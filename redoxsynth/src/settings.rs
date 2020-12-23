@@ -1,1073 +1,549 @@
-use crate::hash::delete_fluid_hashtable;
-use crate::hash::fluid_hashtable_insert;
-use crate::hash::fluid_hashtable_lookup;
-use crate::hash::fluid_hashtable_replace;
-use crate::hash::HashTable;
-use crate::hash::new_fluid_hashtable;
-use crate::list::delete_fluid_list;
-use crate::list::fluid_list_append;
-use crate::list::fluid_list_remove_link;
-use crate::list::List;
-use crate::synth::fluid_synth_settings;
-use crate::sys::fluid_strtok;
-use std::ffi::CStr;
-pub type Settings = HashTable;
-pub type SettingsType = libc::c_int;
-pub const FLUID_SET_TYPE: SettingsType = 3;
-pub const FLUID_STR_TYPE: SettingsType = 2;
-pub const FLUID_INT_TYPE: SettingsType = 1;
-pub const FLUID_NUM_TYPE: SettingsType = 0;
-pub const FLUID_NO_TYPE: SettingsType = -1;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct StrSetting {
-    pub value: *mut libc::c_char,
-    pub def: *mut libc::c_char,
-    pub hints: libc::c_int,
-    pub options: *mut List,
-    pub update: StrUpdateFn,
-    pub data: *mut libc::c_void,
+use crate::{ll, result_from_ptr, Result};
+use bitflags::bitflags;
+use std::{
+    ffi::{CStr, CString},
+    marker::PhantomData,
+    mem::{transmute, MaybeUninit},
+    ops::{Bound, RangeBounds},
+    os::raw,
+};
+
+/**
+The generic settings object
+ */
+#[repr(transparent)]
+pub struct Settings {
+    handle: *mut ll::settings::Settings,
 }
-pub type StrUpdateFn = Option<
-    unsafe extern "C" fn(
-        _: *mut libc::c_void,
-        _: *const libc::c_char,
-        _: *mut libc::c_char,
-    ) -> libc::c_int,
->;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct IntSetting {
-    pub value: libc::c_int,
-    pub def: libc::c_int,
-    pub min: libc::c_int,
-    pub max: libc::c_int,
-    pub hints: libc::c_int,
-    pub update: IntUpdateFn,
-    pub data: *mut libc::c_void,
+
+unsafe impl Send for Settings {}
+
+/**
+The settings reference
+*/
+#[repr(transparent)]
+pub struct SettingsRef<'a> {
+    handle: *mut ll::settings::Settings,
+    phantom: PhantomData<&'a ()>,
 }
-pub type IntUpdateFn = Option<
-    unsafe extern "C" fn(
-        _: *mut libc::c_void,
-        _: *const libc::c_char,
-        _: libc::c_int,
-    ) -> libc::c_int,
->;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct NumSetting {
-    pub value: f64,
-    pub def: f64,
-    pub min: f64,
-    pub max: f64,
-    pub hints: libc::c_int,
-    pub update: NumUpdateFn,
-    pub data: *mut libc::c_void,
+
+impl Drop for Settings {
+    fn drop(&mut self) {
+        unsafe { ll::settings::delete_fluid_settings(self.handle) }
+    }
 }
-pub type NumUpdateFn = Option<
-    unsafe extern "C" fn(
-        _: *mut libc::c_void,
-        _: *const libc::c_char,
-        _: f64,
-    ) -> libc::c_int,
->;
-unsafe extern "C" fn new_fluid_str_setting(
-    value: *const libc::c_char,
-    def: *mut libc::c_char,
-    hints: libc::c_int,
-    fun: StrUpdateFn,
-    data: *mut libc::c_void,
-) -> *mut StrSetting {
-    let mut str;
-    str = libc::malloc(::std::mem::size_of::<StrSetting>() as libc::size_t)
-        as *mut StrSetting;
-    (*str).value = if !value.is_null() {
-        libc::strcpy(
-            libc::malloc(libc::strlen(value) + 1) as *mut libc::c_char,
-            value,
+
+impl Settings {
+    pub fn new() -> Result<Self> {
+        result_from_ptr(unsafe { ll::settings::new_fluid_settings() }).map(|handle| Self { handle })
+    }
+
+    pub(crate) fn into_ptr(self) -> *mut ll::settings::Settings {
+        unsafe { transmute(self) }
+    }
+
+    pub(crate) fn from_ptr(handle: *mut ll::settings::Settings) -> Self {
+        Self { handle }
+    }
+}
+
+impl<'a> SettingsRef<'a> {
+    pub(crate) fn from_ptr(handle: *mut ll::settings::Settings) -> Self {
+        Self {
+            handle,
+            phantom: PhantomData,
+        }
+    }
+}
+
+/**
+The settings interface
+ */
+pub trait IsSettings {
+    fn pick<S, T>(&self, name: S) -> Option<Setting<'_, T>>
+    where
+        S: Into<Vec<u8>>,
+        T: IsSetting + ?Sized;
+
+    fn str_<S>(&self, name: S) -> Option<Setting<'_, str>>
+    where
+        S: Into<Vec<u8>>;
+
+    fn num<S>(&self, name: S) -> Option<Setting<'_, f64>>
+    where
+        S: Into<Vec<u8>>;
+
+    fn int<S>(&self, name: S) -> Option<Setting<'_, i32>>
+    where
+        S: Into<Vec<u8>>;
+}
+
+mod private {
+    use crate::{ll, private::HasHandle, IsSetting, IsSettings, Setting, Settings, SettingsRef};
+    use std::{ffi::CString, marker::PhantomData};
+
+    impl<X> IsSettings for X
+    where
+        X: HasHandle<Handle = ll::settings::Settings>,
+    {
+        fn pick<S, T>(&self, name: S) -> Option<Setting<'_, T>>
+        where
+            S: Into<Vec<u8>>,
+            T: IsSetting + ?Sized,
+        {
+            let handle = self.get_handle();
+            let name = CString::new(name).ok()?;
+
+            if T::TYPE == unsafe { ll::settings::fluid_settings_get_type(handle, name.as_ptr() as *const _) }
+            {
+                Some(Setting {
+                    handle,
+                    name,
+                    phantom: PhantomData,
+                })
+            } else {
+                None
+            }
+        }
+
+        fn str_<S>(&self, name: S) -> Option<Setting<'_, str>>
+        where
+            S: Into<Vec<u8>>,
+        {
+            self.pick(name)
+        }
+
+        fn num<S>(&self, name: S) -> Option<Setting<'_, f64>>
+        where
+            S: Into<Vec<u8>>,
+        {
+            self.pick(name)
+        }
+
+        fn int<S>(&self, name: S) -> Option<Setting<'_, i32>>
+        where
+            S: Into<Vec<u8>>,
+        {
+            self.pick(name)
+        }
+    }
+
+    impl HasHandle for Settings {
+        type Handle = ll::settings::Settings;
+
+        fn get_handle(&self) -> *mut Self::Handle {
+            self.handle
+        }
+    }
+
+    impl<'a> HasHandle for SettingsRef<'a> {
+        type Handle = ll::settings::Settings;
+
+        fn get_handle(&self) -> *mut Self::Handle {
+            self.handle
+        }
+    }
+}
+
+/**
+The single setting object interface
+ */
+pub trait IsSetting {
+    const TYPE: ll::settings::SettingsType;
+}
+
+impl IsSetting for str {
+    const TYPE: ll::settings::SettingsType = ll::settings::FLUID_STR_TYPE;
+}
+
+impl IsSetting for f64 {
+    const TYPE: ll::settings::SettingsType = ll::settings::FLUID_NUM_TYPE;
+}
+
+impl IsSetting for i32 {
+    const TYPE: ll::settings::SettingsType = ll::settings::FLUID_INT_TYPE;
+}
+
+impl IsSetting for () {
+    const TYPE: ll::settings::SettingsType = ll::settings::FLUID_SET_TYPE;
+}
+
+bitflags! {
+    /**
+    The setting hints
+     */
+    pub struct Hints: i32 {
+        /**
+        Hint BOUNDED_BELOW indicates that the LowerBound field
+        of the FLUID_PortRangeHint should be considered meaningful. The
+        value in this field should be considered the (inclusive) lower
+        bound of the valid range. If SAMPLE_RATE is also
+        specified then the value of LowerBound should be multiplied by the
+        sample rate.
+         */
+        const BOUNDED_BELOW = ll::HINT_BOUNDED_BELOW as i32;
+
+        /**
+        Hint BOUNDED_ABOVE indicates that the UpperBound field
+        of the FLUID_PortRangeHint should be considered meaningful. The
+        value in this field should be considered the (inclusive) upper
+        bound of the valid range. If SAMPLE_RATE is also
+        specified then the value of UpperBound should be multiplied by the
+        sample rate.
+         */
+        const BOUNDED_ABOVE = ll::HINT_BOUNDED_ABOVE as i32;
+
+        /**
+        Hint TOGGLED indicates that the data item should be
+        considered a Boolean toggle. Data less than or equal to zero should
+        be considered `off' or `false,' and data above zero should be
+        considered `on' or `true.' TOGGLED may not be used in
+        conjunction with any other hint except DEFAULT_0 or
+        DEFAULT_1.
+         */
+        const TOGGLED = ll::HINT_TOGGLED as i32;
+
+        /**
+        Hint SAMPLE_RATE indicates that any bounds specified
+        should be interpreted as multiples of the sample rate. For
+        instance, a frequency range from 0Hz to the Nyquist frequency (half
+        the sample rate) could be requested by this hint in conjunction
+        with LowerBound = 0 and UpperBound = 0.5. Hosts that support bounds
+        at all must support this hint to retain meaning.
+         */
+        const SAMPLE_RATE = ll::HINT_SAMPLE_RATE as i32;
+
+        /**
+        Hint LOGARITHMIC indicates that it is likely that the
+        user will find it more intuitive to view values using a logarithmic
+        scale. This is particularly useful for frequencies and gains.
+         */
+        const LOGARITHMIC = ll::HINT_LOGARITHMIC as i32;
+
+        /**
+        Hint INTEGER indicates that a user interface would
+        probably wish to provide a stepped control taking only integer
+        values. Any bounds set should be slightly wider than the actual
+        integer range required to avoid floating point rounding errors. For
+        instance, the integer set {0,1,2,3} might be described as [-0.1,
+        3.1].
+         */
+        const INTEGER = ll::HINT_INTEGER as i32;
+
+        const FILENAME = ll::HINT_FILENAME as i32;
+
+        const OPTIONLIST = ll::HINT_OPTIONLIST as i32;
+    }
+}
+
+/**
+The single setting of specific type
+ */
+pub struct Setting<'a, T: ?Sized> {
+    handle: *mut ll::settings::Settings,
+    name: CString,
+    phantom: PhantomData<(&'a (), T)>,
+}
+
+impl<'a, T> Setting<'a, T>
+where
+    T: ?Sized,
+{
+    #[inline]
+    fn name_ptr(&self) -> *const raw::c_char {
+        self.name.as_ptr() as *const _
+    }
+
+    pub fn hints(&self) -> Hints {
+        Hints::from_bits_truncate(unsafe {
+            ll::settings::fluid_settings_get_hints(self.handle, self.name_ptr())
+        })
+    }
+
+    /** Returns whether the setting is changeable in real-time
+     */
+    pub fn is_realtime(&self) -> bool {
+        0 < unsafe { ll::settings::fluid_settings_is_realtime(self.handle, self.name_ptr()) }
+    }
+}
+
+impl<'a> Setting<'a, str> {
+    /**
+    Set the value of a string setting
+
+    Returns `true` if the value has been set, `false` otherwise
+     */
+    pub fn set<S: Into<String>>(&self, value: S) -> bool {
+        let mut value = value.into();
+        value.push('\0');
+        0 < unsafe {
+            ll::settings::fluid_settings_setstr(self.handle, self.name_ptr(), value.as_ptr() as *const _)
+        }
+    }
+
+    /**
+    Get the value of a string setting
+
+    Returns `Some("value")` if the value exists, `None` otherwise
+     */
+    pub fn get(&self) -> Option<&str> {
+        let mut value = MaybeUninit::uninit();
+
+        if 0 < unsafe {
+            ll::settings::fluid_settings_getstr(self.handle, self.name_ptr(), value.as_mut_ptr())
+        } {
+            let value = unsafe { value.assume_init() };
+            let value = unsafe { CStr::from_ptr(value) };
+            value.to_str().ok()
+        } else {
+            None
+        }
+    }
+
+    /**
+    Get the default value of a string setting
+     */
+    pub fn default(&self) -> &str {
+        let value = unsafe { ll::settings::fluid_settings_getstr_default(self.handle, self.name_ptr()) };
+        let value = unsafe { CStr::from_ptr(value) };
+        value.to_str().unwrap()
+    }
+}
+
+impl<'a, S> PartialEq<S> for Setting<'a, str>
+where
+    S: AsRef<str>,
+{
+    fn eq(&self, other: &S) -> bool {
+        let mut other = String::from(other.as_ref());
+        other.push('\0');
+        0 < unsafe {
+            ll::settings::fluid_settings_str_equal(self.handle, self.name_ptr(), other.as_ptr() as *mut _)
+        }
+    }
+}
+
+/**
+The range of setting value
+ */
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Range<T> {
+    /// Below limit
+    pub min: Option<T>,
+    /// Above limit
+    pub max: Option<T>,
+}
+
+impl<T> Range<T> {
+    pub fn new(min: Option<T>, max: Option<T>) -> Self {
+        Self { min, max }
+    }
+
+    fn new_unsafe(min: MaybeUninit<T>, max: MaybeUninit<T>, hints: Hints) -> Self {
+        Self::new(
+            if hints.contains(Hints::BOUNDED_BELOW) {
+                Some(unsafe { min.assume_init() })
+            } else {
+                None
+            },
+            if hints.contains(Hints::BOUNDED_ABOVE) {
+                Some(unsafe { max.assume_init() })
+            } else {
+                None
+            },
         )
-    } else {
-        0 as *mut libc::c_char
-    };
-    (*str).def = if !def.is_null() {
-        libc::strcpy(
-            libc::malloc(libc::strlen(def) + 1) as *mut libc::c_char,
-            def,
-        )
-    } else {
-        0 as *mut libc::c_char
-    };
-    (*str).hints = hints;
-    (*str).options = 0 as *mut List;
-    (*str).update = fun;
-    (*str).data = data;
-    return str;
-}
-unsafe extern "C" fn delete_fluid_str_setting(str: *mut StrSetting) {
-    if !str.is_null() {
-        if !(*str).value.is_null() {
-            libc::free((*str).value as *mut libc::c_void);
-        }
-        if !(*str).def.is_null() {
-            libc::free((*str).def as *mut libc::c_void);
-        }
-        if !(*str).options.is_null() {
-            let mut list: *mut List = (*str).options;
-            while !list.is_null() {
-                libc::free((*list).data);
-                list = if !list.is_null() {
-                    (*list).next
-                } else {
-                    0 as *mut List
-                }
-            }
-            delete_fluid_list((*str).options);
-        }
-        libc::free(str as *mut libc::c_void);
-    };
-}
-unsafe extern "C" fn new_fluid_num_setting(
-    min: f64,
-    max: f64,
-    def: f64,
-    hints: libc::c_int,
-    fun: NumUpdateFn,
-    data: *mut libc::c_void,
-) -> *mut NumSetting {
-    let mut setting;
-    setting = libc::malloc(::std::mem::size_of::<NumSetting>() as libc::size_t)
-        as *mut NumSetting;
-    (*setting).value = def;
-    (*setting).def = def;
-    (*setting).min = min;
-    (*setting).max = max;
-    (*setting).hints = hints;
-    (*setting).update = fun;
-    (*setting).data = data;
-    return setting;
-}
-unsafe extern "C" fn delete_fluid_num_setting(setting: *mut NumSetting) {
-    if !setting.is_null() {
-        libc::free(setting as *mut libc::c_void);
-    };
-}
-unsafe extern "C" fn new_fluid_int_setting(
-    min: libc::c_int,
-    max: libc::c_int,
-    def: libc::c_int,
-    hints: libc::c_int,
-    fun: IntUpdateFn,
-    data: *mut libc::c_void,
-) -> *mut IntSetting {
-    let mut setting;
-    setting = libc::malloc(::std::mem::size_of::<IntSetting>() as libc::size_t)
-        as *mut IntSetting;
-    (*setting).value = def;
-    (*setting).def = def;
-    (*setting).min = min;
-    (*setting).max = max;
-    (*setting).hints = hints;
-    (*setting).update = fun;
-    (*setting).data = data;
-    return setting;
-}
-unsafe extern "C" fn delete_fluid_int_setting(setting: *mut IntSetting) {
-    if !setting.is_null() {
-        libc::free(setting as *mut libc::c_void);
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn new_fluid_settings() -> *mut Settings {
-    let settings: *mut Settings = new_fluid_hashtable(Some(
-        fluid_settings_hash_delete
-            as unsafe extern "C" fn(_: *mut libc::c_void, _: libc::c_int) -> (),
-    ));
-    if settings.is_null() {
-        return 0 as *mut Settings;
     }
-    fluid_settings_init(settings);
-    return settings;
 }
-#[no_mangle]
-pub unsafe extern "C" fn delete_fluid_settings(settings: *mut Settings) {
-    delete_fluid_hashtable(settings);
-}
-unsafe extern "C" fn fluid_settings_hash_delete(
-    value: *mut libc::c_void,
-    type_0: libc::c_int,
-) {
-    match type_0 {
-        0 => {
-            delete_fluid_num_setting(value as *mut NumSetting);
-        }
-        1 => {
-            delete_fluid_int_setting(value as *mut IntSetting);
-        }
-        2 => {
-            delete_fluid_str_setting(value as *mut StrSetting);
-        }
-        3 => {
-            delete_fluid_hashtable(value as *mut HashTable);
-        }
-        _ => {}
-    };
-}
-unsafe extern "C" fn fluid_settings_init(settings: *mut Settings) {
-    fluid_synth_settings(settings);
-}
-unsafe extern "C" fn fluid_settings_tokenize(
-    s: *const libc::c_char,
-    buf: *mut libc::c_char,
-    ptr: *mut *mut libc::c_char,
-) -> libc::c_int {
-    let mut tokstr;
-    let mut tok;
-    let mut n: libc::c_int = 0 as libc::c_int;
-    if libc::strlen(s) > 256 {
-        fluid_log!(
-            FLUID_ERR,
-            "Setting variable name exceeded max length of {} chars",
-            256
-        );
-        return 0 as libc::c_int;
-    }
-    libc::strcpy(buf, s);
-    tokstr = buf;
-    loop {
-        tok = fluid_strtok(
-            &mut tokstr,
-            b".\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
-        );
-        if tok.is_null() {
-            break;
-        }
-        if n > 8 as libc::c_int {
-            fluid_log!(
-                FLUID_ERR,
-                "Setting variable name exceeded max token count of {}",
-                8
-            );
-            return 0 as libc::c_int;
-        }
-        let fresh0 = n;
-        n = n + 1;
-        let ref mut fresh1 = *ptr.offset(fresh0 as isize);
-        *fresh1 = tok
-    }
-    return n;
-}
-unsafe extern "C" fn fluid_settings_get(
-    settings: *mut Settings,
-    name: *mut *mut libc::c_char,
-    len: libc::c_int,
-    value: *mut *mut libc::c_void,
-    type_0: *mut libc::c_int,
-) -> libc::c_int {
-    let mut table: *mut HashTable = settings;
-    let mut t: libc::c_int = 0;
-    let mut v: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut n;
-    n = 0 as libc::c_int;
-    while n < len {
-        if table.is_null() {
-            return 0 as libc::c_int;
-        }
-        if fluid_hashtable_lookup(table, *name.offset(n as isize), &mut v, &mut t) == 0 {
-            return 0 as libc::c_int;
-        }
-        table = if t == FLUID_SET_TYPE as libc::c_int {
-            v as *mut HashTable
+
+impl<T> RangeBounds<T> for Range<T> {
+    fn start_bound(&self) -> Bound<&T> {
+        if let Some(value) = &self.min {
+            Bound::Included(value)
         } else {
-            0 as *mut HashTable
-        };
-        n += 1
+            Bound::Unbounded
+        }
     }
-    if !value.is_null() {
-        *value = v
+
+    fn end_bound(&self) -> Bound<&T> {
+        if let Some(value) = &self.max {
+            Bound::Included(value)
+        } else {
+            Bound::Unbounded
+        }
     }
-    if !type_0.is_null() {
-        *type_0 = t
+}
+
+impl<'a> Setting<'a, f64> {
+    /**
+    Set the value of a numeric setting
+
+    Returns `true` if the value has been set, `false` otherwise
+     */
+    pub fn set(&self, value: f64) -> bool {
+        0 < unsafe { ll::settings::fluid_settings_setnum(self.handle, self.name_ptr(), value) }
     }
-    return 1 as libc::c_int;
-}
-unsafe extern "C" fn fluid_settings_set(
-    settings: *mut Settings,
-    name: *mut *mut libc::c_char,
-    len: libc::c_int,
-    value: *mut libc::c_void,
-    type_0: libc::c_int,
-) -> libc::c_int {
-    let mut table: *mut HashTable = settings;
-    let mut t: libc::c_int = 0;
-    let mut v: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut n;
-    let num: libc::c_int = len - 1 as libc::c_int;
-    n = 0 as libc::c_int;
-    while n < num {
-        if fluid_hashtable_lookup(table, *name.offset(n as isize), &mut v, &mut t) != 0 {
-            if t == FLUID_SET_TYPE as libc::c_int {
-                table = v as *mut HashTable
-            } else {
-                fluid_log!(
-                    FLUID_WARN,
-                    "\'{}\' is not a node",
-                    CStr::from_ptr(*name.offset(n as isize)).to_str().unwrap()
-                );
-                return 0 as libc::c_int;
-            }
+
+    /**
+    Get the value of a numeric setting
+
+    Returns `Some(value)` if the value exists, `None` otherwise
+     */
+    pub fn get(&self) -> Option<f64> {
+        let mut value = MaybeUninit::uninit();
+
+        if 0 < unsafe {
+            ll::settings::fluid_settings_getnum(self.handle, self.name_ptr(), value.as_mut_ptr())
+        } {
+            let value = unsafe { value.assume_init() };
+            Some(value)
         } else {
-            let tmp;
-            tmp = new_fluid_hashtable(Some(
-                fluid_settings_hash_delete
-                    as unsafe extern "C" fn(_: *mut libc::c_void, _: libc::c_int) -> (),
-            ));
-            fluid_hashtable_insert(
-                table,
-                *name.offset(n as isize),
-                tmp as *mut libc::c_void,
-                FLUID_SET_TYPE as libc::c_int,
-            );
-            table = tmp
+            None
         }
-        n += 1
     }
-    fluid_hashtable_replace(table, *name.offset(num as isize), value, type_0);
-    return 1 as libc::c_int;
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_register_str(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-    def: *mut libc::c_char,
-    hints: libc::c_int,
-    fun: StrUpdateFn,
-    data: *mut libc::c_void,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    let mut setting;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) == 0
-    {
-        setting = new_fluid_str_setting(def, def, hints, fun, data);
-        return fluid_settings_set(
-            settings,
-            tokens.as_mut_ptr(),
-            ntokens,
-            setting as *mut libc::c_void,
-            FLUID_STR_TYPE as libc::c_int,
-        );
-    } else if type_0 == FLUID_STR_TYPE as libc::c_int {
-        setting = value as *mut StrSetting;
-        (*setting).update = fun;
-        (*setting).data = data;
-        (*setting).def = if !def.is_null() {
-            libc::strcpy(
-                libc::malloc(libc::strlen(def).wrapping_add(1)) as *mut libc::c_char,
-                def,
-            )
-        } else {
-            0 as *mut libc::c_char
-        };
-        (*setting).hints = hints;
-        return 1 as libc::c_int;
-    } else {
-        fluid_log!(
-            FLUID_WARN,
-            "Type mismatch on setting \'{}\'",
-            CStr::from_ptr(name).to_str().unwrap()
-        );
-        return 1 as libc::c_int;
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_register_num(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-    def: f64,
-    min: f64,
-    max: f64,
-    hints: libc::c_int,
-    fun: NumUpdateFn,
-    data: *mut libc::c_void,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) == 0
-    {
-        let setting;
-        setting = new_fluid_num_setting(min, max, def, hints, fun, data);
-        return fluid_settings_set(
-            settings,
-            tokens.as_mut_ptr(),
-            ntokens,
-            setting as *mut libc::c_void,
-            FLUID_NUM_TYPE as libc::c_int,
-        );
-    } else if type_0 == FLUID_NUM_TYPE as libc::c_int {
-        let mut setting_0: *mut NumSetting = value as *mut NumSetting;
-        (*setting_0).update = fun;
-        (*setting_0).data = data;
-        (*setting_0).min = min;
-        (*setting_0).max = max;
-        (*setting_0).def = def;
-        (*setting_0).hints = hints;
-        return 1 as libc::c_int;
-    } else {
-        fluid_log!(
-            FLUID_WARN,
-            "Type mismatch on setting \'{}\'",
-            CStr::from_ptr(name).to_str().unwrap()
-        );
-        return 0 as libc::c_int;
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_register_int(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-    def: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-    hints: libc::c_int,
-    fun: IntUpdateFn,
-    data: *mut libc::c_void,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) == 0
-    {
-        let setting;
-        setting = new_fluid_int_setting(min, max, def, hints, fun, data);
-        return fluid_settings_set(
-            settings,
-            tokens.as_mut_ptr(),
-            ntokens,
-            setting as *mut libc::c_void,
-            FLUID_INT_TYPE as libc::c_int,
-        );
-    } else if type_0 == FLUID_INT_TYPE as libc::c_int {
-        let mut setting_0: *mut IntSetting = value as *mut IntSetting;
-        (*setting_0).update = fun;
-        (*setting_0).data = data;
-        (*setting_0).min = min;
-        (*setting_0).max = max;
-        (*setting_0).def = def;
-        (*setting_0).hints = hints;
-        return 1 as libc::c_int;
-    } else {
-        fluid_log!(
-            FLUID_WARN,
-            "Type mismatch on setting \'{}\'",
-            CStr::from_ptr(name).to_str().unwrap()
-        );
-        return 0 as libc::c_int;
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_get_type(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    return if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-    {
-        type_0
-    } else {
-        FLUID_NO_TYPE as libc::c_int
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_get_hints(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-    {
-        if type_0 == FLUID_NUM_TYPE as libc::c_int {
-            let setting: *mut NumSetting = value as *mut NumSetting;
-            return (*setting).hints;
-        } else if type_0 == FLUID_STR_TYPE as libc::c_int {
-            let setting_0: *mut StrSetting = value as *mut StrSetting;
-            return (*setting_0).hints;
-        } else {
-            return 0 as libc::c_int;
-        }
-    } else {
-        return 0 as libc::c_int;
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_is_realtime(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-    {
-        if type_0 == FLUID_NUM_TYPE as libc::c_int {
-            let setting: *mut NumSetting = value as *mut NumSetting;
-            return (*setting).update.is_some() as libc::c_int;
-        } else if type_0 == FLUID_STR_TYPE as libc::c_int {
-            let setting_0: *mut StrSetting = value as *mut StrSetting;
-            return (*setting_0).update.is_some() as libc::c_int;
-        } else {
-            return 0 as libc::c_int;
-        }
-    } else {
-        return 0 as libc::c_int;
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_setstr(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-    str: *const libc::c_char,
-) -> libc::c_int {
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut setting;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-    {
-        if type_0 != FLUID_STR_TYPE as libc::c_int {
-            return 0 as libc::c_int;
-        }
-        setting = value as *mut StrSetting;
-        if !(*setting).value.is_null() {
-            libc::free((*setting).value as *mut libc::c_void);
-        }
-        (*setting).value = if !str.is_null() {
-            libc::strcpy(
-                libc::malloc(libc::strlen(str).wrapping_add(1)) as *mut libc::c_char,
-                str,
-            )
-        } else {
-            0 as *mut libc::c_char
-        };
-        if (*setting).update.is_some() {
-            Some((*setting).update.expect("non-null function pointer"))
-                .expect("non-null function pointer")(
-                (*setting).data, name, (*setting).value
+
+    /**
+    Get the default value of a numeric setting
+     */
+    pub fn default(&self) -> f64 {
+        unsafe { ll::settings::fluid_settings_getnum_default(self.handle, self.name_ptr()) }
+    }
+
+    /**
+    Get the range of values of a numeric setting
+     */
+    pub fn range(&self) -> Range<f64> {
+        let mut min = MaybeUninit::uninit();
+        let mut max = MaybeUninit::uninit();
+
+        unsafe {
+            ll::settings::fluid_settings_getnum_range(
+                self.handle,
+                self.name_ptr(),
+                min.as_mut_ptr(),
+                max.as_mut_ptr(),
             );
         }
-        return 1 as libc::c_int;
-    } else {
-        let setting_0;
-        setting_0 = new_fluid_str_setting(
-            str,
-            0 as *mut libc::c_char,
-            0 as libc::c_int,
-            None,
-            0 as *mut libc::c_void,
-        );
-        return fluid_settings_set(
-            settings,
-            tokens.as_mut_ptr(),
-            ntokens,
-            setting_0 as *mut libc::c_void,
-            FLUID_STR_TYPE as libc::c_int,
-        );
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_getstr(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-    str: *mut *mut libc::c_char,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-        && type_0 == FLUID_STR_TYPE as libc::c_int
-    {
-        let setting: *mut StrSetting = value as *mut StrSetting;
-        *str = (*setting).value;
-        return 1 as libc::c_int;
+
+        let hints = self.hints();
+        Range::new_unsafe(min, max, hints)
     }
-    *str = 0 as *mut libc::c_char;
-    return 0 as libc::c_int;
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_str_equal(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-    s: *mut libc::c_char,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-        && type_0 == FLUID_STR_TYPE as libc::c_int
-    {
-        let setting: *mut StrSetting = value as *mut StrSetting;
-        return (libc::strcmp((*setting).value, s) == 0 as libc::c_int) as libc::c_int;
+
+impl<'a> Setting<'a, i32> {
+    /**
+    Set the value of a integer setting
+
+    Returns `true` if the value has been set, `false` otherwise
+     */
+    pub fn set(&self, value: i32) -> bool {
+        0 < unsafe { ll::settings::fluid_settings_setint(self.handle, self.name_ptr(), value) }
     }
-    return 0 as libc::c_int;
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_getstr_default(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-) -> *mut libc::c_char {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-        && type_0 == FLUID_STR_TYPE as libc::c_int
-    {
-        let setting: *mut StrSetting = value as *mut StrSetting;
-        return (*setting).def;
-    } else {
-        return 0 as *mut libc::c_char;
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_add_option(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-    s: *mut libc::c_char,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-        && type_0 == FLUID_STR_TYPE as libc::c_int
-    {
-        let mut setting: *mut StrSetting = value as *mut StrSetting;
-        let copy: *mut libc::c_char = libc::strcpy(
-            libc::malloc(libc::strlen(s).wrapping_add(1)) as *mut libc::c_char,
-            s,
-        );
-        (*setting).options = fluid_list_append((*setting).options, copy as *mut libc::c_void);
-        return 1 as libc::c_int;
-    } else {
-        return 0 as libc::c_int;
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_remove_option(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-    s: *mut libc::c_char,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-        && type_0 == FLUID_STR_TYPE as libc::c_int
-    {
-        let mut setting: *mut StrSetting = value as *mut StrSetting;
-        let mut list: *mut List = (*setting).options;
-        while !list.is_null() {
-            let option: *mut libc::c_char = if !list.is_null() {
-                (*list).data
-            } else {
-                0 as *mut libc::c_void
-            } as *mut libc::c_char;
-            if libc::strcmp(s, option) == 0 as libc::c_int {
-                libc::free(option as *mut libc::c_void);
-                (*setting).options = fluid_list_remove_link((*setting).options, list);
-                return 1 as libc::c_int;
-            }
-            list = if !list.is_null() {
-                (*list).next
-            } else {
-                0 as *mut List
-            }
+
+    /**
+    Get the value of a integer setting
+
+    Returns `Some(value)` if the value exists, `None` otherwise
+     */
+    pub fn get(&self) -> Option<i32> {
+        let mut value = MaybeUninit::uninit();
+
+        if 0 < unsafe {
+            ll::settings::fluid_settings_getint(self.handle, self.name_ptr(), value.as_mut_ptr())
+        } {
+            let value = unsafe { value.assume_init() };
+            Some(value)
+        } else {
+            None
         }
-        return 0 as libc::c_int;
-    } else {
-        return 0 as libc::c_int;
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_setnum(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-    mut val: f64,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut setting;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-    {
-        if type_0 != FLUID_NUM_TYPE as libc::c_int {
-            return 0 as libc::c_int;
-        }
-        setting = value as *mut NumSetting;
-        if val < (*setting).min {
-            val = (*setting).min
-        } else if val > (*setting).max {
-            val = (*setting).max
-        }
-        (*setting).value = val;
-        if (*setting).update.is_some() {
-            Some((*setting).update.expect("non-null function pointer"))
-                .expect("non-null function pointer")((*setting).data, name, val);
-        }
-        return 1 as libc::c_int;
-    } else {
-        let mut setting_0;
-        setting_0 = new_fluid_num_setting(
-            -1e10f64,
-            1e10f64,
-            0.0f32 as f64,
-            0 as libc::c_int,
-            None,
-            0 as *mut libc::c_void,
-        );
-        (*setting_0).value = val;
-        return fluid_settings_set(
-            settings,
-            tokens.as_mut_ptr(),
-            ntokens,
-            setting_0 as *mut libc::c_void,
-            FLUID_NUM_TYPE as libc::c_int,
-        );
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_getnum(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-    val: *mut f64,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-        && type_0 == FLUID_NUM_TYPE as libc::c_int
-    {
-        let setting: *mut NumSetting = value as *mut NumSetting;
-        *val = (*setting).value;
-        return 1 as libc::c_int;
     }
-    return 0 as libc::c_int;
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_getnum_range(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-    min: *mut f64,
-    max: *mut f64,
-) {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-        && type_0 == FLUID_NUM_TYPE as libc::c_int
-    {
-        let setting: *mut NumSetting = value as *mut NumSetting;
-        *min = (*setting).min;
-        *max = (*setting).max
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_getnum_default(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-) -> f64 {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-        && type_0 == FLUID_NUM_TYPE as libc::c_int
-    {
-        let setting: *mut NumSetting = value as *mut NumSetting;
-        return (*setting).def;
-    } else {
-        return 0.0f32 as f64;
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_setint(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-    mut val: libc::c_int,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut setting;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-    {
-        if type_0 != FLUID_INT_TYPE as libc::c_int {
-            return 0 as libc::c_int;
-        }
-        setting = value as *mut IntSetting;
-        if val < (*setting).min {
-            val = (*setting).min
-        } else if val > (*setting).max {
-            val = (*setting).max
-        }
-        (*setting).value = val;
-        if (*setting).update.is_some() {
-            Some((*setting).update.expect("non-null function pointer"))
-                .expect("non-null function pointer")((*setting).data, name, val);
-        }
-        return 1 as libc::c_int;
-    } else {
-        let mut setting_0;
-        setting_0 = new_fluid_int_setting(
-            -(2147483647 as libc::c_int) - 1 as libc::c_int,
-            2147483647 as libc::c_int,
-            0 as libc::c_int,
-            0 as libc::c_int,
-            None,
-            0 as *mut libc::c_void,
-        );
-        (*setting_0).value = val;
-        return fluid_settings_set(
-            settings,
-            tokens.as_mut_ptr(),
-            ntokens,
-            setting_0 as *mut libc::c_void,
-            FLUID_INT_TYPE as libc::c_int,
-        );
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_getint(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-    val: *mut libc::c_int,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-        && type_0 == FLUID_INT_TYPE as libc::c_int
-    {
-        let setting: *mut IntSetting = value as *mut IntSetting;
-        *val = (*setting).value;
-        return 1 as libc::c_int;
+
+    /**
+    Get the default value of a integer setting
+     */
+    pub fn default(&self) -> i32 {
+        unsafe { ll::settings::fluid_settings_getint_default(self.handle, self.name_ptr()) }
     }
-    return 0 as libc::c_int;
+
+    /**
+    Get the range of values of a integer setting
+     */
+    pub fn range(&self) -> Range<i32> {
+        let mut min = MaybeUninit::uninit();
+        let mut max = MaybeUninit::uninit();
+
+        unsafe {
+            ll::settings::fluid_settings_getint_range(
+                self.handle,
+                self.name_ptr(),
+                min.as_mut_ptr(),
+                max.as_mut_ptr(),
+            );
+        }
+
+        let hints = self.hints();
+        Range::new_unsafe(min, max, hints)
+    }
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_getint_range(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-    min: *mut libc::c_int,
-    max: *mut libc::c_int,
-) {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-        && type_0 == FLUID_INT_TYPE as libc::c_int
-    {
-        let setting: *mut IntSetting = value as *mut IntSetting;
-        *min = (*setting).min;
-        *max = (*setting).max
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_getint_default(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-        && type_0 == FLUID_INT_TYPE as libc::c_int
-    {
-        let setting: *mut IntSetting = value as *mut IntSetting;
-        return (*setting).def;
-    } else {
-        return 0.0f32 as libc::c_int;
-    };
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn settings() {
+        let settings = Settings::new().unwrap();
+
+        drop(settings);
+    }
+
+    #[test]
+    fn num_setting() {
+        let settings = Settings::new().unwrap();
+        let gain = settings.num("synth.gain").unwrap();
+
+        assert_eq!(gain.default(), 0.2f32 as f64);
+        //assert_eq!(gain.range().min, Some(0.0));
+        //assert_eq!(gain.range().max, Some(10.0));
+
+        assert_eq!(gain.get(), Some(0.2f32 as f64));
+        assert!(gain.set(0.5));
+        assert_eq!(gain.get(), Some(0.5));
+    }
+
+    #[test]
+    fn int_setting() {
+        let settings = Settings::new().unwrap();
+        let polyphony = settings.int("synth.polyphony").unwrap();
+
+        assert_eq!(polyphony.default(), 256);
+        //assert_eq!(polyphony.range().min, Some(1));
+        //assert_eq!(polyphony.range().max, Some(65535));
+
+        assert_eq!(polyphony.get(), Some(256));
+        assert!(polyphony.set(512));
+        assert_eq!(polyphony.get(), Some(512));
+    }
+
+    #[test]
+    fn str_setting() {
+        let settings = Settings::new().unwrap();
+        let active = settings.str_("synth.drums-channel.active").unwrap();
+
+        assert_eq!(active.default(), "yes");
+
+        assert_eq!(active.get(), Some("yes"));
+        assert!(active.set("no"));
+        assert_eq!(active.get(), Some("no"));
+    }
+
+    #[test]
+    fn settings_ref() {
+        let settings = Settings::new().unwrap();
+
+        let settings_ref = SettingsRef::from_ptr(settings.into_ptr());
+
+        let gain = settings_ref.num("synth.gain").unwrap();
+
+        assert_eq!(gain.default(), 0.2f32 as f64);
+    }
 }

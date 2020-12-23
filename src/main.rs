@@ -3,8 +3,7 @@ use std::{
     io::Write,
 };
 use byte_slice_cast::AsByteSlice;
-use fluidlite::{Settings, Synth};
-use redoxsynth as _;
+use redoxsynth::{Settings, Synth};
 fn main() {
     let settings = Settings::new().unwrap();
     let synth = Synth::new(settings).unwrap();

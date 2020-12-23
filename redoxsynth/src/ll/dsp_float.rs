@@ -1,4 +1,4 @@
-use crate::voice::fluid_voice_t;
+use crate::ll::voice::fluid_voice_t;
 pub type Phase = libc::c_ulonglong;
 pub type GenType = libc::c_uint;
 pub const GEN_SAMPLEMODE: GenType = 54;

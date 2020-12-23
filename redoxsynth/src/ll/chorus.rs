@@ -1,6 +1,6 @@
 pub type ChorusMod = libc::c_uint;
-pub const CHORUS_MODTRIANGLE: ChorusMod = 1;
-pub const CHORUS_MODSINE: ChorusMod = 0;
+pub const CHORUS_MOD_TRIANGLE: ChorusMod = 1;
+pub const CHORUS_MOD_SINE: ChorusMod = 0;
 pub const FLUID_OK: libc::c_int = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -98,7 +98,7 @@ pub unsafe extern "C" fn fluid_chorus_init(chorus: *mut Chorus) -> libc::c_int {
     fluid_chorus_set_level(chorus, 2.0f32);
     fluid_chorus_set_speed_Hz(chorus, 0.3f32);
     fluid_chorus_set_depth_ms(chorus, 8.0f32);
-    fluid_chorus_set_type(chorus, CHORUS_MODSINE as libc::c_int);
+    fluid_chorus_set_type(chorus, CHORUS_MOD_SINE as libc::c_int);
     return fluid_chorus_update(chorus);
 }
 #[no_mangle]
@@ -235,13 +235,13 @@ pub unsafe extern "C" fn fluid_chorus_update(chorus: *mut Chorus) -> libc::c_int
         );
         modulation_depth_samples = (1 as libc::c_int) << 12 as libc::c_int - 1 as libc::c_int
     }
-    if (*chorus).type_0 == CHORUS_MODSINE as libc::c_int {
+    if (*chorus).type_0 == CHORUS_MOD_SINE as libc::c_int {
         fluid_chorus_sine(
             (*chorus).lookup_tab,
             (*chorus).modulation_period_samples as libc::c_int,
             modulation_depth_samples,
         );
-    } else if (*chorus).type_0 == CHORUS_MODTRIANGLE as libc::c_int {
+    } else if (*chorus).type_0 == CHORUS_MOD_TRIANGLE as libc::c_int {
         Chorusriangle(
             (*chorus).lookup_tab,
             (*chorus).modulation_period_samples as libc::c_int,
@@ -252,7 +252,7 @@ pub unsafe extern "C" fn fluid_chorus_update(chorus: *mut Chorus) -> libc::c_int
             FLUID_WARN,
             "chorus: Unknown modulation type. Using sinewave.",
         );
-        (*chorus).type_0 = CHORUS_MODSINE as libc::c_int;
+        (*chorus).type_0 = CHORUS_MOD_SINE as libc::c_int;
         fluid_chorus_sine(
             (*chorus).lookup_tab,
             (*chorus).modulation_period_samples as libc::c_int,

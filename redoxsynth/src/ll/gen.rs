@@ -1,4 +1,4 @@
-use crate::channel::Channel;
+use crate::ll::channel::Channel;
 pub type GenType = libc::c_uint;
 pub const GEN_LAST: GenType = 60;
 pub const GEN_PITCH: GenType = 59;

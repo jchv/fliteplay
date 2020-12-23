@@ -1,8 +1,8 @@
-use crate::channel::fluid_channel_get_cc;
-use crate::channel::Channel;
-use crate::conv::fluid_concave;
-use crate::conv::fluid_convex;
-use crate::voice::fluid_voice_t;
+use crate::ll::channel::fluid_channel_get_cc;
+use crate::ll::channel::Channel;
+use crate::ll::conv::fluid_concave;
+use crate::ll::conv::fluid_convex;
+use crate::ll::voice::fluid_voice_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct fluid_mod_t {

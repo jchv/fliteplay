@@ -1,4 +1,4 @@
-use crate::synth::fluid_synth_t;
+use crate::ll::synth::fluid_synth_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct SoundfontLoader {

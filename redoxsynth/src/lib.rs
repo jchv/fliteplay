@@ -1,39 +1,17 @@
-#[macro_use]
-mod redoxsynth_macros {
-    macro_rules! fluid_log {
-        ($log_level:expr, $fmt_string:expr, $( $arg:expr ),*) => {
-            println!($fmt_string, $( $arg ),*);
-        }
-    }
-
-    macro_rules! gerr {
-        ($err:expr, $fmt_string:expr, $( $arg:expr ),*) => {
-            { println!($fmt_string, $( $arg ),*); 0 }
-        }
-    }
-}
-
-mod channel;
-mod chorus;
-mod conv;
-mod defsfont;
-mod dsp_float;
-mod gen;
-mod hash;
-mod list;
-mod modulator;
-mod reverb;
+pub(crate) mod ll;
+mod font;
+mod loader;
+mod log;
+mod private;
 mod settings;
-mod sfont;
 mod synth;
-mod sys;
-mod tuning;
-mod voice;
+mod types;
+mod version;
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
+pub use self::font::*;
+pub use self::loader::*;
+pub use self::log::*;
+pub use self::settings::*;
+pub use self::synth::*;
+pub use self::types::*;
+pub use self::version::*;

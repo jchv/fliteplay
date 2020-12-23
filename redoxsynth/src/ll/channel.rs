@@ -1,15 +1,15 @@
-use crate::gen::fluid_gen_scale_nrpn;
-use crate::settings::fluid_settings_str_equal;
-use crate::sfont::Preset;
-use crate::synth::fluid_synth_all_notes_off;
-use crate::synth::fluid_synth_all_sounds_off;
-use crate::synth::fluid_synth_damp_voices;
-use crate::synth::fluid_synth_find_preset;
-use crate::synth::fluid_synth_modulate_voices;
-use crate::synth::fluid_synth_modulate_voices_all;
-use crate::synth::fluid_synth_set_gen;
-use crate::synth::fluid_synth_t;
-use crate::tuning::Tuning;
+use crate::ll::gen::fluid_gen_scale_nrpn;
+use crate::ll::settings::fluid_settings_str_equal;
+use crate::ll::sfont::Preset;
+use crate::ll::synth::fluid_synth_all_notes_off;
+use crate::ll::synth::fluid_synth_all_sounds_off;
+use crate::ll::synth::fluid_synth_damp_voices;
+use crate::ll::synth::fluid_synth_find_preset;
+use crate::ll::synth::fluid_synth_modulate_voices;
+use crate::ll::synth::fluid_synth_modulate_voices_all;
+use crate::ll::synth::fluid_synth_set_gen;
+use crate::ll::synth::fluid_synth_t;
+use crate::ll::tuning::Tuning;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Channel {
