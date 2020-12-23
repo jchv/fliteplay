@@ -2,7 +2,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 use crate::hash::delete_fluid_hashtable;
@@ -85,7 +84,7 @@ unsafe extern "C" fn new_fluid_str_setting(
     mut fun: fluid_str_update_t,
     mut data: *mut libc::c_void,
 ) -> *mut fluid_str_setting_t {
-    let mut str: *mut fluid_str_setting_t = 0 as *mut fluid_str_setting_t;
+    let mut str;
     str = libc::malloc(::std::mem::size_of::<fluid_str_setting_t>() as libc::size_t)
         as *mut fluid_str_setting_t;
     (*str).value = if !value.is_null() {
@@ -141,7 +140,7 @@ unsafe extern "C" fn new_fluid_num_setting(
     mut fun: fluid_num_update_t,
     mut data: *mut libc::c_void,
 ) -> *mut fluid_num_setting_t {
-    let mut setting: *mut fluid_num_setting_t = 0 as *mut fluid_num_setting_t;
+    let mut setting;
     setting = libc::malloc(::std::mem::size_of::<fluid_num_setting_t>() as libc::size_t)
         as *mut fluid_num_setting_t;
     (*setting).value = def;
@@ -166,7 +165,7 @@ unsafe extern "C" fn new_fluid_int_setting(
     mut fun: fluid_int_update_t,
     mut data: *mut libc::c_void,
 ) -> *mut fluid_int_setting_t {
-    let mut setting: *mut fluid_int_setting_t = 0 as *mut fluid_int_setting_t;
+    let mut setting;
     setting = libc::malloc(::std::mem::size_of::<fluid_int_setting_t>() as libc::size_t)
         as *mut fluid_int_setting_t;
     (*setting).value = def;
@@ -227,8 +226,8 @@ unsafe extern "C" fn fluid_settings_tokenize(
     mut buf: *mut libc::c_char,
     mut ptr: *mut *mut libc::c_char,
 ) -> libc::c_int {
-    let mut tokstr: *mut libc::c_char = 0 as *mut libc::c_char;
-    let mut tok: *mut libc::c_char = 0 as *mut libc::c_char;
+    let mut tokstr;
+    let mut tok;
     let mut n: libc::c_int = 0 as libc::c_int;
     if libc::strlen(s) > 256 {
         fluid_log!(
@@ -273,7 +272,7 @@ unsafe extern "C" fn fluid_settings_get(
     let mut table: *mut fluid_hashtable_t = settings;
     let mut t: libc::c_int = 0;
     let mut v: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut n: libc::c_int = 0;
+    let mut n;
     n = 0 as libc::c_int;
     while n < len {
         if table.is_null() {
@@ -307,7 +306,7 @@ unsafe extern "C" fn fluid_settings_set(
     let mut table: *mut fluid_hashtable_t = settings;
     let mut t: libc::c_int = 0;
     let mut v: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut n: libc::c_int = 0;
+    let mut n;
     let mut num: libc::c_int = len - 1 as libc::c_int;
     n = 0 as libc::c_int;
     while n < num {
@@ -323,7 +322,7 @@ unsafe extern "C" fn fluid_settings_set(
                 return 0 as libc::c_int;
             }
         } else {
-            let mut tmp: *mut fluid_hashtable_t = 0 as *mut fluid_hashtable_t;
+            let mut tmp;
             tmp = new_fluid_hashtable(Some(
                 fluid_settings_hash_delete
                     as unsafe extern "C" fn(_: *mut libc::c_void, _: libc::c_int) -> (),
@@ -354,8 +353,8 @@ pub unsafe extern "C" fn fluid_settings_register_str(
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
-    let mut setting: *mut fluid_str_setting_t = 0 as *mut fluid_str_setting_t;
+    let mut ntokens;
+    let mut setting;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -411,7 +410,7 @@ pub unsafe extern "C" fn fluid_settings_register_num(
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -421,7 +420,7 @@ pub unsafe extern "C" fn fluid_settings_register_num(
         &mut type_0,
     ) == 0
     {
-        let mut setting: *mut fluid_num_setting_t = 0 as *mut fluid_num_setting_t;
+        let mut setting;
         setting = new_fluid_num_setting(min, max, def, hints, fun, data);
         return fluid_settings_set(
             settings,
@@ -463,7 +462,7 @@ pub unsafe extern "C" fn fluid_settings_register_int(
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -473,7 +472,7 @@ pub unsafe extern "C" fn fluid_settings_register_int(
         &mut type_0,
     ) == 0
     {
-        let mut setting: *mut fluid_int_setting_t = 0 as *mut fluid_int_setting_t;
+        let mut setting;
         setting = new_fluid_int_setting(min, max, def, hints, fun, data);
         return fluid_settings_set(
             settings,
@@ -509,7 +508,7 @@ pub unsafe extern "C" fn fluid_settings_get_type(
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     return if fluid_settings_get(
         settings,
@@ -533,7 +532,7 @@ pub unsafe extern "C" fn fluid_settings_get_hints(
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -565,7 +564,7 @@ pub unsafe extern "C" fn fluid_settings_is_realtime(
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -596,10 +595,10 @@ pub unsafe extern "C" fn fluid_settings_setstr(
 ) -> libc::c_int {
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     let mut type_0: libc::c_int = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut setting: *mut fluid_str_setting_t = 0 as *mut fluid_str_setting_t;
+    let mut setting;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -632,7 +631,7 @@ pub unsafe extern "C" fn fluid_settings_setstr(
         }
         return 1 as libc::c_int;
     } else {
-        let mut setting_0: *mut fluid_str_setting_t = 0 as *mut fluid_str_setting_t;
+        let mut setting_0;
         setting_0 = new_fluid_str_setting(
             str,
             0 as *mut libc::c_char,
@@ -659,7 +658,7 @@ pub unsafe extern "C" fn fluid_settings_getstr(
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -687,7 +686,7 @@ pub unsafe extern "C" fn fluid_settings_str_equal(
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -712,7 +711,7 @@ pub unsafe extern "C" fn fluid_settings_getstr_default(
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -739,7 +738,7 @@ pub unsafe extern "C" fn fluid_settings_add_option(
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -771,7 +770,7 @@ pub unsafe extern "C" fn fluid_settings_remove_option(
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -814,10 +813,10 @@ pub unsafe extern "C" fn fluid_settings_setnum(
 ) -> libc::c_int {
     let mut type_0: libc::c_int = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut setting: *mut fluid_num_setting_t = 0 as *mut fluid_num_setting_t;
+    let mut setting;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -843,7 +842,7 @@ pub unsafe extern "C" fn fluid_settings_setnum(
         }
         return 1 as libc::c_int;
     } else {
-        let mut setting_0: *mut fluid_num_setting_t = 0 as *mut fluid_num_setting_t;
+        let mut setting_0;
         setting_0 = new_fluid_num_setting(
             -1e10f64,
             1e10f64,
@@ -872,7 +871,7 @@ pub unsafe extern "C" fn fluid_settings_getnum(
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -900,7 +899,7 @@ pub unsafe extern "C" fn fluid_settings_getnum_range(
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -925,7 +924,7 @@ pub unsafe extern "C" fn fluid_settings_getnum_default(
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -950,10 +949,10 @@ pub unsafe extern "C" fn fluid_settings_setint(
 ) -> libc::c_int {
     let mut type_0: libc::c_int = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut setting: *mut fluid_int_setting_t = 0 as *mut fluid_int_setting_t;
+    let mut setting;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -979,7 +978,7 @@ pub unsafe extern "C" fn fluid_settings_setint(
         }
         return 1 as libc::c_int;
     } else {
-        let mut setting_0: *mut fluid_int_setting_t = 0 as *mut fluid_int_setting_t;
+        let mut setting_0;
         setting_0 = new_fluid_int_setting(
             -(2147483647 as libc::c_int) - 1 as libc::c_int,
             2147483647 as libc::c_int,
@@ -1008,7 +1007,7 @@ pub unsafe extern "C" fn fluid_settings_getint(
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -1036,7 +1035,7 @@ pub unsafe extern "C" fn fluid_settings_getint_range(
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,
@@ -1061,7 +1060,7 @@ pub unsafe extern "C" fn fluid_settings_getint_default(
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
-    let mut ntokens: libc::c_int = 0;
+    let mut ntokens;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
     if fluid_settings_get(
         settings,

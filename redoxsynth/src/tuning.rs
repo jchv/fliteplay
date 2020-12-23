@@ -2,7 +2,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 #[derive(Copy, Clone)]
@@ -19,8 +18,8 @@ pub unsafe extern "C" fn new_fluid_tuning(
     mut bank: libc::c_int,
     mut prog: libc::c_int,
 ) -> *mut fluid_tuning_t {
-    let mut tuning: *mut fluid_tuning_t = 0 as *mut fluid_tuning_t;
-    let mut i: libc::c_int = 0;
+    let mut tuning;
+    let mut i;
     tuning = libc::malloc(::std::mem::size_of::<fluid_tuning_t>() as libc::size_t)
         as *mut fluid_tuning_t;
     if tuning.is_null() {
@@ -47,8 +46,8 @@ pub unsafe extern "C" fn new_fluid_tuning(
 pub unsafe extern "C" fn fluid_tuning_duplicate(
     mut tuning: *mut fluid_tuning_t,
 ) -> *mut fluid_tuning_t {
-    let mut new_tuning: *mut fluid_tuning_t = 0 as *mut fluid_tuning_t;
-    let mut i: libc::c_int = 0;
+    let mut new_tuning;
+    let mut i;
     new_tuning = libc::malloc(::std::mem::size_of::<fluid_tuning_t>() as libc::size_t)
         as *mut fluid_tuning_t;
     if new_tuning.is_null() {
@@ -122,7 +121,7 @@ pub unsafe extern "C" fn fluid_tuning_set_octave(
     mut tuning: *mut fluid_tuning_t,
     mut pitch_deriv: *const libc::c_double,
 ) {
-    let mut i: libc::c_int = 0;
+    let mut i;
     i = 0 as libc::c_int;
     while i < 128 as libc::c_int {
         (*tuning).pitch[i as usize] =
@@ -135,7 +134,7 @@ pub unsafe extern "C" fn fluid_tuning_set_all(
     mut tuning: *mut fluid_tuning_t,
     mut pitch: *mut libc::c_double,
 ) {
-    let mut i: libc::c_int = 0;
+    let mut i;
     i = 0 as libc::c_int;
     while i < 128 as libc::c_int {
         (*tuning).pitch[i as usize] = *pitch.offset(i as isize);

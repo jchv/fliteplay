@@ -2,7 +2,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 pub type fluid_log_level = libc::c_uint;
@@ -38,10 +37,10 @@ pub unsafe extern "C" fn fluid_strtok(
     mut str: *mut *mut libc::c_char,
     mut delim: *mut libc::c_char,
 ) -> *mut libc::c_char {
-    let mut s: *mut libc::c_char = 0 as *mut libc::c_char;
-    let mut d: *mut libc::c_char = 0 as *mut libc::c_char;
-    let mut token: *mut libc::c_char = 0 as *mut libc::c_char;
-    let mut c: libc::c_char = 0;
+    let mut s;
+    let mut d;
+    let mut token;
+    let mut c;
     if str.is_null() || delim.is_null() || *delim == 0 {
         fluid_log!(FLUID_ERR, "Null pointer",);
         return 0 as *mut libc::c_char;

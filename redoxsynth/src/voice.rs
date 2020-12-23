@@ -2,7 +2,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 use crate::channel::fluid_channel_get_interp_method;
@@ -209,7 +208,7 @@ pub type fluid_midi_control_change = libc::c_uint;
 pub type fluid_loop = libc::c_uint;
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_voice(mut output_rate: fluid_real_t) -> *mut fluid_voice_t {
-    let mut voice: *mut fluid_voice_t = 0 as *mut fluid_voice_t;
+    let voice: *mut fluid_voice_t;
     voice =
         libc::malloc(::std::mem::size_of::<fluid_voice_t>() as libc::size_t) as *mut fluid_voice_t;
     if voice.is_null() {
@@ -356,12 +355,12 @@ pub unsafe extern "C" fn fluid_voice_write(
     mut dsp_chorus_buf: *mut fluid_real_t,
 ) -> libc::c_int {
     let mut current_block: u64;
-    let mut fres: fluid_real_t = 0.;
-    let mut target_amp: fluid_real_t = 0.;
-    let mut count: libc::c_int = 0;
+    let mut fres;
+    let mut target_amp;
+    let mut count;
     let mut dsp_buf: [fluid_real_t; 64] = [0.; 64];
-    let mut env_data: *mut fluid_env_data_t = 0 as *mut fluid_env_data_t;
-    let mut x: fluid_real_t = 0.;
+    let mut env_data;
+    let mut x;
     if !((*voice).status as libc::c_int == FLUID_VOICE_ON as libc::c_int
         || (*voice).status as libc::c_int == FLUID_VOICE_SUSTAINED as libc::c_int)
     {
@@ -460,8 +459,8 @@ pub unsafe extern "C" fn fluid_voice_write(
                 * (*voice).volenv_val;
             current_block = 576355610076403033;
         } else {
-            let mut amplitude_that_reaches_noise_floor: fluid_real_t = 0.;
-            let mut amp_max: fluid_real_t = 0.;
+            let mut amplitude_that_reaches_noise_floor;
+            let mut amp_max;
             target_amp = fluid_atten2amp((*voice).attenuation)
                 * fluid_cb2amp(
                     960.0f32 * (1.0f32 - (*voice).volenv_val)
@@ -593,9 +592,9 @@ unsafe extern "C" fn fluid_voice_effects(
     let mut dsp_b1_incr: fluid_real_t = (*voice).b1_incr;
     let mut dsp_filter_coeff_incr_count: libc::c_int = (*voice).filter_coeff_incr_count;
     let mut dsp_buf: *mut fluid_real_t = (*voice).dsp_buf;
-    let mut dsp_centernode: fluid_real_t = 0.;
-    let mut dsp_i: libc::c_int = 0;
-    let mut v: libc::c_float = 0.;
+    let mut dsp_centernode;
+    let mut dsp_i;
+    let mut v;
     if f64::abs(dsp_hist1 as libc::c_double) < 1e-20f64 {
         dsp_hist1 = 0.0f32
     }
@@ -698,7 +697,7 @@ pub unsafe extern "C" fn fluid_voice_start(mut voice: *mut fluid_voice_t) {
 pub unsafe extern "C" fn fluid_voice_calculate_runtime_synthesis_parameters(
     mut voice: *mut fluid_voice_t,
 ) -> libc::c_int {
-    let mut i: libc::c_int = 0;
+    let mut i;
     let mut list_of_generators_to_initialize: [libc::c_int; 35] = [
         GEN_STARTADDROFS as libc::c_int,
         GEN_ENDADDROFS as libc::c_int,
@@ -775,9 +774,9 @@ pub unsafe extern "C" fn calculate_hold_decay_buffers(
     mut gen_key2base: libc::c_int,
     mut is_decay: libc::c_int,
 ) -> libc::c_int {
-    let mut timecents: fluid_real_t = 0.;
-    let mut seconds: fluid_real_t = 0.;
-    let mut buffers: libc::c_int = 0;
+    let mut timecents;
+    let mut seconds;
+    let mut buffers;
     timecents = (((*voice).gen[gen_base as usize].val as fluid_real_t
         + (*voice).gen[gen_base as usize].mod_0 as fluid_real_t
         + (*voice).gen[gen_base as usize].nrpn as fluid_real_t) as libc::c_double
@@ -812,10 +811,10 @@ pub unsafe extern "C" fn fluid_voice_update_param(
     mut voice: *mut fluid_voice_t,
     mut gen: libc::c_int,
 ) {
-    let mut q_dB: libc::c_double = 0.;
-    let mut x: fluid_real_t = 0.;
-    let mut y: fluid_real_t = 0.;
-    let mut count: libc::c_uint = 0;
+    let mut q_dB;
+    let mut x;
+    let mut y;
+    let mut count;
     // Alternate attenuation scale used by EMU10K1 cards when setting the attenuation at the preset or instrument level within the SoundFont bank.
     static mut ALT_ATTENUATION_SCALE: libc::c_float = 0.4f64 as libc::c_float;
     let mut current_block_195: u64;
@@ -1476,11 +1475,11 @@ pub unsafe extern "C" fn fluid_voice_modulate(
     mut cc: libc::c_int,
     mut ctrl: libc::c_int,
 ) -> libc::c_int {
-    let mut i: libc::c_int = 0;
-    let mut k: libc::c_int = 0;
-    let mut mod_0: *mut fluid_mod_t = 0 as *mut fluid_mod_t;
-    let mut gen: libc::c_int = 0;
-    let mut modval: fluid_real_t = 0.;
+    let mut i;
+    let mut k;
+    let mut mod_0;
+    let mut gen;
+    let mut modval;
     i = 0 as libc::c_int;
     while i < (*voice).mod_count {
         mod_0 = &mut *(*voice).mod_0.as_mut_ptr().offset(i as isize) as *mut fluid_mod_t;
@@ -1520,11 +1519,11 @@ pub unsafe extern "C" fn fluid_voice_modulate(
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_voice_modulate_all(mut voice: *mut fluid_voice_t) -> libc::c_int {
-    let mut mod_0: *mut fluid_mod_t = 0 as *mut fluid_mod_t;
-    let mut i: libc::c_int = 0;
-    let mut k: libc::c_int = 0;
-    let mut gen: libc::c_int = 0;
-    let mut modval: fluid_real_t = 0.;
+    let mut mod_0;
+    let mut i;
+    let mut k;
+    let mut gen;
+    let mut modval;
     i = 0 as libc::c_int;
     while i < (*voice).mod_count {
         mod_0 = &mut *(*voice).mod_0.as_mut_ptr().offset(i as isize) as *mut fluid_mod_t;
@@ -1549,7 +1548,7 @@ pub unsafe extern "C" fn fluid_voice_modulate_all(mut voice: *mut fluid_voice_t)
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_voice_noteoff(mut voice: *mut fluid_voice_t) -> libc::c_int {
-    let mut at_tick: libc::c_uint = 0;
+    let mut at_tick;
     at_tick = (*(*(*voice).channel).synth).min_note_length_ticks;
     if at_tick > (*voice).ticks {
         (*voice).noteoff_ticks = at_tick;
@@ -1656,7 +1655,7 @@ pub unsafe extern "C" fn fluid_voice_add_mod(
     mut mod_0: *mut fluid_mod_t,
     mut mode: libc::c_int,
 ) {
-    let mut i: libc::c_int = 0;
+    let mut i;
     if (*mod_0).flags1 as libc::c_int & FLUID_MOD_CC as libc::c_int == 0 as libc::c_int
         && ((*mod_0).src1 as libc::c_int != 0 as libc::c_int
             && (*mod_0).src1 as libc::c_int != 2 as libc::c_int
@@ -1721,10 +1720,10 @@ pub unsafe extern "C" fn fluid_voice_is_playing(mut voice: *mut fluid_voice_t) -
 pub unsafe extern "C" fn fluid_voice_get_lower_boundary_for_attenuation(
     mut voice: *mut fluid_voice_t,
 ) -> fluid_real_t {
-    let mut i: libc::c_int = 0;
-    let mut mod_0: *mut fluid_mod_t = 0 as *mut fluid_mod_t;
+    let mut i;
+    let mut mod_0;
     let mut possible_att_reduction_cB: fluid_real_t = 0 as libc::c_int as fluid_real_t;
-    let mut lower_bound: fluid_real_t = 0.;
+    let mut lower_bound;
     i = 0 as libc::c_int;
     while i < (*voice).mod_count {
         mod_0 = &mut *(*voice).mod_0.as_mut_ptr().offset(i as isize) as *mut fluid_mod_t;
@@ -1884,10 +1883,10 @@ pub unsafe extern "C" fn fluid_voice_set_gain(
 pub unsafe extern "C" fn fluid_voice_optimize_sample(mut s: *mut fluid_sample_t) -> libc::c_int {
     let mut peak_max: libc::c_short = 0 as libc::c_int as libc::c_short;
     let mut peak_min: libc::c_short = 0 as libc::c_int as libc::c_short;
-    let mut peak: libc::c_short = 0;
-    let mut normalized_amplitude_during_loop: fluid_real_t = 0.;
-    let mut result: libc::c_double = 0.;
-    let mut i: libc::c_int = 0;
+    let mut peak;
+    let mut normalized_amplitude_during_loop;
+    let mut result;
+    let mut i;
     if (*s).valid == 0 || (*s).sampletype & 0x10 as libc::c_int != 0 {
         return FLUID_OK as libc::c_int;
     }
