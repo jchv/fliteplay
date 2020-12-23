@@ -32,11 +32,11 @@ use crate::sfont::_fluid_sfont_t;
 use crate::synth::_fluid_synth_t;
 use crate::synth::fluid_synth_alloc_voice;
 use crate::synth::fluid_synth_start_voice;
-use crate::fluid_voice::_fluid_voice_t;
-use crate::fluid_voice::fluid_voice_add_mod;
-use crate::fluid_voice::fluid_voice_gen_incr;
-use crate::fluid_voice::fluid_voice_gen_set;
-use crate::fluid_voice::fluid_voice_optimize_sample;
+use crate::voice::_fluid_voice_t;
+use crate::voice::fluid_voice_add_mod;
+use crate::voice::fluid_voice_gen_incr;
+use crate::voice::fluid_voice_gen_set;
+use crate::voice::fluid_voice_optimize_sample;
 use std::ffi::{CStr, CString};
 
 pub type size_t = libc::c_ulong;

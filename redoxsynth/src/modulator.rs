@@ -17,8 +17,8 @@ use crate::sfont::_fluid_sample_t;
 use crate::sfont::_fluid_sfont_t;
 use crate::synth::_fluid_synth_t;
 use crate::tuning::_fluid_tuning_t;
-use crate::fluid_voice::_fluid_env_data_t;
-use crate::fluid_voice::_fluid_voice_t;
+use crate::voice::_fluid_env_data_t;
+use crate::voice::_fluid_voice_t;
 
 pub type fluid_synth_t = _fluid_synth_t;
 pub type fluid_real_t = libc::c_float;

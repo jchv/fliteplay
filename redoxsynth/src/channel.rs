@@ -28,8 +28,8 @@ use crate::synth::fluid_synth_modulate_voices;
 use crate::synth::fluid_synth_modulate_voices_all;
 use crate::synth::fluid_synth_set_gen;
 use crate::tuning::_fluid_tuning_t;
-use crate::fluid_voice::_fluid_env_data_t;
-use crate::fluid_voice::_fluid_voice_t;
+use crate::voice::_fluid_env_data_t;
+use crate::voice::_fluid_voice_t;
 
 pub type fluid_settings_t = _fluid_hashtable_t;
 pub type fluid_tuning_t = _fluid_tuning_t;

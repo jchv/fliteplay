@@ -12,8 +12,8 @@ use crate::channel::_fluid_channel_t;
 use crate::gen::_fluid_gen_t;
 use crate::modulator::_fluid_mod_t;
 use crate::sfont::_fluid_sample_t;
-use crate::fluid_voice::_fluid_env_data_t;
-use crate::fluid_voice::_fluid_voice_t;
+use crate::voice::_fluid_env_data_t;
+use crate::voice::_fluid_voice_t;
 
 pub type fluid_real_t = libc::c_float;
 pub type fluid_voice_t = _fluid_voice_t;

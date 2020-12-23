@@ -31,7 +31,7 @@ mod sfont;
 mod synth;
 mod sys;
 mod tuning;
-mod fluid_voice;
+mod voice;
 
 #[cfg(test)]
 mod tests {
