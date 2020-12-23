@@ -23,7 +23,7 @@ mod dsp_float;
 mod gen;
 mod hash;
 mod list;
-mod fluid_mod;
+mod modulator;
 mod fluid_ramsfont;
 mod fluid_rev;
 mod fluid_settings;
