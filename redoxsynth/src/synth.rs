@@ -1,7 +1,4 @@
 #![allow(
-    non_camel_case_types,
-    non_snake_case,
-    non_upper_case_globals,
     unused_mut
 )]
 use crate::channel::delete_fluid_channel;
@@ -160,9 +157,9 @@ pub struct fluid_bank_offset_t {
     pub sfont_id: libc::c_int,
     pub offset: libc::c_int,
 }
-pub const FLUID_SYNTH_STOPPED: fluid_synth_status = 3;
+pub const FLUID_SYNTH_STOPPED: SynthStatus = 3;
 pub const FLUID_FAILED: C2RustUnnamed = -1;
-pub const FLUID_SYNTH_PLAYING: fluid_synth_status = 1;
+pub const FLUID_SYNTH_PLAYING: SynthStatus = 1;
 pub type IntUpdateFn = Option<
     unsafe extern "C" fn(
         _: *mut libc::c_void,
@@ -170,8 +167,8 @@ pub type IntUpdateFn = Option<
         _: libc::c_int,
     ) -> libc::c_int,
 >;
-pub const FLUID_VOICE_SUSTAINED: fluid_voice_status = 2;
-pub const FLUID_VOICE_ON: fluid_voice_status = 1;
+pub const FLUID_VOICE_SUSTAINED: VoiceStatus = 2;
+pub const FLUID_VOICE_ON: VoiceStatus = 1;
 pub type NumUpdateFn = Option<
     unsafe extern "C" fn(
         _: *mut libc::c_void,
@@ -199,19 +196,18 @@ pub const FLUID_MOD_CHANNELPRESSURE: ModSrc = 13;
 pub const GEN_FILTERFC: GenType = 8;
 pub const FLUID_MOD_SWITCH: ModFlags = 12;
 pub const FLUID_MOD_VELOCITY: ModSrc = 2;
-pub const FLUID_VOICE_OFF: fluid_voice_status = 3;
-pub const FLUID_VOICE_CLEAN: fluid_voice_status = 0;
+pub const FLUID_VOICE_OFF: VoiceStatus = 3;
+pub const FLUID_VOICE_CLEAN: VoiceStatus = 0;
 pub const FLUID_VOICE_ENVRELEASE: VoiceEnvelopeIndex = 5;
 pub const FLUID_MOD_KEYPRESSURE: ModSrc = 10;
-pub const MIDI_SYSEX_TUNING_OCTAVE_TUNE_1BYTE: midi_sysex_tuning_msg_id = 8;
-pub const MIDI_SYSEX_TUNING_OCTAVE_TUNE_2BYTE: midi_sysex_tuning_msg_id = 9;
-pub const MIDI_SYSEX_TUNING_NOTE_TUNE: midi_sysex_tuning_msg_id = 2;
-pub type uint8 = libc::c_uchar;
-pub const MIDI_SYSEX_TUNING_BULK_DUMP: midi_sysex_tuning_msg_id = 1;
-pub const MIDI_SYSEX_UNIV_NON_REALTIME: midi_sysex_manuf = 126;
-pub const MIDI_SYSEX_TUNING_BULK_DUMP_REQ: midi_sysex_tuning_msg_id = 0;
-pub const MIDI_SYSEX_TUNING_BULK_DUMP_REQ_BANK: midi_sysex_tuning_msg_id = 3;
-pub const MIDI_SYSEX_UNIV_REALTIME: midi_sysex_manuf = 127;
+pub const MIDI_SYSEX_TUNING_OCTAVE_TUNE_1BYTE: MidiSysexTuningMsgId = 8;
+pub const MIDI_SYSEX_TUNING_OCTAVE_TUNE_2BYTE: MidiSysexTuningMsgId = 9;
+pub const MIDI_SYSEX_TUNING_NOTE_TUNE: MidiSysexTuningMsgId = 2;
+pub const MIDI_SYSEX_TUNING_BULK_DUMP: MidiSysexTuningMsgId = 1;
+pub const MIDI_SYSEX_UNIV_NON_REALTIME: MidiSysexManuf = 126;
+pub const MIDI_SYSEX_TUNING_BULK_DUMP_REQ: MidiSysexTuningMsgId = 0;
+pub const MIDI_SYSEX_TUNING_BULK_DUMP_REQ_BANK: MidiSysexTuningMsgId = 3;
+pub const MIDI_SYSEX_UNIV_REALTIME: MidiSysexManuf = 127;
 pub const GEN_LAST: GenType = 60;
 pub const FLUID_VOICE_DEFAULT: fluid_voice_add_mod = 2;
 pub const FLUID_VOICE_ENVATTACK: VoiceEnvelopeIndex = 1;
@@ -222,19 +218,19 @@ pub type GenType = libc::c_uint;
 pub type C2RustUnnamed = libc::c_int;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct fluid_revmodel_presets_t {
+pub struct ReverbModelPreset {
     pub name: *mut libc::c_char,
     pub roomsize: f32,
     pub damp: f32,
     pub width: f32,
     pub level: f32,
 }
-pub type fluid_voice_status = libc::c_uint;
+pub type VoiceStatus = libc::c_uint;
 pub type VoiceEnvelopeIndex = libc::c_uint;
-pub type fluid_synth_status = libc::c_uint;
-pub type midi_sysex_manuf = libc::c_uint;
-pub type midi_sysex_tuning_msg_id = libc::c_uint;
-static mut fluid_synth_initialized: libc::c_int = 0 as libc::c_int;
+pub type SynthStatus = libc::c_uint;
+pub type MidiSysexManuf = libc::c_uint;
+pub type MidiSysexTuningMsgId = libc::c_uint;
+static mut FLUID_SYNTH_INITIALIZED: libc::c_int = 0 as libc::c_int;
 #[no_mangle]
 pub static mut default_vel2att_mod: fluid_mod_t = fluid_mod_t {
     dest: 0,
@@ -326,7 +322,7 @@ pub static mut default_chorus_mod: fluid_mod_t = fluid_mod_t {
     next: 0 as *const fluid_mod_t as *mut fluid_mod_t,
 };
 #[no_mangle]
-pub static mut default_pitch_bend_mod: fluid_mod_t = fluid_mod_t {
+pub static mut DEFAULT_PITCH_BEND_MOD: fluid_mod_t = fluid_mod_t {
     dest: 0,
     src1: 0,
     flags1: 0,
@@ -335,9 +331,9 @@ pub static mut default_pitch_bend_mod: fluid_mod_t = fluid_mod_t {
     amount: 0.,
     next: 0 as *const fluid_mod_t as *mut fluid_mod_t,
 };
-static mut revmodel_preset: [fluid_revmodel_presets_t; 6] = [
+static mut REVMODEL_PRESET: [ReverbModelPreset; 6] = [
     {
-        let mut init = fluid_revmodel_presets_t {
+        let mut init = ReverbModelPreset {
             name: b"Test 1\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
             roomsize: 0.2f32,
             damp: 0.0f32,
@@ -347,7 +343,7 @@ static mut revmodel_preset: [fluid_revmodel_presets_t; 6] = [
         init
     },
     {
-        let mut init = fluid_revmodel_presets_t {
+        let mut init = ReverbModelPreset {
             name: b"Test 2\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
             roomsize: 0.4f32,
             damp: 0.2f32,
@@ -357,7 +353,7 @@ static mut revmodel_preset: [fluid_revmodel_presets_t; 6] = [
         init
     },
     {
-        let mut init = fluid_revmodel_presets_t {
+        let mut init = ReverbModelPreset {
             name: b"Test 3\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
             roomsize: 0.6f32,
             damp: 0.4f32,
@@ -367,7 +363,7 @@ static mut revmodel_preset: [fluid_revmodel_presets_t; 6] = [
         init
     },
     {
-        let mut init = fluid_revmodel_presets_t {
+        let mut init = ReverbModelPreset {
             name: b"Test 4\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
             roomsize: 0.8f32,
             damp: 0.7f32,
@@ -377,7 +373,7 @@ static mut revmodel_preset: [fluid_revmodel_presets_t; 6] = [
         init
     },
     {
-        let mut init = fluid_revmodel_presets_t {
+        let mut init = ReverbModelPreset {
             name: b"Test 5\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
             roomsize: 0.8f32,
             damp: 1.0f32,
@@ -387,7 +383,7 @@ static mut revmodel_preset: [fluid_revmodel_presets_t; 6] = [
         init
     },
     {
-        let mut init = fluid_revmodel_presets_t {
+        let mut init = ReverbModelPreset {
             name: 0 as *const libc::c_char as *mut libc::c_char,
             roomsize: 0.0f32,
             damp: 0.0f32,
@@ -551,7 +547,7 @@ pub unsafe extern "C" fn fluid_version_str() -> *mut libc::c_char {
     return b"1.2.1\x00" as *const u8 as *const libc::c_char as *mut libc::c_char;
 }
 unsafe extern "C" fn fluid_synth_init() {
-    fluid_synth_initialized += 1;
+    FLUID_SYNTH_INITIALIZED += 1;
     fluid_conversion_config();
     fluid_dsp_float_config();
     fluid_sys_config();
@@ -689,7 +685,7 @@ unsafe extern "C" fn fluid_synth_init() {
         200 as libc::c_int as f64,
     );
     fluid_mod_set_source1(
-        &mut default_pitch_bend_mod,
+        &mut DEFAULT_PITCH_BEND_MOD,
         FLUID_MOD_PITCHWHEEL as libc::c_int,
         FLUID_MOD_GC as libc::c_int
             | FLUID_MOD_LINEAR as libc::c_int
@@ -697,15 +693,15 @@ unsafe extern "C" fn fluid_synth_init() {
             | FLUID_MOD_POSITIVE as libc::c_int,
     );
     fluid_mod_set_source2(
-        &mut default_pitch_bend_mod,
+        &mut DEFAULT_PITCH_BEND_MOD,
         FLUID_MOD_PITCHWHEELSENS as libc::c_int,
         FLUID_MOD_GC as libc::c_int
             | FLUID_MOD_LINEAR as libc::c_int
             | FLUID_MOD_UNIPOLAR as libc::c_int
             | FLUID_MOD_POSITIVE as libc::c_int,
     );
-    fluid_mod_set_dest(&mut default_pitch_bend_mod, GEN_PITCH as libc::c_int);
-    fluid_mod_set_amount(&mut default_pitch_bend_mod, 12700.0f64);
+    fluid_mod_set_dest(&mut DEFAULT_PITCH_BEND_MOD, GEN_PITCH as libc::c_int);
+    fluid_mod_set_amount(&mut DEFAULT_PITCH_BEND_MOD, 12700.0f64);
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_verify_settings(
@@ -721,7 +717,7 @@ pub unsafe extern "C" fn new_fluid_synth(
     let mut i: libc::c_int = 0;
     let mut synth;
     let mut loader;
-    if fluid_synth_initialized == 0 as libc::c_int {
+    if FLUID_SYNTH_INITIALIZED == 0 as libc::c_int {
         fluid_synth_init();
     }
     fluid_synth_verify_settings(settings);
@@ -1701,19 +1697,19 @@ unsafe extern "C" fn fluid_synth_sysex_midi_tuning(
                 chksum = (MIDI_SYSEX_UNIV_NON_REALTIME as libc::c_int
                     ^ 0x8 as libc::c_int
                     ^ MIDI_SYSEX_TUNING_BULK_DUMP as libc::c_int
-                    ^ prog) as uint8;
+                    ^ prog) as u8;
                 i = 21 as libc::c_int;
                 while i < 128 as libc::c_int * 3 as libc::c_int + 21 as libc::c_int {
                     chksum = (chksum as libc::c_int ^ *response.offset(i as isize) as libc::c_int)
-                        as uint8;
+                        as u8;
                     i += 1
                 }
             } else {
                 i = 1 as libc::c_int;
-                chksum = 0 as libc::c_int as uint8;
+                chksum = 0 as libc::c_int as u8;
                 while i < 406 as libc::c_int {
                     chksum = (chksum as libc::c_int ^ *response.offset(i as isize) as libc::c_int)
-                        as uint8;
+                        as u8;
                     i += 1
                 }
             }
@@ -2529,12 +2525,12 @@ pub unsafe extern "C" fn fluid_synth_set_reverb_preset(
     mut num: libc::c_int,
 ) -> libc::c_int {
     let mut i: libc::c_int = 0 as libc::c_int;
-    while !revmodel_preset[i as usize].name.is_null() {
+    while !REVMODEL_PRESET[i as usize].name.is_null() {
         if i == num {
-            fluid_revmodel_setroomsize((*synth).reverb, revmodel_preset[i as usize].roomsize);
-            fluid_revmodel_setdamp((*synth).reverb, revmodel_preset[i as usize].damp);
-            fluid_revmodel_setwidth((*synth).reverb, revmodel_preset[i as usize].width);
-            fluid_revmodel_setlevel((*synth).reverb, revmodel_preset[i as usize].level);
+            fluid_revmodel_setroomsize((*synth).reverb, REVMODEL_PRESET[i as usize].roomsize);
+            fluid_revmodel_setdamp((*synth).reverb, REVMODEL_PRESET[i as usize].damp);
+            fluid_revmodel_setwidth((*synth).reverb, REVMODEL_PRESET[i as usize].width);
+            fluid_revmodel_setlevel((*synth).reverb, REVMODEL_PRESET[i as usize].level);
             return FLUID_OK as libc::c_int;
         }
         i += 1
@@ -2737,7 +2733,7 @@ pub unsafe extern "C" fn fluid_synth_write_float(
     (*synth).cur = l;
     return 0 as libc::c_int;
 }
-static mut rand_table: [[libc::c_float; 48000]; 2] = [[0.; 48000]; 2];
+static mut RAND_TABLE: [[libc::c_float; 48000]; 2] = [[0.; 48000]; 2];
 unsafe extern "C" fn init_dither() {
     let mut d;
     let mut dp;
@@ -2749,11 +2745,11 @@ unsafe extern "C" fn init_dither() {
         i = 0 as libc::c_int;
         while i < 48000 as libc::c_int - 1 as libc::c_int {
             d = libc::rand() as libc::c_float / 2147483647 as libc::c_int as libc::c_float - 0.5f32;
-            rand_table[c as usize][i as usize] = d - dp;
+            RAND_TABLE[c as usize][i as usize] = d - dp;
             dp = d;
             i += 1
         }
-        rand_table[c as usize][(48000 as libc::c_int - 1 as libc::c_int) as usize] =
+        RAND_TABLE[c as usize][(48000 as libc::c_int - 1 as libc::c_int) as usize] =
             0 as libc::c_int as libc::c_float - dp;
         c += 1
     }
@@ -2801,11 +2797,11 @@ pub unsafe extern "C" fn fluid_synth_write_s16(
         }
         left_sample = roundi(
             *left_in.offset(cur as isize) * 32766.0f32
-                + rand_table[0 as libc::c_int as usize][di as usize],
+                + RAND_TABLE[0 as libc::c_int as usize][di as usize],
         ) as f32;
         right_sample = roundi(
             *right_in.offset(cur as isize) * 32766.0f32
-                + rand_table[1 as libc::c_int as usize][di as usize],
+                + RAND_TABLE[1 as libc::c_int as usize][di as usize],
         ) as f32;
         di += 1;
         if di >= 48000 as libc::c_int {
@@ -2861,11 +2857,11 @@ pub unsafe extern "C" fn fluid_synth_dither_s16(
     while i < len {
         left_sample = roundi(
             *lin.offset(i as isize) * 32766.0f32
-                + rand_table[0 as libc::c_int as usize][di as usize],
+                + RAND_TABLE[0 as libc::c_int as usize][di as usize],
         ) as f32;
         right_sample = roundi(
             *rin.offset(i as isize) * 32766.0f32
-                + rand_table[1 as libc::c_int as usize][di as usize],
+                + RAND_TABLE[1 as libc::c_int as usize][di as usize],
         ) as f32;
         di += 1;
         if di >= 48000 as libc::c_int {
@@ -3170,7 +3166,7 @@ pub unsafe extern "C" fn fluid_synth_alloc_voice(
     );
     fluid_voice_add_mod(
         voice,
-        &mut default_pitch_bend_mod,
+        &mut DEFAULT_PITCH_BEND_MOD,
         FLUID_VOICE_DEFAULT as libc::c_int,
     );
     return voice;
@@ -3479,7 +3475,7 @@ pub unsafe extern "C" fn fluid_synth_get_voicelist(
     mut synth: *mut fluid_synth_t,
     mut buf: *mut *mut fluid_voice_t,
     mut bufsize: libc::c_int,
-    mut ID: libc::c_int,
+    mut id: libc::c_int,
 ) {
     let mut i;
     let mut count: libc::c_int = 0 as libc::c_int;
@@ -3491,7 +3487,7 @@ pub unsafe extern "C" fn fluid_synth_get_voicelist(
         }
         if ((*voice).status as libc::c_int == FLUID_VOICE_ON as libc::c_int
             || (*voice).status as libc::c_int == FLUID_VOICE_SUSTAINED as libc::c_int)
-            && ((*voice).id as libc::c_int == ID || ID < 0 as libc::c_int)
+            && ((*voice).id as libc::c_int == id || id < 0 as libc::c_int)
         {
             let fresh27 = count;
             count = count + 1;
