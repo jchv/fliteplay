@@ -26,7 +26,7 @@ use crate::channel::fluid_channel_set_preset;
 use crate::channel::fluid_channel_set_prognum;
 use crate::channel::fluid_channel_set_sfontnum;
 use crate::channel::new_fluid_channel;
-use crate::chorus::_fluid_chorus_t;
+use crate::chorus::fluid_chorus_t;
 use crate::chorus::delete_fluid_chorus;
 use crate::chorus::fluid_chorus_get_depth_ms;
 use crate::chorus::fluid_chorus_get_level;
@@ -164,7 +164,7 @@ pub struct _fluid_synth_t {
 }
 
 pub type fluid_tuning_t = _fluid_tuning_t;
-pub type fluid_chorus_t = _fluid_chorus_t;
+
 pub type fluid_revmodel_t = _fluid_revmodel_t;
 pub type fluid_real_t = libc::c_float;
 pub type fluid_voice_t = _fluid_voice_t;

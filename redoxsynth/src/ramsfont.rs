@@ -9,7 +9,7 @@
 )]
 
 use crate::channel::_fluid_channel_t;
-use crate::chorus::_fluid_chorus_t;
+use crate::chorus::fluid_chorus_t;
 use crate::defsfont::_fluid_inst_t;
 use crate::defsfont::_fluid_inst_zone_t;
 use crate::defsfont::_fluid_preset_zone_t;
@@ -56,7 +56,7 @@ use crate::voice::fluid_voice_update_param;
 
 pub type fluid_settings_t = _fluid_hashtable_t;
 pub type fluid_tuning_t = _fluid_tuning_t;
-pub type fluid_chorus_t = _fluid_chorus_t;
+
 
 pub type fluid_revmodel_t = _fluid_revmodel_t;
 pub type fluid_real_t = libc::c_float;

@@ -8,7 +8,7 @@
     unused_mut
 )]
 
-use crate::chorus::_fluid_chorus_t;
+use crate::chorus::fluid_chorus_t;
 use crate::gen::_fluid_gen_t;
 use crate::gen::fluid_gen_scale_nrpn;
 use crate::hash::_fluid_hashtable_t;
@@ -33,7 +33,7 @@ use crate::voice::_fluid_voice_t;
 
 pub type fluid_settings_t = _fluid_hashtable_t;
 pub type fluid_tuning_t = _fluid_tuning_t;
-pub type fluid_chorus_t = _fluid_chorus_t;
+
 pub type fluid_revmodel_t = _fluid_revmodel_t;
 pub type fluid_real_t = libc::c_float;
 pub type fluid_voice_t = _fluid_voice_t;

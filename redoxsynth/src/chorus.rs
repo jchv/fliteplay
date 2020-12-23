@@ -32,7 +32,7 @@ pub const FLUID_OK: C2RustUnnamed = 0;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct _fluid_chorus_t {
+pub struct fluid_chorus_t {
     pub type_0: libc::c_int,
     pub new_type: libc::c_int,
     pub depth_ms: fluid_real_t,
@@ -51,7 +51,7 @@ pub struct _fluid_chorus_t {
     pub sample_rate: fluid_real_t,
     pub sinc_table: [[fluid_real_t; 128]; 5],
 }
-pub type fluid_chorus_t = _fluid_chorus_t;
+
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_chorus(mut sample_rate: fluid_real_t) -> *mut fluid_chorus_t {
     let mut i: libc::c_int = 0;

@@ -10,7 +10,7 @@
 use crate::channel::_fluid_channel_t;
 use crate::channel::fluid_channel_get_interp_method;
 use crate::channel::fluid_channel_get_num;
-use crate::chorus::_fluid_chorus_t;
+use crate::chorus::fluid_chorus_t;
 use crate::conv::fluid_act2hz;
 use crate::conv::fluid_atten2amp;
 use crate::conv::fluid_cb2amp;
@@ -43,7 +43,7 @@ use crate::tuning::_fluid_tuning_t;
 
 pub type fluid_settings_t = _fluid_hashtable_t;
 pub type fluid_tuning_t = _fluid_tuning_t;
-pub type fluid_chorus_t = _fluid_chorus_t;
+
 pub type fluid_revmodel_t = _fluid_revmodel_t;
 pub type fluid_real_t = libc::c_float;
 pub type fluid_voice_t = _fluid_voice_t;
