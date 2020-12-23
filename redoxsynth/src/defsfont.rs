@@ -1,5 +1,4 @@
 #![allow(
-    dead_code,
     mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
@@ -36,13 +35,10 @@ use crate::voice::fluid_voice_gen_set;
 use crate::voice::fluid_voice_optimize_sample;
 use crate::voice::fluid_voice_t;
 use std::ffi::{CStr, CString};
-pub type size_t = libc::c_ulong;
 pub type __off_t = libc::c_long;
 pub type __off64_t = libc::c_long;
 pub const FLUID_OK: C2RustUnnamed_0 = 0;
 pub const FLUID_FAILED: C2RustUnnamed_0 = -1;
-pub const FLUID_ERR: fluid_log_level = 1;
-pub const ErrEof: C2RustUnnamed_3 = 4;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct fluid_defsfont_t {
@@ -197,13 +193,9 @@ pub struct SFGenAmountRange {
     pub hi: libc::c_uchar,
 }
 pub type fluid_real_t = libc::c_float;
-pub const GEN_VELRANGE: fluid_gen_type = 44;
-pub const GEN_KEYRANGE: fluid_gen_type = 43;
-pub const FLUID_WARN: fluid_log_level = 2;
 pub type fluid_file = *mut libc::FILE;
 pub type fluid_compare_func_t =
     Option<unsafe extern "C" fn(_: *mut libc::c_void, _: *mut libc::c_void) -> libc::c_int>;
-pub const ErrCorr: C2RustUnnamed_3 = 3;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct SFChunk {
@@ -271,117 +263,12 @@ pub const GEN_ENDADDROFS: fluid_gen_type = 1;
 pub const GEN_STARTADDROFS: fluid_gen_type = 0;
 pub const GEN_LAST: fluid_gen_type = 60;
 pub const FLUID_VOICE_OVERWRITE: fluid_voice_add_mod = 0;
-pub type fluid_log_level = libc::c_uint;
-pub const LAST_LOG_LEVEL: fluid_log_level = 5;
-pub const FLUID_DBG: fluid_log_level = 4;
-pub const FLUID_INFO: fluid_log_level = 3;
-pub const FLUID_PANIC: fluid_log_level = 0;
 pub type fluid_mod_flags = libc::c_uint;
 pub type fluid_gen_type = libc::c_uint;
-pub const GEN_PITCH: fluid_gen_type = 59;
-pub const GEN_SCALETUNE: fluid_gen_type = 56;
-pub const GEN_RESERVED3: fluid_gen_type = 55;
-pub const GEN_SAMPLEID: fluid_gen_type = 53;
-pub const GEN_FINETUNE: fluid_gen_type = 52;
-pub const GEN_COARSETUNE: fluid_gen_type = 51;
-pub const GEN_RESERVED2: fluid_gen_type = 49;
-pub const GEN_ATTENUATION: fluid_gen_type = 48;
-pub const GEN_RESERVED1: fluid_gen_type = 42;
-pub const GEN_INSTRUMENT: fluid_gen_type = 41;
-pub const GEN_KEYTOVOLENVDECAY: fluid_gen_type = 40;
-pub const GEN_KEYTOVOLENVHOLD: fluid_gen_type = 39;
-pub const GEN_VOLENVRELEASE: fluid_gen_type = 38;
-pub const GEN_VOLENVSUSTAIN: fluid_gen_type = 37;
-pub const GEN_VOLENVDECAY: fluid_gen_type = 36;
-pub const GEN_VOLENVHOLD: fluid_gen_type = 35;
-pub const GEN_VOLENVATTACK: fluid_gen_type = 34;
-pub const GEN_VOLENVDELAY: fluid_gen_type = 33;
-pub const GEN_KEYTOMODENVDECAY: fluid_gen_type = 32;
-pub const GEN_KEYTOMODENVHOLD: fluid_gen_type = 31;
-pub const GEN_MODENVRELEASE: fluid_gen_type = 30;
-pub const GEN_MODENVSUSTAIN: fluid_gen_type = 29;
-pub const GEN_MODENVDECAY: fluid_gen_type = 28;
-pub const GEN_MODENVHOLD: fluid_gen_type = 27;
-pub const GEN_MODENVATTACK: fluid_gen_type = 26;
-pub const GEN_MODENVDELAY: fluid_gen_type = 25;
-pub const GEN_VIBLFOFREQ: fluid_gen_type = 24;
-pub const GEN_VIBLFODELAY: fluid_gen_type = 23;
-pub const GEN_MODLFOFREQ: fluid_gen_type = 22;
-pub const GEN_MODLFODELAY: fluid_gen_type = 21;
-pub const GEN_UNUSED4: fluid_gen_type = 20;
-pub const GEN_UNUSED3: fluid_gen_type = 19;
-pub const GEN_UNUSED2: fluid_gen_type = 18;
-pub const GEN_PAN: fluid_gen_type = 17;
-pub const GEN_REVERBSEND: fluid_gen_type = 16;
-pub const GEN_CHORUSSEND: fluid_gen_type = 15;
-pub const GEN_UNUSED1: fluid_gen_type = 14;
-pub const GEN_MODLFOTOVOL: fluid_gen_type = 13;
-pub const GEN_MODENVTOFILTERFC: fluid_gen_type = 11;
-pub const GEN_MODLFOTOFILTERFC: fluid_gen_type = 10;
-pub const GEN_FILTERQ: fluid_gen_type = 9;
-pub const GEN_FILTERFC: fluid_gen_type = 8;
-pub const GEN_MODENVTOPITCH: fluid_gen_type = 7;
-pub const GEN_VIBLFOTOPITCH: fluid_gen_type = 6;
-pub const GEN_MODLFOTOPITCH: fluid_gen_type = 5;
 pub type fluid_gen_flags = libc::c_uint;
-pub const GEN_ABS_NRPN: fluid_gen_flags = 2;
-pub const GEN_UNUSED: fluid_gen_flags = 0;
-pub const FLUID_VOICE_DEFAULT: fluid_voice_add_mod = 2;
 pub type C2RustUnnamed_0 = libc::c_int;
 pub type C2RustUnnamed_1 = libc::c_uint;
-pub const SNAM_ID: C2RustUnnamed_1 = 18;
-pub const ISFT_ID: C2RustUnnamed_1 = 17;
-pub const ICOP_ID: C2RustUnnamed_1 = 15;
-pub const IPRD_ID: C2RustUnnamed_1 = 14;
-pub const IENG_ID: C2RustUnnamed_1 = 13;
-pub const ICRD_ID: C2RustUnnamed_1 = 12;
-pub const IROM_ID: C2RustUnnamed_1 = 10;
-pub const INAM_ID: C2RustUnnamed_1 = 9;
-pub const ISNG_ID: C2RustUnnamed_1 = 8;
 pub type C2RustUnnamed_2 = libc::c_uint;
-pub const Gen_ScaleTune: C2RustUnnamed_2 = 56;
-pub const Gen_FineTune: C2RustUnnamed_2 = 52;
-pub const Gen_CoarseTune: C2RustUnnamed_2 = 51;
-pub const Gen_Attenuation: C2RustUnnamed_2 = 48;
-pub const Gen_Key2VolEnvDecay: C2RustUnnamed_2 = 40;
-pub const Gen_Key2VolEnvHold: C2RustUnnamed_2 = 39;
-pub const Gen_VolEnvRelease: C2RustUnnamed_2 = 38;
-pub const Gen_VolEnvSustain: C2RustUnnamed_2 = 37;
-pub const Gen_VolEnvDecay: C2RustUnnamed_2 = 36;
-pub const Gen_VolEnvHold: C2RustUnnamed_2 = 35;
-pub const Gen_VolEnvAttack: C2RustUnnamed_2 = 34;
-pub const Gen_VolEnvDelay: C2RustUnnamed_2 = 33;
-pub const Gen_Key2ModEnvDecay: C2RustUnnamed_2 = 32;
-pub const Gen_Key2ModEnvHold: C2RustUnnamed_2 = 31;
-pub const Gen_ModEnvRelease: C2RustUnnamed_2 = 30;
-pub const Gen_ModEnvSustain: C2RustUnnamed_2 = 29;
-pub const Gen_ModEnvDecay: C2RustUnnamed_2 = 28;
-pub const Gen_ModEnvHold: C2RustUnnamed_2 = 27;
-pub const Gen_ModEnvAttack: C2RustUnnamed_2 = 26;
-pub const Gen_ModEnvDelay: C2RustUnnamed_2 = 25;
-pub const Gen_VibLFOFreq: C2RustUnnamed_2 = 24;
-pub const Gen_VibLFODelay: C2RustUnnamed_2 = 23;
-pub const Gen_ModLFOFreq: C2RustUnnamed_2 = 22;
-pub const Gen_ModLFODelay: C2RustUnnamed_2 = 21;
-pub const Gen_Pan: C2RustUnnamed_2 = 17;
-pub const Gen_ReverbSend: C2RustUnnamed_2 = 16;
-pub const Gen_ChorusSend: C2RustUnnamed_2 = 15;
-pub const Gen_ModLFO2Vol: C2RustUnnamed_2 = 13;
-pub const Gen_ModEnv2FilterFc: C2RustUnnamed_2 = 11;
-pub const Gen_ModLFO2FilterFc: C2RustUnnamed_2 = 10;
-pub const Gen_FilterQ: C2RustUnnamed_2 = 9;
-pub const Gen_FilterFc: C2RustUnnamed_2 = 8;
-pub const Gen_ModEnv2Pitch: C2RustUnnamed_2 = 7;
-pub const Gen_VibLFO2Pitch: C2RustUnnamed_2 = 6;
-pub const Gen_ModLFO2Pitch: C2RustUnnamed_2 = 5;
-pub type C2RustUnnamed_3 = libc::c_uint;
-pub const ErrWrite: C2RustUnnamed_3 = 8;
-pub const ErrRead: C2RustUnnamed_3 = 7;
-pub const Errno: C2RustUnnamed_3 = 6;
-pub const ErrMem: C2RustUnnamed_3 = 5;
-pub const ErrStatus: C2RustUnnamed_3 = 2;
-pub const ErrFatal: C2RustUnnamed_3 = 1;
-pub const ErrWarn: C2RustUnnamed_3 = 0;
 unsafe extern "C" fn default_fopen(
     _fileapi: *mut fluid_fileapi_t,
     mut path: *const libc::c_char,

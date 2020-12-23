@@ -1,5 +1,4 @@
 #![allow(
-    dead_code,
     mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
@@ -80,15 +79,6 @@ pub type fluid_num_update_t = Option<
         _: libc::c_double,
     ) -> libc::c_int,
 >;
-pub type fluid_hash_delete_t =
-    Option<unsafe extern "C" fn(_: *mut libc::c_void, _: libc::c_int) -> ()>;
-pub const FLUID_ERR: fluid_log_level = 1;
-pub const FLUID_WARN: fluid_log_level = 2;
-pub type fluid_log_level = libc::c_uint;
-pub const LAST_LOG_LEVEL: fluid_log_level = 5;
-pub const FLUID_DBG: fluid_log_level = 4;
-pub const FLUID_INFO: fluid_log_level = 3;
-pub const FLUID_PANIC: fluid_log_level = 0;
 unsafe extern "C" fn new_fluid_str_setting(
     mut value: *const libc::c_char,
     mut def: *mut libc::c_char,

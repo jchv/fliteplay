@@ -1,5 +1,4 @@
 #![allow(
-    dead_code,
     mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
@@ -7,13 +6,6 @@
     unused_assignments,
     unused_mut
 )]
-pub type fluid_log_level = libc::c_uint;
-pub const LAST_LOG_LEVEL: fluid_log_level = 5;
-pub const FLUID_DBG: fluid_log_level = 4;
-pub const FLUID_INFO: fluid_log_level = 3;
-pub const FLUID_WARN: fluid_log_level = 2;
-pub const FLUID_ERR: fluid_log_level = 1;
-pub const FLUID_PANIC: fluid_log_level = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct fluid_tuning_t {

@@ -1,5 +1,4 @@
 #![allow(
-    dead_code,
     mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
@@ -10,16 +9,8 @@
 pub type fluid_chorus_mod = libc::c_uint;
 pub const FLUID_CHORUS_MOD_TRIANGLE: fluid_chorus_mod = 1;
 pub const FLUID_CHORUS_MOD_SINE: fluid_chorus_mod = 0;
-pub type fluid_log_level = libc::c_uint;
-pub const LAST_LOG_LEVEL: fluid_log_level = 5;
-pub const FLUID_DBG: fluid_log_level = 4;
-pub const FLUID_INFO: fluid_log_level = 3;
-pub const FLUID_WARN: fluid_log_level = 2;
-pub const FLUID_ERR: fluid_log_level = 1;
-pub const FLUID_PANIC: fluid_log_level = 0;
 pub type fluid_real_t = libc::c_float;
 pub type C2RustUnnamed = libc::c_int;
-pub const FLUID_FAILED: C2RustUnnamed = -1;
 pub const FLUID_OK: C2RustUnnamed = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]

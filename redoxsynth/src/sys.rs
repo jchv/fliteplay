@@ -1,5 +1,4 @@
 #![allow(
-    dead_code,
     mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
@@ -9,23 +8,12 @@
 )]
 pub type fluid_log_level = libc::c_uint;
 pub const LAST_LOG_LEVEL: fluid_log_level = 5;
-pub const FLUID_DBG: fluid_log_level = 4;
-pub const FLUID_INFO: fluid_log_level = 3;
-pub const FLUID_WARN: fluid_log_level = 2;
-pub const FLUID_ERR: fluid_log_level = 1;
-pub const FLUID_PANIC: fluid_log_level = 0;
 pub type fluid_log_function_t =
     Option<unsafe extern "C" fn(_: libc::c_int, _: *mut libc::c_char, _: *mut libc::c_void) -> ()>;
-pub const FLUID_FAILED: C2RustUnnamed = -1;
-pub type C2RustUnnamed = libc::c_int;
-pub const FLUID_OK: C2RustUnnamed = 0;
 static mut fluid_errbuf: [libc::c_char; 512] = [0; 512];
 static mut fluid_log_function: [fluid_log_function_t; 5] = [None; 5];
 static mut fluid_log_user_data: [*mut libc::c_void; 5] =
     [0 as *const libc::c_void as *mut libc::c_void; 5];
-static mut fluid_log_initialized: libc::c_int = 0 as libc::c_int;
-static mut fluid_libname: *mut libc::c_char =
-    b"fluidsynth\x00" as *const u8 as *const libc::c_char as *mut libc::c_char;
 #[no_mangle]
 pub unsafe extern "C" fn fluid_sys_config() {}
 #[no_mangle]

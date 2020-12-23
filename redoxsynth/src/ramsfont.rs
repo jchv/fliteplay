@@ -1,5 +1,4 @@
 #![allow(
-    dead_code,
     mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
@@ -25,7 +24,6 @@ use crate::defsfont::fluid_sample_in_rom;
 use crate::defsfont::new_fluid_inst;
 use crate::defsfont::new_fluid_inst_zone;
 use crate::defsfont::new_fluid_preset_zone;
-use crate::hash::fluid_hashtable_t;
 use crate::list::delete_fluid_list;
 use crate::list::fluid_list_append;
 use crate::list::fluid_list_remove;
@@ -46,9 +44,6 @@ use crate::voice::fluid_voice_is_playing;
 use crate::voice::fluid_voice_off;
 use crate::voice::fluid_voice_t;
 use crate::voice::fluid_voice_update_param;
-pub type fluid_settings_t = fluid_hashtable_t;
-pub type fluid_real_t = libc::c_float;
-pub type fluid_phase_t = libc::c_ulonglong;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct fluid_ramsfont_t {
@@ -88,7 +83,6 @@ pub const GEN_STARTADDROFS: fluid_gen_type = 0;
 pub const GEN_LAST: fluid_gen_type = 60;
 pub const FLUID_VOICE_OVERWRITE: fluid_voice_add_mod = 0;
 pub const FLUID_FAILED: C2RustUnnamed = -1;
-pub const FLUID_ERR: fluid_log_level = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct fluid_rampreset_voice_t {
@@ -99,67 +93,10 @@ pub const GEN_SET: fluid_gen_flags = 1;
 pub const FLUID_LOOP_DURING_RELEASE: fluid_loop = 1;
 pub const GEN_UNUSED: fluid_gen_flags = 0;
 pub const FLUID_UNLOOPED: fluid_loop = 0;
-pub type fluid_log_level = libc::c_uint;
-pub const LAST_LOG_LEVEL: fluid_log_level = 5;
-pub const FLUID_DBG: fluid_log_level = 4;
-pub const FLUID_INFO: fluid_log_level = 3;
-pub const FLUID_WARN: fluid_log_level = 2;
-pub const FLUID_PANIC: fluid_log_level = 0;
 pub type fluid_gen_type = libc::c_uint;
-pub const GEN_PITCH: fluid_gen_type = 59;
-pub const GEN_SCALETUNE: fluid_gen_type = 56;
-pub const GEN_RESERVED3: fluid_gen_type = 55;
-pub const GEN_SAMPLEID: fluid_gen_type = 53;
-pub const GEN_FINETUNE: fluid_gen_type = 52;
-pub const GEN_COARSETUNE: fluid_gen_type = 51;
-pub const GEN_RESERVED2: fluid_gen_type = 49;
-pub const GEN_ATTENUATION: fluid_gen_type = 48;
-pub const GEN_VELRANGE: fluid_gen_type = 44;
-pub const GEN_KEYRANGE: fluid_gen_type = 43;
-pub const GEN_RESERVED1: fluid_gen_type = 42;
-pub const GEN_INSTRUMENT: fluid_gen_type = 41;
-pub const GEN_KEYTOVOLENVDECAY: fluid_gen_type = 40;
-pub const GEN_KEYTOVOLENVHOLD: fluid_gen_type = 39;
-pub const GEN_VOLENVRELEASE: fluid_gen_type = 38;
-pub const GEN_VOLENVSUSTAIN: fluid_gen_type = 37;
-pub const GEN_VOLENVDECAY: fluid_gen_type = 36;
-pub const GEN_VOLENVHOLD: fluid_gen_type = 35;
-pub const GEN_VOLENVATTACK: fluid_gen_type = 34;
-pub const GEN_VOLENVDELAY: fluid_gen_type = 33;
-pub const GEN_KEYTOMODENVDECAY: fluid_gen_type = 32;
-pub const GEN_KEYTOMODENVHOLD: fluid_gen_type = 31;
-pub const GEN_MODENVRELEASE: fluid_gen_type = 30;
-pub const GEN_MODENVSUSTAIN: fluid_gen_type = 29;
-pub const GEN_MODENVDECAY: fluid_gen_type = 28;
-pub const GEN_MODENVHOLD: fluid_gen_type = 27;
-pub const GEN_MODENVATTACK: fluid_gen_type = 26;
-pub const GEN_MODENVDELAY: fluid_gen_type = 25;
-pub const GEN_VIBLFOFREQ: fluid_gen_type = 24;
-pub const GEN_VIBLFODELAY: fluid_gen_type = 23;
-pub const GEN_MODLFOFREQ: fluid_gen_type = 22;
-pub const GEN_MODLFODELAY: fluid_gen_type = 21;
-pub const GEN_UNUSED4: fluid_gen_type = 20;
-pub const GEN_UNUSED3: fluid_gen_type = 19;
-pub const GEN_UNUSED2: fluid_gen_type = 18;
-pub const GEN_PAN: fluid_gen_type = 17;
-pub const GEN_REVERBSEND: fluid_gen_type = 16;
-pub const GEN_CHORUSSEND: fluid_gen_type = 15;
-pub const GEN_UNUSED1: fluid_gen_type = 14;
-pub const GEN_MODLFOTOVOL: fluid_gen_type = 13;
-pub const GEN_MODENVTOFILTERFC: fluid_gen_type = 11;
-pub const GEN_MODLFOTOFILTERFC: fluid_gen_type = 10;
-pub const GEN_FILTERQ: fluid_gen_type = 9;
-pub const GEN_FILTERFC: fluid_gen_type = 8;
-pub const GEN_MODENVTOPITCH: fluid_gen_type = 7;
-pub const GEN_VIBLFOTOPITCH: fluid_gen_type = 6;
-pub const GEN_MODLFOTOPITCH: fluid_gen_type = 5;
 pub type fluid_gen_flags = libc::c_uint;
-pub const GEN_ABS_NRPN: fluid_gen_flags = 2;
-pub const FLUID_VOICE_DEFAULT: fluid_voice_add_mod = 2;
 pub type C2RustUnnamed = libc::c_int;
 pub type fluid_loop = libc::c_uint;
-pub const FLUID_LOOP_UNTIL_RELEASE: fluid_loop = 3;
-pub const FLUID_NOTUSED: fluid_loop = 2;
 #[no_mangle]
 pub unsafe extern "C" fn fluid_ramsfont_create_sfont() -> *mut fluid_sfont_t {
     let mut sfont: *mut fluid_sfont_t = 0 as *mut fluid_sfont_t;

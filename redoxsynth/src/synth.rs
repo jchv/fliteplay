@@ -1,5 +1,4 @@
 #![allow(
-    dead_code,
     mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
@@ -157,7 +156,6 @@ pub struct fluid_synth_t {
     pub min_note_length_ticks: libc::c_uint,
 }
 pub type fluid_real_t = libc::c_float;
-pub type fluid_phase_t = libc::c_ulonglong;
 pub const FLUID_OK: C2RustUnnamed = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -167,8 +165,6 @@ pub struct fluid_bank_offset_t {
 }
 pub const FLUID_SYNTH_STOPPED: fluid_synth_status = 3;
 pub const FLUID_FAILED: C2RustUnnamed = -1;
-pub const FLUID_ERR: fluid_log_level = 1;
-pub const FLUID_WARN: fluid_log_level = 2;
 pub const FLUID_SYNTH_PLAYING: fluid_synth_status = 1;
 pub type fluid_int_update_t = Option<
     unsafe extern "C" fn(
@@ -206,89 +202,26 @@ pub const FLUID_MOD_CHANNELPRESSURE: fluid_mod_src = 13;
 pub const GEN_FILTERFC: fluid_gen_type = 8;
 pub const FLUID_MOD_SWITCH: fluid_mod_flags = 12;
 pub const FLUID_MOD_VELOCITY: fluid_mod_src = 2;
-pub const FLUID_INFO: fluid_log_level = 3;
 pub const FLUID_VOICE_OFF: fluid_voice_status = 3;
 pub const FLUID_VOICE_CLEAN: fluid_voice_status = 0;
 pub const FLUID_VOICE_ENVRELEASE: fluid_voice_envelope_index_t = 5;
 pub const FLUID_MOD_KEYPRESSURE: fluid_mod_src = 10;
-pub const FLUID_PANIC: fluid_log_level = 0;
 pub const MIDI_SYSEX_TUNING_OCTAVE_TUNE_1BYTE: midi_sysex_tuning_msg_id = 8;
 pub const MIDI_SYSEX_TUNING_OCTAVE_TUNE_2BYTE: midi_sysex_tuning_msg_id = 9;
 pub const MIDI_SYSEX_TUNING_NOTE_TUNE: midi_sysex_tuning_msg_id = 2;
-pub const MIDI_SYSEX_TUNING_NOTE_TUNE_BANK: midi_sysex_tuning_msg_id = 7;
 pub type uint8 = libc::c_uchar;
 pub const MIDI_SYSEX_TUNING_BULK_DUMP: midi_sysex_tuning_msg_id = 1;
 pub const MIDI_SYSEX_UNIV_NON_REALTIME: midi_sysex_manuf = 126;
 pub const MIDI_SYSEX_TUNING_BULK_DUMP_REQ: midi_sysex_tuning_msg_id = 0;
 pub const MIDI_SYSEX_TUNING_BULK_DUMP_REQ_BANK: midi_sysex_tuning_msg_id = 3;
 pub const MIDI_SYSEX_UNIV_REALTIME: midi_sysex_manuf = 127;
-pub const FLUID_DBG: fluid_log_level = 4;
 pub const GEN_LAST: fluid_gen_type = 60;
 pub const FLUID_VOICE_DEFAULT: fluid_voice_add_mod = 2;
 pub const FLUID_VOICE_ENVATTACK: fluid_voice_envelope_index_t = 1;
 pub const GEN_EXCLUSIVECLASS: fluid_gen_type = 57;
-pub type fluid_log_level = libc::c_uint;
-pub const LAST_LOG_LEVEL: fluid_log_level = 5;
 pub type fluid_mod_flags = libc::c_uint;
-pub const FLUID_MOD_CONVEX: fluid_mod_flags = 8;
 pub type fluid_mod_src = libc::c_uint;
-pub const FLUID_MOD_KEY: fluid_mod_src = 3;
-pub const FLUID_MOD_NONE: fluid_mod_src = 0;
 pub type fluid_gen_type = libc::c_uint;
-pub const GEN_OVERRIDEROOTKEY: fluid_gen_type = 58;
-pub const GEN_SCALETUNE: fluid_gen_type = 56;
-pub const GEN_RESERVED3: fluid_gen_type = 55;
-pub const GEN_SAMPLEMODE: fluid_gen_type = 54;
-pub const GEN_SAMPLEID: fluid_gen_type = 53;
-pub const GEN_FINETUNE: fluid_gen_type = 52;
-pub const GEN_COARSETUNE: fluid_gen_type = 51;
-pub const GEN_ENDLOOPADDRCOARSEOFS: fluid_gen_type = 50;
-pub const GEN_RESERVED2: fluid_gen_type = 49;
-pub const GEN_VELOCITY: fluid_gen_type = 47;
-pub const GEN_KEYNUM: fluid_gen_type = 46;
-pub const GEN_STARTLOOPADDRCOARSEOFS: fluid_gen_type = 45;
-pub const GEN_VELRANGE: fluid_gen_type = 44;
-pub const GEN_KEYRANGE: fluid_gen_type = 43;
-pub const GEN_RESERVED1: fluid_gen_type = 42;
-pub const GEN_INSTRUMENT: fluid_gen_type = 41;
-pub const GEN_KEYTOVOLENVDECAY: fluid_gen_type = 40;
-pub const GEN_KEYTOVOLENVHOLD: fluid_gen_type = 39;
-pub const GEN_VOLENVRELEASE: fluid_gen_type = 38;
-pub const GEN_VOLENVSUSTAIN: fluid_gen_type = 37;
-pub const GEN_VOLENVDECAY: fluid_gen_type = 36;
-pub const GEN_VOLENVHOLD: fluid_gen_type = 35;
-pub const GEN_VOLENVATTACK: fluid_gen_type = 34;
-pub const GEN_VOLENVDELAY: fluid_gen_type = 33;
-pub const GEN_KEYTOMODENVDECAY: fluid_gen_type = 32;
-pub const GEN_KEYTOMODENVHOLD: fluid_gen_type = 31;
-pub const GEN_MODENVRELEASE: fluid_gen_type = 30;
-pub const GEN_MODENVSUSTAIN: fluid_gen_type = 29;
-pub const GEN_MODENVDECAY: fluid_gen_type = 28;
-pub const GEN_MODENVHOLD: fluid_gen_type = 27;
-pub const GEN_MODENVATTACK: fluid_gen_type = 26;
-pub const GEN_MODENVDELAY: fluid_gen_type = 25;
-pub const GEN_VIBLFOFREQ: fluid_gen_type = 24;
-pub const GEN_VIBLFODELAY: fluid_gen_type = 23;
-pub const GEN_MODLFOFREQ: fluid_gen_type = 22;
-pub const GEN_MODLFODELAY: fluid_gen_type = 21;
-pub const GEN_UNUSED4: fluid_gen_type = 20;
-pub const GEN_UNUSED3: fluid_gen_type = 19;
-pub const GEN_UNUSED2: fluid_gen_type = 18;
-pub const GEN_UNUSED1: fluid_gen_type = 14;
-pub const GEN_MODLFOTOVOL: fluid_gen_type = 13;
-pub const GEN_ENDADDRCOARSEOFS: fluid_gen_type = 12;
-pub const GEN_MODENVTOFILTERFC: fluid_gen_type = 11;
-pub const GEN_MODLFOTOFILTERFC: fluid_gen_type = 10;
-pub const GEN_FILTERQ: fluid_gen_type = 9;
-pub const GEN_MODENVTOPITCH: fluid_gen_type = 7;
-pub const GEN_MODLFOTOPITCH: fluid_gen_type = 5;
-pub const GEN_STARTADDRCOARSEOFS: fluid_gen_type = 4;
-pub const GEN_ENDLOOPADDROFS: fluid_gen_type = 3;
-pub const GEN_STARTLOOPADDROFS: fluid_gen_type = 2;
-pub const GEN_ENDADDROFS: fluid_gen_type = 1;
-pub const GEN_STARTADDROFS: fluid_gen_type = 0;
-pub const FLUID_VOICE_ADD: fluid_voice_add_mod = 1;
-pub const FLUID_VOICE_OVERWRITE: fluid_voice_add_mod = 0;
 pub type C2RustUnnamed = libc::c_int;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -301,28 +234,9 @@ pub struct fluid_revmodel_presets_t {
 }
 pub type fluid_voice_status = libc::c_uint;
 pub type fluid_voice_envelope_index_t = libc::c_uint;
-pub const FLUID_VOICE_ENVLAST: fluid_voice_envelope_index_t = 7;
-pub const FLUID_VOICE_ENVFINISHED: fluid_voice_envelope_index_t = 6;
-pub const FLUID_VOICE_ENVSUSTAIN: fluid_voice_envelope_index_t = 4;
-pub const FLUID_VOICE_ENVDECAY: fluid_voice_envelope_index_t = 3;
-pub const FLUID_VOICE_ENVHOLD: fluid_voice_envelope_index_t = 2;
-pub const FLUID_VOICE_ENVDELAY: fluid_voice_envelope_index_t = 0;
 pub type fluid_synth_status = libc::c_uint;
-pub const FLUID_SYNTH_QUIET: fluid_synth_status = 2;
-pub const FLUID_SYNTH_CLEAN: fluid_synth_status = 0;
-pub type fluid_str_update_t = Option<
-    unsafe extern "C" fn(
-        _: *mut libc::c_void,
-        _: *const libc::c_char,
-        _: *mut libc::c_char,
-    ) -> libc::c_int,
->;
 pub type midi_sysex_manuf = libc::c_uint;
-pub const MIDI_SYSEX_MANUF_ROLAND: midi_sysex_manuf = 65;
 pub type midi_sysex_tuning_msg_id = libc::c_uint;
-pub const MIDI_SYSEX_TUNING_OCTAVE_DUMP_2BYTE: midi_sysex_tuning_msg_id = 6;
-pub const MIDI_SYSEX_TUNING_OCTAVE_DUMP_1BYTE: midi_sysex_tuning_msg_id = 5;
-pub const MIDI_SYSEX_TUNING_BULK_DUMP_BANK: midi_sysex_tuning_msg_id = 4;
 static mut fluid_synth_initialized: libc::c_int = 0 as libc::c_int;
 #[no_mangle]
 pub static mut default_vel2att_mod: fluid_mod_t = fluid_mod_t {

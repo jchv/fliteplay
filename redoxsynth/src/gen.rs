@@ -1,5 +1,4 @@
 #![allow(
-    dead_code,
     mutable_transmutes,
     non_camel_case_types,
     non_snake_case,
@@ -80,7 +79,6 @@ pub struct fluid_gen_t {
 }
 pub type fluid_gen_flags = libc::c_uint;
 pub const GEN_ABS_NRPN: fluid_gen_flags = 2;
-pub const GEN_SET: fluid_gen_flags = 1;
 pub const GEN_UNUSED: fluid_gen_flags = 0;
 pub const FLUID_OK: C2RustUnnamed = 0;
 #[derive(Copy, Clone)]
@@ -95,7 +93,6 @@ pub struct fluid_gen_info_t {
 }
 pub type fluid_real_t = libc::c_float;
 pub type C2RustUnnamed = libc::c_int;
-pub const FLUID_FAILED: C2RustUnnamed = -1;
 #[no_mangle]
 pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
     {
