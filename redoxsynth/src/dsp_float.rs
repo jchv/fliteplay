@@ -11,7 +11,7 @@
 use crate::channel::_fluid_channel_t;
 use crate::gen::_fluid_gen_t;
 use crate::modulator::_fluid_mod_t;
-use crate::fluid_sfont::_fluid_sample_t;
+use crate::sfont::_fluid_sample_t;
 use crate::fluid_voice::_fluid_env_data_t;
 use crate::fluid_voice::_fluid_voice_t;
 
