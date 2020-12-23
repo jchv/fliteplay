@@ -9,7 +9,7 @@
 )]
 
 use crate::channel::_fluid_channel_t;
-use crate::fluid_chorus::_fluid_chorus_t;
+use crate::chorus::_fluid_chorus_t;
 use crate::fluid_defsfont::_fluid_inst_t;
 use crate::fluid_defsfont::_fluid_inst_zone_t;
 use crate::fluid_defsfont::_fluid_preset_zone_t;

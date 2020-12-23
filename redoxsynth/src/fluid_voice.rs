@@ -10,7 +10,7 @@
 use crate::channel::_fluid_channel_t;
 use crate::channel::fluid_channel_get_interp_method;
 use crate::channel::fluid_channel_get_num;
-use crate::fluid_chorus::_fluid_chorus_t;
+use crate::chorus::_fluid_chorus_t;
 use crate::fluid_conv::fluid_act2hz;
 use crate::fluid_conv::fluid_atten2amp;
 use crate::fluid_conv::fluid_cb2amp;
