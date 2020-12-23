@@ -1,5 +1,3 @@
-#![allow(warnings)]
-
 #[macro_use]
 mod redoxsynth_macros {
     macro_rules! fluid_log {

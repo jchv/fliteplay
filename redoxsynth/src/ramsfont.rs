@@ -7,8 +7,6 @@
     unused_assignments,
     unused_mut
 )]
-use crate::channel::fluid_channel_t;
-use crate::chorus::fluid_chorus_t;
 use crate::defsfont::delete_fluid_inst_zone;
 use crate::defsfont::delete_fluid_preset_zone;
 use crate::defsfont::fluid_inst_add_zone;
@@ -27,7 +25,6 @@ use crate::defsfont::fluid_sample_in_rom;
 use crate::defsfont::new_fluid_inst;
 use crate::defsfont::new_fluid_inst_zone;
 use crate::defsfont::new_fluid_preset_zone;
-use crate::gen::fluid_gen_t;
 use crate::hash::fluid_hashtable_t;
 use crate::list::delete_fluid_list;
 use crate::list::fluid_list_append;
@@ -35,15 +32,12 @@ use crate::list::fluid_list_remove;
 use crate::list::fluid_list_t;
 use crate::modulator::fluid_mod_t;
 use crate::modulator::fluid_mod_test_identity;
-use crate::reverb::fluid_revmodel_t;
 use crate::sfont::fluid_preset_t;
 use crate::sfont::fluid_sample_t;
 use crate::sfont::fluid_sfont_t;
 use crate::synth::fluid_synth_alloc_voice;
 use crate::synth::fluid_synth_start_voice;
 use crate::synth::fluid_synth_t;
-use crate::tuning::fluid_tuning_t;
-use crate::voice::fluid_env_data_t;
 use crate::voice::fluid_voice_add_mod;
 use crate::voice::fluid_voice_gen_incr;
 use crate::voice::fluid_voice_gen_set;
@@ -955,7 +949,6 @@ pub unsafe extern "C" fn fluid_rampreset_noteon(
     let mut inst: *mut fluid_inst_t = 0 as *mut fluid_inst_t;
     let mut inst_zone: *mut fluid_inst_zone_t = 0 as *mut fluid_inst_zone_t;
     let mut global_inst_zone: *mut fluid_inst_zone_t = 0 as *mut fluid_inst_zone_t;
-    let mut z: *mut fluid_inst_zone_t = 0 as *mut fluid_inst_zone_t;
     let mut sample: *mut fluid_sample_t = 0 as *mut fluid_sample_t;
     let mut voice: *mut fluid_voice_t = 0 as *mut fluid_voice_t;
     let mut mod_0: *mut fluid_mod_t = 0 as *mut fluid_mod_t;
@@ -981,7 +974,6 @@ pub unsafe extern "C" fn fluid_rampreset_noteon(
                         if fluid_rampreset_remembervoice(preset, voice) != FLUID_OK as libc::c_int {
                             return FLUID_FAILED as libc::c_int;
                         }
-                        z = inst_zone;
                         i = 0 as libc::c_int;
                         while i < GEN_LAST as libc::c_int {
                             if (*inst_zone).gen[i as usize].flags != 0 {

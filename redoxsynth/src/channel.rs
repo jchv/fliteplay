@@ -7,17 +7,10 @@
     unused_assignments,
     unused_mut
 )]
-use crate::chorus::fluid_chorus_t;
 use crate::gen::fluid_gen_scale_nrpn;
-use crate::gen::fluid_gen_t;
 use crate::hash::fluid_hashtable_t;
-use crate::list::fluid_list_t;
-use crate::modulator::fluid_mod_t;
-use crate::reverb::fluid_revmodel_t;
 use crate::settings::fluid_settings_str_equal;
 use crate::sfont::fluid_preset_t;
-use crate::sfont::fluid_sample_t;
-use crate::sfont::fluid_sfont_t;
 use crate::synth::fluid_synth_all_notes_off;
 use crate::synth::fluid_synth_all_sounds_off;
 use crate::synth::fluid_synth_damp_voices;
@@ -27,8 +20,6 @@ use crate::synth::fluid_synth_modulate_voices_all;
 use crate::synth::fluid_synth_set_gen;
 use crate::synth::fluid_synth_t;
 use crate::tuning::fluid_tuning_t;
-use crate::voice::fluid_env_data_t;
-use crate::voice::fluid_voice_t;
 pub type fluid_settings_t = fluid_hashtable_t;
 pub type fluid_real_t = libc::c_float;
 pub type fluid_phase_t = libc::c_ulonglong;

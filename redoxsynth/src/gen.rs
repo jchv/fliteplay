@@ -8,10 +8,6 @@
     unused_mut
 )]
 use crate::channel::fluid_channel_t;
-use crate::sfont::fluid_preset_t;
-use crate::sfont::fluid_sfont_t;
-use crate::synth::fluid_synth_t;
-use crate::tuning::fluid_tuning_t;
 pub type fluid_gen_type = libc::c_uint;
 pub const GEN_LAST: fluid_gen_type = 60;
 pub const GEN_PITCH: fluid_gen_type = 59;

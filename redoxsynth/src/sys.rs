@@ -7,7 +7,6 @@
     unused_assignments,
     unused_mut
 )]
-#![feature(c_variadic, const_raw_ptr_to_usize_cast, const_transmute)]
 pub type fluid_log_level = libc::c_uint;
 pub const LAST_LOG_LEVEL: fluid_log_level = 5;
 pub const FLUID_DBG: fluid_log_level = 4;
@@ -157,8 +156,8 @@ pub unsafe extern "C" fn fluid_is_soundfont(mut filename: *mut libc::c_char) -> 
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_default_log_function(
-    mut level: libc::c_int,
-    mut message: *mut libc::c_char,
-    mut data: *mut libc::c_void,
+    _level: libc::c_int,
+    _message: *mut libc::c_char,
+    _data: *mut libc::c_void,
 ) {
 }

@@ -7,11 +7,6 @@
     unused_assignments,
     unused_mut
 )]
-use crate::channel::fluid_channel_t;
-use crate::gen::fluid_gen_t;
-use crate::modulator::fluid_mod_t;
-use crate::sfont::fluid_sample_t;
-use crate::voice::fluid_env_data_t;
 use crate::voice::fluid_voice_t;
 pub type fluid_real_t = libc::c_float;
 pub type fluid_phase_t = libc::c_ulonglong;

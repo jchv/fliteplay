@@ -11,13 +11,6 @@ use crate::channel::fluid_channel_get_cc;
 use crate::channel::fluid_channel_t;
 use crate::conv::fluid_concave;
 use crate::conv::fluid_convex;
-use crate::gen::fluid_gen_t;
-use crate::sfont::fluid_preset_t;
-use crate::sfont::fluid_sample_t;
-use crate::sfont::fluid_sfont_t;
-use crate::synth::fluid_synth_t;
-use crate::tuning::fluid_tuning_t;
-use crate::voice::fluid_env_data_t;
 use crate::voice::fluid_voice_t;
 pub type fluid_real_t = libc::c_float;
 pub type fluid_phase_t = libc::c_ulonglong;
@@ -472,97 +465,4 @@ pub unsafe extern "C" fn fluid_mod_test_identity(
         return 0 as libc::c_int;
     }
     return 1 as libc::c_int;
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_dump_modulator(mut mod_0: *mut fluid_mod_t) {
-    let mut src1: libc::c_int = (*mod_0).src1 as libc::c_int;
-    let mut dest: libc::c_int = (*mod_0).dest as libc::c_int;
-    let mut src2: libc::c_int = (*mod_0).src2 as libc::c_int;
-    let mut flags1: libc::c_int = (*mod_0).flags1 as libc::c_int;
-    let mut flags2: libc::c_int = (*mod_0).flags2 as libc::c_int;
-    let mut amount: fluid_real_t = (*mod_0).amount as fluid_real_t;
-    // printf(b"Src: \x00" as *const u8 as *const libc::c_char);
-    if flags1 & FLUID_MOD_CC as libc::c_int != 0 {
-        // printf(b"MIDI CC=%i\x00" as *const u8 as *const libc::c_char, src1);
-    } else {
-        match src1 {
-            0 => {
-                // printf(b"None\x00" as *const u8 as *const libc::c_char);
-            }
-            2 => {
-                // printf(b"note-on velocity\x00" as *const u8 as *const libc::c_char);
-            }
-            3 => {
-                // printf(b"Key nr\x00" as *const u8 as *const libc::c_char);
-            }
-            10 => {
-                // printf(b"Poly pressure\x00" as *const u8 as *const libc::c_char);
-            }
-            13 => {
-                // printf(b"Chan pressure\x00" as *const u8 as *const libc::c_char);
-            }
-            14 => {
-                // printf(b"Pitch Wheel\x00" as *const u8 as *const libc::c_char);
-            }
-            16 => {
-                // printf(b"Pitch Wheel sens\x00" as *const u8 as *const libc::c_char);
-            }
-            _ => {
-                // printf(
-                //    b"(unknown: %i)\x00" as *const u8 as *const libc::c_char,
-                //    src1,
-                //);
-            }
-        }
-    }
-    if flags1 & FLUID_MOD_NEGATIVE as libc::c_int != 0 {
-        // printf(b"- \x00" as *const u8 as *const libc::c_char);
-    } else {
-        // printf(b"+ \x00" as *const u8 as *const libc::c_char);
-    }
-    if flags1 & FLUID_MOD_BIPOLAR as libc::c_int != 0 {
-        // printf(b"bip \x00" as *const u8 as *const libc::c_char);
-    } else {
-        // printf(b"unip \x00" as *const u8 as *const libc::c_char);
-    }
-    // printf(b"-> \x00" as *const u8 as *const libc::c_char);
-    match dest {
-        9 => {
-            // printf(b"Q\x00" as *const u8 as *const libc::c_char);
-        }
-        8 => {
-            // printf(b"fc\x00" as *const u8 as *const libc::c_char);
-        }
-        6 => {
-            // printf(b"VibLFO-to-pitch\x00" as *const u8 as *const libc::c_char);
-        }
-        7 => {
-            // printf(b"ModEnv-to-pitch\x00" as *const u8 as *const libc::c_char);
-        }
-        5 => {
-            // printf(b"ModLFO-to-pitch\x00" as *const u8 as *const libc::c_char);
-        }
-        15 => {
-            // printf(b"Chorus send\x00" as *const u8 as *const libc::c_char);
-        }
-        16 => {
-            // printf(b"Reverb send\x00" as *const u8 as *const libc::c_char);
-        }
-        17 => {
-            // printf(b"pan\x00" as *const u8 as *const libc::c_char);
-        }
-        48 => {
-            // printf(b"att\x00" as *const u8 as *const libc::c_char);
-        }
-        _ => {
-            // printf(b"dest %i\x00" as *const u8 as *const libc::c_char, dest);
-        }
-    }
-    // printf(
-    //    b", amount %f flags %i src2 %i flags2 %i\n\x00" as *const u8 as *const libc::c_char,
-    //    amount as libc::c_double,
-    //    flags1,
-    //    src2,
-    //    flags2,
-    //);
 }
