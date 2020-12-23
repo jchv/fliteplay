@@ -10,7 +10,7 @@ pub struct fluid_tuning_t {
     pub name: *mut libc::c_char,
     pub bank: libc::c_int,
     pub prog: libc::c_int,
-    pub pitch: [libc::c_double; 128],
+    pub pitch: [f64; 128],
 }
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_tuning(
@@ -37,7 +37,7 @@ pub unsafe extern "C" fn new_fluid_tuning(
     (*tuning).prog = prog;
     i = 0 as libc::c_int;
     while i < 128 as libc::c_int {
-        (*tuning).pitch[i as usize] = i as libc::c_double * 100.0f64;
+        (*tuning).pitch[i as usize] = i as f64 * 100.0f64;
         i += 1
     }
     return tuning;
@@ -112,27 +112,27 @@ pub unsafe extern "C" fn fluid_tuning_get_name(
 pub unsafe extern "C" fn fluid_tuning_set_key(
     mut tuning: *mut fluid_tuning_t,
     mut key: libc::c_int,
-    mut pitch: libc::c_double,
+    mut pitch: f64,
 ) {
     (*tuning).pitch[key as usize] = pitch;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_tuning_set_octave(
     mut tuning: *mut fluid_tuning_t,
-    mut pitch_deriv: *const libc::c_double,
+    mut pitch_deriv: *const f64,
 ) {
     let mut i;
     i = 0 as libc::c_int;
     while i < 128 as libc::c_int {
         (*tuning).pitch[i as usize] =
-            i as libc::c_double * 100.0f64 + *pitch_deriv.offset((i % 12 as libc::c_int) as isize);
+            i as f64 * 100.0f64 + *pitch_deriv.offset((i % 12 as libc::c_int) as isize);
         i += 1
     }
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_tuning_set_all(
     mut tuning: *mut fluid_tuning_t,
-    mut pitch: *mut libc::c_double,
+    mut pitch: *mut f64,
 ) {
     let mut i;
     i = 0 as libc::c_int;
@@ -145,7 +145,7 @@ pub unsafe extern "C" fn fluid_tuning_set_all(
 pub unsafe extern "C" fn fluid_tuning_set_pitch(
     mut tuning: *mut fluid_tuning_t,
     mut key: libc::c_int,
-    mut pitch: libc::c_double,
+    mut pitch: f64,
 ) {
     if key >= 0 as libc::c_int && key < 128 as libc::c_int {
         (*tuning).pitch[key as usize] = pitch

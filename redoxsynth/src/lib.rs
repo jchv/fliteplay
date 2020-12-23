@@ -22,7 +22,6 @@ mod gen;
 mod hash;
 mod list;
 mod modulator;
-mod ramsfont;
 mod reverb;
 mod settings;
 mod sfont;

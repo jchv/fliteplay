@@ -20,7 +20,7 @@ use crate::channel::fluid_channel_set_interp_method;
 use crate::channel::fluid_channel_set_preset;
 use crate::channel::fluid_channel_set_prognum;
 use crate::channel::fluid_channel_set_sfontnum;
-use crate::channel::fluid_channel_t;
+use crate::channel::Channel;
 use crate::channel::new_fluid_channel;
 use crate::chorus::delete_fluid_chorus;
 use crate::chorus::fluid_chorus_get_depth_ms;
@@ -36,21 +36,21 @@ use crate::chorus::fluid_chorus_set_level;
 use crate::chorus::fluid_chorus_set_nr;
 use crate::chorus::fluid_chorus_set_speed_Hz;
 use crate::chorus::fluid_chorus_set_type;
-use crate::chorus::fluid_chorus_t;
+use crate::chorus::Chorus;
 use crate::chorus::fluid_chorus_update;
 use crate::chorus::new_fluid_chorus;
 use crate::conv::fluid_conversion_config;
 use crate::defsfont::new_fluid_defsfloader;
 use crate::dsp_float::fluid_dsp_float_config;
 use crate::gen::fluid_gen_scale;
-use crate::hash::fluid_hashtable_t;
+use crate::hash::HashTable;
 use crate::list::delete_fluid_list;
 use crate::list::fluid_list_insert_at;
 use crate::list::fluid_list_nth;
 use crate::list::fluid_list_prepend;
 use crate::list::fluid_list_remove;
 use crate::list::fluid_list_size;
-use crate::list::fluid_list_t;
+use crate::list::List;
 use crate::modulator::fluid_mod_set_amount;
 use crate::modulator::fluid_mod_set_dest;
 use crate::modulator::fluid_mod_set_source1;
@@ -68,7 +68,7 @@ use crate::reverb::fluid_revmodel_setdamp;
 use crate::reverb::fluid_revmodel_setlevel;
 use crate::reverb::fluid_revmodel_setroomsize;
 use crate::reverb::fluid_revmodel_setwidth;
-use crate::reverb::fluid_revmodel_t;
+use crate::reverb::ReverbModel;
 use crate::reverb::new_fluid_revmodel;
 use crate::settings::fluid_settings_getint;
 use crate::settings::fluid_settings_getnum;
@@ -111,41 +111,41 @@ use crate::voice::fluid_voice_t;
 use crate::voice::fluid_voice_write;
 use crate::voice::new_fluid_voice;
 use std::ffi::CStr;
-pub type fluid_settings_t = fluid_hashtable_t;
+pub type Settings = HashTable;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct fluid_synth_t {
-    pub settings: *mut fluid_settings_t,
+    pub settings: *mut Settings,
     pub polyphony: libc::c_int,
     pub with_reverb: libc::c_char,
     pub with_chorus: libc::c_char,
     pub verbose: libc::c_char,
     pub dump: libc::c_char,
-    pub sample_rate: libc::c_double,
+    pub sample_rate: f64,
     pub midi_channels: libc::c_int,
     pub audio_channels: libc::c_int,
     pub audio_groups: libc::c_int,
     pub effects_channels: libc::c_int,
     pub state: libc::c_uint,
     pub ticks: libc::c_uint,
-    pub loaders: *mut fluid_list_t,
-    pub sfont: *mut fluid_list_t,
+    pub loaders: *mut List,
+    pub sfont: *mut List,
     pub sfont_id: libc::c_uint,
-    pub bank_offsets: *mut fluid_list_t,
-    pub gain: libc::c_double,
-    pub channel: *mut *mut fluid_channel_t,
+    pub bank_offsets: *mut List,
+    pub gain: f64,
+    pub channel: *mut *mut Channel,
     pub num_channels: libc::c_int,
     pub nvoice: libc::c_int,
     pub voice: *mut *mut fluid_voice_t,
     pub noteid: libc::c_uint,
     pub storeid: libc::c_uint,
     pub nbuf: libc::c_int,
-    pub left_buf: *mut *mut fluid_real_t,
-    pub right_buf: *mut *mut fluid_real_t,
-    pub fx_left_buf: *mut *mut fluid_real_t,
-    pub fx_right_buf: *mut *mut fluid_real_t,
-    pub reverb: *mut fluid_revmodel_t,
-    pub chorus: *mut fluid_chorus_t,
+    pub left_buf: *mut *mut f32,
+    pub right_buf: *mut *mut f32,
+    pub fx_left_buf: *mut *mut f32,
+    pub fx_right_buf: *mut *mut f32,
+    pub reverb: *mut ReverbModel,
+    pub chorus: *mut Chorus,
     pub cur: libc::c_int,
     pub dither_index: libc::c_int,
     pub outbuf: [libc::c_char; 256],
@@ -153,7 +153,6 @@ pub struct fluid_synth_t {
     pub cur_tuning: *mut fluid_tuning_t,
     pub min_note_length_ticks: libc::c_uint,
 }
-pub type fluid_real_t = libc::c_float;
 pub const FLUID_OK: C2RustUnnamed = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -164,7 +163,7 @@ pub struct fluid_bank_offset_t {
 pub const FLUID_SYNTH_STOPPED: fluid_synth_status = 3;
 pub const FLUID_FAILED: C2RustUnnamed = -1;
 pub const FLUID_SYNTH_PLAYING: fluid_synth_status = 1;
-pub type fluid_int_update_t = Option<
+pub type IntUpdateFn = Option<
     unsafe extern "C" fn(
         _: *mut libc::c_void,
         _: *const libc::c_char,
@@ -173,37 +172,37 @@ pub type fluid_int_update_t = Option<
 >;
 pub const FLUID_VOICE_SUSTAINED: fluid_voice_status = 2;
 pub const FLUID_VOICE_ON: fluid_voice_status = 1;
-pub type fluid_num_update_t = Option<
+pub type NumUpdateFn = Option<
     unsafe extern "C" fn(
         _: *mut libc::c_void,
         _: *const libc::c_char,
-        _: libc::c_double,
+        _: f64,
     ) -> libc::c_int,
 >;
-pub const GEN_PITCH: fluid_gen_type = 59;
-pub const FLUID_MOD_POSITIVE: fluid_mod_flags = 0;
-pub const FLUID_MOD_UNIPOLAR: fluid_mod_flags = 0;
-pub const FLUID_MOD_LINEAR: fluid_mod_flags = 0;
-pub const FLUID_MOD_GC: fluid_mod_flags = 0;
-pub const FLUID_MOD_PITCHWHEELSENS: fluid_mod_src = 16;
-pub const FLUID_MOD_BIPOLAR: fluid_mod_flags = 2;
-pub const FLUID_MOD_PITCHWHEEL: fluid_mod_src = 14;
-pub const GEN_CHORUSSEND: fluid_gen_type = 15;
-pub const FLUID_MOD_CC: fluid_mod_flags = 16;
-pub const GEN_REVERBSEND: fluid_gen_type = 16;
-pub const GEN_ATTENUATION: fluid_gen_type = 48;
-pub const FLUID_MOD_NEGATIVE: fluid_mod_flags = 1;
-pub const FLUID_MOD_CONCAVE: fluid_mod_flags = 4;
-pub const GEN_PAN: fluid_gen_type = 17;
-pub const GEN_VIBLFOTOPITCH: fluid_gen_type = 6;
-pub const FLUID_MOD_CHANNELPRESSURE: fluid_mod_src = 13;
-pub const GEN_FILTERFC: fluid_gen_type = 8;
-pub const FLUID_MOD_SWITCH: fluid_mod_flags = 12;
-pub const FLUID_MOD_VELOCITY: fluid_mod_src = 2;
+pub const GEN_PITCH: GenType = 59;
+pub const FLUID_MOD_POSITIVE: ModFlags = 0;
+pub const FLUID_MOD_UNIPOLAR: ModFlags = 0;
+pub const FLUID_MOD_LINEAR: ModFlags = 0;
+pub const FLUID_MOD_GC: ModFlags = 0;
+pub const FLUID_MOD_PITCHWHEELSENS: ModSrc = 16;
+pub const FLUID_MOD_BIPOLAR: ModFlags = 2;
+pub const FLUID_MOD_PITCHWHEEL: ModSrc = 14;
+pub const GEN_CHORUSSEND: GenType = 15;
+pub const FLUID_MOD_CC: ModFlags = 16;
+pub const GEN_REVERBSEND: GenType = 16;
+pub const GEN_ATTENUATION: GenType = 48;
+pub const FLUID_MOD_NEGATIVE: ModFlags = 1;
+pub const FLUID_MOD_CONCAVE: ModFlags = 4;
+pub const GEN_PAN: GenType = 17;
+pub const GEN_VIBLFOTOPITCH: GenType = 6;
+pub const FLUID_MOD_CHANNELPRESSURE: ModSrc = 13;
+pub const GEN_FILTERFC: GenType = 8;
+pub const FLUID_MOD_SWITCH: ModFlags = 12;
+pub const FLUID_MOD_VELOCITY: ModSrc = 2;
 pub const FLUID_VOICE_OFF: fluid_voice_status = 3;
 pub const FLUID_VOICE_CLEAN: fluid_voice_status = 0;
-pub const FLUID_VOICE_ENVRELEASE: fluid_voice_envelope_index_t = 5;
-pub const FLUID_MOD_KEYPRESSURE: fluid_mod_src = 10;
+pub const FLUID_VOICE_ENVRELEASE: VoiceEnvelopeIndex = 5;
+pub const FLUID_MOD_KEYPRESSURE: ModSrc = 10;
 pub const MIDI_SYSEX_TUNING_OCTAVE_TUNE_1BYTE: midi_sysex_tuning_msg_id = 8;
 pub const MIDI_SYSEX_TUNING_OCTAVE_TUNE_2BYTE: midi_sysex_tuning_msg_id = 9;
 pub const MIDI_SYSEX_TUNING_NOTE_TUNE: midi_sysex_tuning_msg_id = 2;
@@ -213,25 +212,25 @@ pub const MIDI_SYSEX_UNIV_NON_REALTIME: midi_sysex_manuf = 126;
 pub const MIDI_SYSEX_TUNING_BULK_DUMP_REQ: midi_sysex_tuning_msg_id = 0;
 pub const MIDI_SYSEX_TUNING_BULK_DUMP_REQ_BANK: midi_sysex_tuning_msg_id = 3;
 pub const MIDI_SYSEX_UNIV_REALTIME: midi_sysex_manuf = 127;
-pub const GEN_LAST: fluid_gen_type = 60;
+pub const GEN_LAST: GenType = 60;
 pub const FLUID_VOICE_DEFAULT: fluid_voice_add_mod = 2;
-pub const FLUID_VOICE_ENVATTACK: fluid_voice_envelope_index_t = 1;
-pub const GEN_EXCLUSIVECLASS: fluid_gen_type = 57;
-pub type fluid_mod_flags = libc::c_uint;
-pub type fluid_mod_src = libc::c_uint;
-pub type fluid_gen_type = libc::c_uint;
+pub const FLUID_VOICE_ENVATTACK: VoiceEnvelopeIndex = 1;
+pub const GEN_EXCLUSIVECLASS: GenType = 57;
+pub type ModFlags = libc::c_uint;
+pub type ModSrc = libc::c_uint;
+pub type GenType = libc::c_uint;
 pub type C2RustUnnamed = libc::c_int;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct fluid_revmodel_presets_t {
     pub name: *mut libc::c_char,
-    pub roomsize: fluid_real_t,
-    pub damp: fluid_real_t,
-    pub width: fluid_real_t,
-    pub level: fluid_real_t,
+    pub roomsize: f32,
+    pub damp: f32,
+    pub width: f32,
+    pub level: f32,
 }
 pub type fluid_voice_status = libc::c_uint;
-pub type fluid_voice_envelope_index_t = libc::c_uint;
+pub type VoiceEnvelopeIndex = libc::c_uint;
 pub type fluid_synth_status = libc::c_uint;
 pub type midi_sysex_manuf = libc::c_uint;
 pub type midi_sysex_tuning_msg_id = libc::c_uint;
@@ -399,7 +398,7 @@ static mut revmodel_preset: [fluid_revmodel_presets_t; 6] = [
     },
 ];
 #[no_mangle]
-pub unsafe extern "C" fn fluid_synth_settings(mut settings: *mut fluid_settings_t) {
+pub unsafe extern "C" fn fluid_synth_settings(mut settings: *mut Settings) {
     fluid_settings_register_str(
         settings,
         b"synth.verbose\x00" as *const u8 as *const libc::c_char,
@@ -479,9 +478,9 @@ pub unsafe extern "C" fn fluid_synth_settings(mut settings: *mut fluid_settings_
     fluid_settings_register_num(
         settings,
         b"synth.gain\x00" as *const u8 as *const libc::c_char,
-        0.2f32 as libc::c_double,
-        0.0f32 as libc::c_double,
-        10.0f32 as libc::c_double,
+        0.2f32 as f64,
+        0.0f32 as f64,
+        10.0f32 as f64,
         0 as libc::c_int,
         None,
         0 as *mut libc::c_void,
@@ -519,9 +518,9 @@ pub unsafe extern "C" fn fluid_synth_settings(mut settings: *mut fluid_settings_
     fluid_settings_register_num(
         settings,
         b"synth.sample-rate\x00" as *const u8 as *const libc::c_char,
-        44100.0f32 as libc::c_double,
-        22050.0f32 as libc::c_double,
-        96000.0f32 as libc::c_double,
+        44100.0f32 as f64,
+        22050.0f32 as f64,
+        96000.0f32 as f64,
         0 as libc::c_int,
         None,
         0 as *mut libc::c_void,
@@ -587,7 +586,7 @@ unsafe extern "C" fn fluid_synth_init() {
     fluid_mod_set_dest(&mut default_vel2filter_mod, GEN_FILTERFC as libc::c_int);
     fluid_mod_set_amount(
         &mut default_vel2filter_mod,
-        -(2400 as libc::c_int) as libc::c_double,
+        -(2400 as libc::c_int) as f64,
     );
     fluid_mod_set_source1(
         &mut default_at2viblfo_mod,
@@ -605,7 +604,7 @@ unsafe extern "C" fn fluid_synth_init() {
     fluid_mod_set_dest(&mut default_at2viblfo_mod, GEN_VIBLFOTOPITCH as libc::c_int);
     fluid_mod_set_amount(
         &mut default_at2viblfo_mod,
-        50 as libc::c_int as libc::c_double,
+        50 as libc::c_int as f64,
     );
     fluid_mod_set_source1(
         &mut default_mod2viblfo_mod,
@@ -626,7 +625,7 @@ unsafe extern "C" fn fluid_synth_init() {
     );
     fluid_mod_set_amount(
         &mut default_mod2viblfo_mod,
-        50 as libc::c_int as libc::c_double,
+        50 as libc::c_int as f64,
     );
     fluid_mod_set_source1(
         &mut default_att_mod,
@@ -673,7 +672,7 @@ unsafe extern "C" fn fluid_synth_init() {
     fluid_mod_set_dest(&mut default_reverb_mod, GEN_REVERBSEND as libc::c_int);
     fluid_mod_set_amount(
         &mut default_reverb_mod,
-        200 as libc::c_int as libc::c_double,
+        200 as libc::c_int as f64,
     );
     fluid_mod_set_source1(
         &mut default_chorus_mod,
@@ -687,7 +686,7 @@ unsafe extern "C" fn fluid_synth_init() {
     fluid_mod_set_dest(&mut default_chorus_mod, GEN_CHORUSSEND as libc::c_int);
     fluid_mod_set_amount(
         &mut default_chorus_mod,
-        200 as libc::c_int as libc::c_double,
+        200 as libc::c_int as f64,
     );
     fluid_mod_set_source1(
         &mut default_pitch_bend_mod,
@@ -710,13 +709,13 @@ unsafe extern "C" fn fluid_synth_init() {
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_verify_settings(
-    _settings: *mut fluid_settings_t,
+    _settings: *mut Settings,
 ) -> libc::c_int {
     return 0 as libc::c_int;
 }
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_synth(
-    mut settings: *mut fluid_settings_t,
+    mut settings: *mut Settings,
 ) -> *mut fluid_synth_t {
     let mut current_block: u64;
     let mut i: libc::c_int = 0;
@@ -799,29 +798,29 @@ pub unsafe extern "C" fn new_fluid_synth(
         &mut i,
     );
     (*synth).min_note_length_ticks =
-        (i as libc::c_double * (*synth).sample_rate / 1000.0f32 as libc::c_double) as libc::c_uint;
+        (i as f64 * (*synth).sample_rate / 1000.0f32 as f64) as libc::c_uint;
     fluid_settings_register_num(
         settings,
         b"synth.gain\x00" as *const u8 as *const libc::c_char,
-        0.2f32 as libc::c_double,
-        0.0f32 as libc::c_double,
-        10.0f32 as libc::c_double,
+        0.2f32 as f64,
+        0.0f32 as f64,
+        10.0f32 as f64,
         0 as libc::c_int,
         ::std::mem::transmute::<
             Option<
                 unsafe extern "C" fn(
                     _: *mut fluid_synth_t,
                     _: *mut libc::c_char,
-                    _: libc::c_double,
+                    _: f64,
                 ) -> libc::c_int,
             >,
-            fluid_num_update_t,
+            NumUpdateFn,
         >(Some(
             fluid_synth_update_gain
                 as unsafe extern "C" fn(
                     _: *mut fluid_synth_t,
                     _: *mut libc::c_char,
-                    _: libc::c_double,
+                    _: f64,
                 ) -> libc::c_int,
         )),
         synth as *mut libc::c_void,
@@ -841,7 +840,7 @@ pub unsafe extern "C" fn new_fluid_synth(
                     _: libc::c_int,
                 ) -> libc::c_int,
             >,
-            fluid_int_update_t,
+            IntUpdateFn,
         >(Some(
             fluid_synth_update_polyphony
                 as unsafe extern "C" fn(
@@ -905,7 +904,7 @@ pub unsafe extern "C" fn new_fluid_synth(
         (*synth).nbuf = (*synth).audio_groups
     }
     (*synth).state = FLUID_SYNTH_PLAYING as libc::c_int as libc::c_uint;
-    (*synth).sfont = 0 as *mut fluid_list_t;
+    (*synth).sfont = 0 as *mut List;
     (*synth).noteid = 0 as libc::c_int as libc::c_uint;
     (*synth).ticks = 0 as libc::c_int as libc::c_uint;
     (*synth).tuning = 0 as *mut *mut *mut fluid_tuning_t;
@@ -917,8 +916,8 @@ pub unsafe extern "C" fn new_fluid_synth(
     }
     (*synth).channel = libc::malloc(
         ((*synth).midi_channels as libc::size_t)
-            .wrapping_mul(::std::mem::size_of::<*mut fluid_channel_t>() as libc::size_t),
-    ) as *mut *mut fluid_channel_t;
+            .wrapping_mul(::std::mem::size_of::<*mut Channel>() as libc::size_t),
+    ) as *mut *mut Channel;
     if (*synth).channel.is_null() {
         fluid_log!(FLUID_ERR, "Out of memory",);
     } else {
@@ -952,7 +951,7 @@ pub unsafe extern "C" fn new_fluid_synth(
                             break;
                         }
                         let ref mut fresh1 = *(*synth).voice.offset(i as isize);
-                        *fresh1 = new_fluid_voice((*synth).sample_rate as fluid_real_t);
+                        *fresh1 = new_fluid_voice((*synth).sample_rate as f32);
                         if (*(*synth).voice.offset(i as isize)).is_null() {
                             current_block = 2776114520721993823;
                             break;
@@ -962,18 +961,18 @@ pub unsafe extern "C" fn new_fluid_synth(
                     match current_block {
                         2776114520721993823 => {}
                         _ => {
-                            (*synth).left_buf = 0 as *mut *mut fluid_real_t;
-                            (*synth).right_buf = 0 as *mut *mut fluid_real_t;
-                            (*synth).fx_left_buf = 0 as *mut *mut fluid_real_t;
-                            (*synth).fx_right_buf = 0 as *mut *mut fluid_real_t;
+                            (*synth).left_buf = 0 as *mut *mut f32;
+                            (*synth).right_buf = 0 as *mut *mut f32;
+                            (*synth).fx_left_buf = 0 as *mut *mut f32;
+                            (*synth).fx_right_buf = 0 as *mut *mut f32;
                             (*synth).left_buf =
                                 libc::malloc(((*synth).nbuf as libc::size_t).wrapping_mul(
-                                    ::std::mem::size_of::<*mut fluid_real_t>() as libc::size_t,
-                                )) as *mut *mut fluid_real_t;
+                                    ::std::mem::size_of::<*mut f32>() as libc::size_t,
+                                )) as *mut *mut f32;
                             (*synth).right_buf =
                                 libc::malloc(((*synth).nbuf as libc::size_t).wrapping_mul(
-                                    ::std::mem::size_of::<*mut fluid_real_t>() as libc::size_t,
-                                )) as *mut *mut fluid_real_t;
+                                    ::std::mem::size_of::<*mut f32>() as libc::size_t,
+                                )) as *mut *mut f32;
                             if (*synth).left_buf.is_null() || (*synth).right_buf.is_null() {
                                 fluid_log!(FLUID_ERR, "Out of memory",);
                             } else {
@@ -981,14 +980,14 @@ pub unsafe extern "C" fn new_fluid_synth(
                                     (*synth).left_buf as *mut libc::c_void,
                                     0 as libc::c_int,
                                     ((*synth).nbuf as libc::size_t)
-                                        .wrapping_mul(::std::mem::size_of::<*mut fluid_real_t>()
+                                        .wrapping_mul(::std::mem::size_of::<*mut f32>()
                                             as libc::size_t),
                                 );
                                 libc::memset(
                                     (*synth).right_buf as *mut libc::c_void,
                                     0 as libc::c_int,
                                     ((*synth).nbuf as libc::size_t)
-                                        .wrapping_mul(::std::mem::size_of::<*mut fluid_real_t>()
+                                        .wrapping_mul(::std::mem::size_of::<*mut f32>()
                                             as libc::size_t),
                                 );
                                 i = 0 as libc::c_int;
@@ -1000,17 +999,17 @@ pub unsafe extern "C" fn new_fluid_synth(
                                     let ref mut fresh2 = *(*synth).left_buf.offset(i as isize);
                                     *fresh2 = libc::malloc(
                                         (64 as libc::c_int as libc::size_t)
-                                            .wrapping_mul(::std::mem::size_of::<fluid_real_t>()
+                                            .wrapping_mul(::std::mem::size_of::<f32>()
                                                 as libc::size_t),
                                     )
-                                        as *mut fluid_real_t;
+                                        as *mut f32;
                                     let ref mut fresh3 = *(*synth).right_buf.offset(i as isize);
                                     *fresh3 = libc::malloc(
                                         (64 as libc::c_int as libc::size_t)
-                                            .wrapping_mul(::std::mem::size_of::<fluid_real_t>()
+                                            .wrapping_mul(::std::mem::size_of::<f32>()
                                                 as libc::size_t),
                                     )
-                                        as *mut fluid_real_t;
+                                        as *mut f32;
                                     if (*(*synth).left_buf.offset(i as isize)).is_null()
                                         || (*(*synth).right_buf.offset(i as isize)).is_null()
                                     {
@@ -1027,19 +1026,19 @@ pub unsafe extern "C" fn new_fluid_synth(
                                         (*synth).fx_left_buf = libc::malloc(
                                             ((*synth).effects_channels as libc::size_t)
                                                 .wrapping_mul(
-                                                    ::std::mem::size_of::<*mut fluid_real_t>()
+                                                    ::std::mem::size_of::<*mut f32>()
                                                         as libc::size_t,
                                                 ),
                                         )
-                                            as *mut *mut fluid_real_t;
+                                            as *mut *mut f32;
                                         (*synth).fx_right_buf = libc::malloc(
                                             ((*synth).effects_channels as libc::size_t)
                                                 .wrapping_mul(
-                                                    ::std::mem::size_of::<*mut fluid_real_t>()
+                                                    ::std::mem::size_of::<*mut f32>()
                                                         as libc::size_t,
                                                 ),
                                         )
-                                            as *mut *mut fluid_real_t;
+                                            as *mut *mut f32;
                                         if (*synth).fx_left_buf.is_null()
                                             || (*synth).fx_right_buf.is_null()
                                         {
@@ -1049,7 +1048,7 @@ pub unsafe extern "C" fn new_fluid_synth(
                                                 (*synth).fx_left_buf as *mut libc::c_void,
                                                 0 as libc::c_int,
                                                 (2 as libc::c_int as libc::size_t).wrapping_mul(
-                                                    ::std::mem::size_of::<*mut fluid_real_t>()
+                                                    ::std::mem::size_of::<*mut f32>()
                                                         as libc::size_t,
                                                 ),
                                             );
@@ -1057,7 +1056,7 @@ pub unsafe extern "C" fn new_fluid_synth(
                                                 (*synth).fx_right_buf as *mut libc::c_void,
                                                 0 as libc::c_int,
                                                 (2 as libc::c_int as libc::size_t).wrapping_mul(
-                                                    ::std::mem::size_of::<*mut fluid_real_t>()
+                                                    ::std::mem::size_of::<*mut f32>()
                                                         as libc::size_t,
                                                 ),
                                             );
@@ -1072,23 +1071,23 @@ pub unsafe extern "C" fn new_fluid_synth(
                                                 *fresh4 = libc::malloc(
                                                     (64 as libc::c_int as libc::size_t)
                                                         .wrapping_mul(::std::mem::size_of::<
-                                                            fluid_real_t,
+                                                            f32,
                                                         >(
                                                         )
                                                             as libc::size_t),
                                                 )
-                                                    as *mut fluid_real_t;
+                                                    as *mut f32;
                                                 let ref mut fresh5 =
                                                     *(*synth).fx_right_buf.offset(i as isize);
                                                 *fresh5 = libc::malloc(
                                                     (64 as libc::c_int as libc::size_t)
                                                         .wrapping_mul(::std::mem::size_of::<
-                                                            fluid_real_t,
+                                                            f32,
                                                         >(
                                                         )
                                                             as libc::size_t),
                                                 )
-                                                    as *mut fluid_real_t;
+                                                    as *mut f32;
                                                 if (*(*synth).fx_left_buf.offset(i as isize))
                                                     .is_null()
                                                     || (*(*synth).fx_right_buf.offset(i as isize))
@@ -1112,13 +1111,13 @@ pub unsafe extern "C" fn new_fluid_synth(
                                                     } else {
                                                         fluid_synth_set_reverb(
                                                             synth,
-                                                            0.2f32 as libc::c_double,
-                                                            0.0f32 as libc::c_double,
-                                                            0.5f32 as libc::c_double,
-                                                            0.9f32 as libc::c_double,
+                                                            0.2f32 as f64,
+                                                            0.0f32 as f64,
+                                                            0.5f32 as f64,
+                                                            0.9f32 as f64,
                                                         );
                                                         (*synth).chorus = new_fluid_chorus(
-                                                            (*synth).sample_rate as fluid_real_t,
+                                                            (*synth).sample_rate as f32,
                                                         );
                                                         if (*synth).chorus.is_null() {
                                                             fluid_log!(FLUID_ERR, "Out of memory",);
@@ -1170,11 +1169,11 @@ pub unsafe extern "C" fn fluid_synth_set_sample_rate(
     while i < (*synth).nvoice {
         delete_fluid_voice(*(*synth).voice.offset(i as isize));
         let ref mut fresh6 = *(*synth).voice.offset(i as isize);
-        *fresh6 = new_fluid_voice((*synth).sample_rate as fluid_real_t);
+        *fresh6 = new_fluid_voice((*synth).sample_rate as f32);
         i += 1
     }
     delete_fluid_chorus((*synth).chorus);
-    (*synth).chorus = new_fluid_chorus((*synth).sample_rate as fluid_real_t);
+    (*synth).chorus = new_fluid_chorus((*synth).sample_rate as f32);
 }
 #[no_mangle]
 pub unsafe extern "C" fn delete_fluid_synth(mut synth: *mut fluid_synth_t) -> libc::c_int {
@@ -1214,7 +1213,7 @@ pub unsafe extern "C" fn delete_fluid_synth(mut synth: *mut fluid_synth_t) -> li
         list = if !list.is_null() {
             (*list).next
         } else {
-            0 as *mut fluid_list_t
+            0 as *mut List
         }
     }
     delete_fluid_list((*synth).sfont);
@@ -1229,7 +1228,7 @@ pub unsafe extern "C" fn delete_fluid_synth(mut synth: *mut fluid_synth_t) -> li
         list = if !list.is_null() {
             (*list).next
         } else {
-            0 as *mut fluid_list_t
+            0 as *mut List
         }
     }
     delete_fluid_list((*synth).bank_offsets);
@@ -1257,7 +1256,7 @@ pub unsafe extern "C" fn delete_fluid_synth(mut synth: *mut fluid_synth_t) -> li
         list = if !list.is_null() {
             (*list).next
         } else {
-            0 as *mut fluid_list_t
+            0 as *mut List
         }
     }
     delete_fluid_list((*synth).loaders);
@@ -1437,8 +1436,8 @@ pub unsafe extern "C" fn fluid_synth_noteoff(
                     0 as libc::c_int,
                     (*voice).id,
                     ((*voice).start_time.wrapping_add((*voice).ticks) as libc::c_float / 44100.0f32)
-                        as libc::c_double,
-                    ((*voice).ticks as libc::c_float / 44100.0f32) as libc::c_double,
+                        as f64,
+                    ((*voice).ticks as libc::c_float / 44100.0f32) as f64,
                     used_voices
                 );
             }
@@ -1580,7 +1579,7 @@ unsafe extern "C" fn fluid_synth_sysex_midi_tuning(
     let mut bank: libc::c_int = 0 as libc::c_int;
     let mut prog;
     let mut channels;
-    let mut tunedata: [libc::c_double; 128] = [0.; 128];
+    let mut tunedata: [f64; 128] = [0.; 128];
     let mut keys: [libc::c_int; 128] = [0; 128];
     let mut name: [libc::c_char; 17] = [0; 17];
     let mut note;
@@ -1677,7 +1676,7 @@ unsafe extern "C" fn fluid_synth_sysex_midi_tuning(
                 } else {
                     note
                 };
-                frac = (((tunedata[i as usize] - note as libc::c_double * 100.0f64) * 16384.0f64
+                frac = (((tunedata[i as usize] - note as f64 * 100.0f64) * 16384.0f64
                     + 50.0f64)
                     / 100.0f64) as libc::c_int;
                 frac = if frac < 0 as libc::c_int {
@@ -1796,8 +1795,8 @@ unsafe extern "C" fn fluid_synth_sysex_midi_tuning(
                 }
                 frac = frac << 7 as libc::c_int | frac2;
                 if !(note == 0x7f as libc::c_int && frac == 16383 as libc::c_int) {
-                    tunedata[index as usize] = note as libc::c_double * 100.0f64
-                        + frac as libc::c_double * 100.0f64 / 16384.0f64;
+                    tunedata[index as usize] = note as f64 * 100.0f64
+                        + frac as f64 * 100.0f64 / 16384.0f64;
                     index += 1
                 }
                 i += 1
@@ -1852,7 +1851,7 @@ unsafe extern "C" fn fluid_synth_sysex_midi_tuning(
                     if frac & 0x80 as libc::c_int != 0 {
                         return FLUID_OK as libc::c_int;
                     }
-                    tunedata[i as usize] = (frac - 64 as libc::c_int) as libc::c_double;
+                    tunedata[i as usize] = (frac - 64 as libc::c_int) as f64;
                     i += 1
                 }
             } else {
@@ -1867,7 +1866,7 @@ unsafe extern "C" fn fluid_synth_sysex_midi_tuning(
                     }
                     tunedata[i as usize] = ((frac << 7 as libc::c_int | frac2)
                         - 8192 as libc::c_int)
-                        as libc::c_double
+                        as f64
                         * (200.0f64 / 16384.0f64);
                     i += 1
                 }
@@ -2174,7 +2173,7 @@ pub unsafe extern "C" fn fluid_synth_find_preset(
 ) -> *mut fluid_preset_t {
     let mut preset;
     let mut sfont;
-    let mut list: *mut fluid_list_t = (*synth).sfont;
+    let mut list: *mut List = (*synth).sfont;
     let mut offset;
     while !list.is_null() {
         sfont = if !list.is_null() {
@@ -2196,7 +2195,7 @@ pub unsafe extern "C" fn fluid_synth_find_preset(
         list = if !list.is_null() {
             (*list).next
         } else {
-            0 as *mut fluid_list_t
+            0 as *mut List
         }
     }
     return 0 as *mut fluid_preset_t;
@@ -2435,7 +2434,7 @@ pub unsafe extern "C" fn fluid_synth_update_presets(mut synth: *mut fluid_synth_
 pub unsafe extern "C" fn fluid_synth_update_gain(
     mut synth: *mut fluid_synth_t,
     _name: *mut libc::c_char,
-    mut value: libc::c_double,
+    mut value: f64,
 ) -> libc::c_int {
     fluid_synth_set_gain(synth, value as libc::c_float);
     return 0 as libc::c_int;
@@ -2453,7 +2452,7 @@ pub unsafe extern "C" fn fluid_synth_set_gain(
     } else {
         gain
     };
-    (*synth).gain = gain as libc::c_double;
+    (*synth).gain = gain as f64;
     i = 0 as libc::c_int;
     while i < (*synth).polyphony {
         let mut voice: *mut fluid_voice_t = *(*synth).voice.offset(i as isize);
@@ -2545,29 +2544,29 @@ pub unsafe extern "C" fn fluid_synth_set_reverb_preset(
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_set_reverb(
     mut synth: *mut fluid_synth_t,
-    mut roomsize: libc::c_double,
-    mut damping: libc::c_double,
-    mut width: libc::c_double,
-    mut level: libc::c_double,
+    mut roomsize: f64,
+    mut damping: f64,
+    mut width: f64,
+    mut level: f64,
 ) {
-    fluid_revmodel_setroomsize((*synth).reverb, roomsize as fluid_real_t);
-    fluid_revmodel_setdamp((*synth).reverb, damping as fluid_real_t);
-    fluid_revmodel_setwidth((*synth).reverb, width as fluid_real_t);
-    fluid_revmodel_setlevel((*synth).reverb, level as fluid_real_t);
+    fluid_revmodel_setroomsize((*synth).reverb, roomsize as f32);
+    fluid_revmodel_setdamp((*synth).reverb, damping as f32);
+    fluid_revmodel_setwidth((*synth).reverb, width as f32);
+    fluid_revmodel_setlevel((*synth).reverb, level as f32);
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_set_chorus(
     mut synth: *mut fluid_synth_t,
     mut nr: libc::c_int,
-    mut level: libc::c_double,
-    mut speed: libc::c_double,
-    mut depth_ms: libc::c_double,
+    mut level: f64,
+    mut speed: f64,
+    mut depth_ms: f64,
     mut type_0: libc::c_int,
 ) {
     fluid_chorus_set_nr((*synth).chorus, nr);
-    fluid_chorus_set_level((*synth).chorus, level as fluid_real_t);
-    fluid_chorus_set_speed_Hz((*synth).chorus, speed as fluid_real_t);
-    fluid_chorus_set_depth_ms((*synth).chorus, depth_ms as fluid_real_t);
+    fluid_chorus_set_level((*synth).chorus, level as f32);
+    fluid_chorus_set_speed_Hz((*synth).chorus, speed as f32);
+    fluid_chorus_set_depth_ms((*synth).chorus, depth_ms as f32);
     fluid_chorus_set_type((*synth).chorus, type_0);
     fluid_chorus_update((*synth).chorus);
 }
@@ -2580,8 +2579,8 @@ pub unsafe extern "C" fn fluid_synth_nwrite_float(
     _fx_left: *mut *mut libc::c_float,
     _fx_right: *mut *mut libc::c_float,
 ) -> libc::c_int {
-    let mut left_in: *mut *mut fluid_real_t = (*synth).left_buf;
-    let mut right_in: *mut *mut fluid_real_t = (*synth).right_buf;
+    let mut left_in: *mut *mut f32 = (*synth).left_buf;
+    let mut right_in: *mut *mut f32 = (*synth).right_buf;
     let mut i;
     let mut num;
     let mut available;
@@ -2714,8 +2713,8 @@ pub unsafe extern "C" fn fluid_synth_write_float(
     let mut l;
     let mut left_out: *mut libc::c_float = lout as *mut libc::c_float;
     let mut right_out: *mut libc::c_float = rout as *mut libc::c_float;
-    let mut left_in: *mut fluid_real_t = *(*synth).left_buf.offset(0 as libc::c_int as isize);
-    let mut right_in: *mut fluid_real_t = *(*synth).right_buf.offset(0 as libc::c_int as isize);
+    let mut left_in: *mut f32 = *(*synth).left_buf.offset(0 as libc::c_int as isize);
+    let mut right_in: *mut f32 = *(*synth).right_buf.offset(0 as libc::c_int as isize);
     if (*synth).state != FLUID_SYNTH_PLAYING as libc::c_int as libc::c_uint {
         return 0 as libc::c_int;
     }
@@ -2783,8 +2782,8 @@ pub unsafe extern "C" fn fluid_synth_write_s16(
     let mut cur;
     let mut left_out: *mut libc::c_short = lout as *mut libc::c_short;
     let mut right_out: *mut libc::c_short = rout as *mut libc::c_short;
-    let mut left_in: *mut fluid_real_t = *(*synth).left_buf.offset(0 as libc::c_int as isize);
-    let mut right_in: *mut fluid_real_t = *(*synth).right_buf.offset(0 as libc::c_int as isize);
+    let mut left_in: *mut f32 = *(*synth).left_buf.offset(0 as libc::c_int as isize);
+    let mut right_in: *mut f32 = *(*synth).right_buf.offset(0 as libc::c_int as isize);
     let mut left_sample;
     let mut right_sample;
     let mut di: libc::c_int = (*synth).dither_index;
@@ -2803,11 +2802,11 @@ pub unsafe extern "C" fn fluid_synth_write_s16(
         left_sample = roundi(
             *left_in.offset(cur as isize) * 32766.0f32
                 + rand_table[0 as libc::c_int as usize][di as usize],
-        ) as fluid_real_t;
+        ) as f32;
         right_sample = roundi(
             *right_in.offset(cur as isize) * 32766.0f32
                 + rand_table[1 as libc::c_int as usize][di as usize],
-        ) as fluid_real_t;
+        ) as f32;
         di += 1;
         if di >= 48000 as libc::c_int {
             di = 0 as libc::c_int
@@ -2863,11 +2862,11 @@ pub unsafe extern "C" fn fluid_synth_dither_s16(
         left_sample = roundi(
             *lin.offset(i as isize) * 32766.0f32
                 + rand_table[0 as libc::c_int as usize][di as usize],
-        ) as fluid_real_t;
+        ) as f32;
         right_sample = roundi(
             *rin.offset(i as isize) * 32766.0f32
                 + rand_table[1 as libc::c_int as usize][di as usize],
-        ) as fluid_real_t;
+        ) as f32;
         di += 1;
         if di >= 48000 as libc::c_int {
             di = 0 as libc::c_int
@@ -2905,7 +2904,7 @@ pub unsafe extern "C" fn fluid_synth_one_block(
     let mut reverb_buf;
     let mut chorus_buf;
     let mut byte_size: libc::c_int = (64 as libc::c_int as libc::size_t)
-        .wrapping_mul(::std::mem::size_of::<fluid_real_t>() as libc::size_t)
+        .wrapping_mul(::std::mem::size_of::<f32>() as libc::size_t)
         as libc::c_int;
     i = 0 as libc::c_int;
     while i < (*synth).nbuf {
@@ -2938,12 +2937,12 @@ pub unsafe extern "C" fn fluid_synth_one_block(
     reverb_buf = if (*synth).with_reverb as libc::c_int != 0 {
         *(*synth).fx_left_buf.offset(0 as libc::c_int as isize)
     } else {
-        0 as *mut fluid_real_t
+        0 as *mut f32
     };
     chorus_buf = if (*synth).with_chorus as libc::c_int != 0 {
         *(*synth).fx_left_buf.offset(1 as libc::c_int as isize)
     } else {
-        0 as *mut fluid_real_t
+        0 as *mut f32
     };
     i = 0 as libc::c_int;
     while i < (*synth).polyphony {
@@ -3004,7 +3003,7 @@ pub unsafe extern "C" fn fluid_synth_free_voice_by_kill(
     mut synth: *mut fluid_synth_t,
 ) -> *mut fluid_voice_t {
     let mut i;
-    let mut best_prio: fluid_real_t = 999999.0f64 as fluid_real_t;
+    let mut best_prio: f32 = 999999.0f64 as f32;
     let mut this_voice_prio;
     let mut voice;
     let mut best_voice_index: libc::c_int = -(1 as libc::c_int);
@@ -3016,18 +3015,18 @@ pub unsafe extern "C" fn fluid_synth_free_voice_by_kill(
         {
             return voice;
         }
-        this_voice_prio = 10000.0f64 as fluid_real_t;
+        this_voice_prio = 10000.0f64 as f32;
         if (*voice).chan as libc::c_int == 0xff as libc::c_int {
-            this_voice_prio = (this_voice_prio as libc::c_double - 2000.0f64) as fluid_real_t
+            this_voice_prio = (this_voice_prio as f64 - 2000.0f64) as f32
         }
         if (*voice).status as libc::c_int == FLUID_VOICE_SUSTAINED as libc::c_int {
             this_voice_prio -= 1000 as libc::c_int as libc::c_float
         }
         this_voice_prio -= (*synth).noteid.wrapping_sub(fluid_voice_get_id(voice)) as libc::c_float;
         if (*voice).volenv_section != FLUID_VOICE_ENVATTACK as libc::c_int {
-            this_voice_prio = (this_voice_prio as libc::c_double
-                + (*voice).volenv_val as libc::c_double * 1000.0f64)
-                as fluid_real_t
+            this_voice_prio = (this_voice_prio as f64
+                + (*voice).volenv_val as f64 * 1000.0f64)
+                as f32
         }
         if this_voice_prio < best_prio {
             best_voice_index = i;
@@ -3099,8 +3098,8 @@ pub unsafe extern "C" fn fluid_synth_alloc_voice(
             key,
             vel,
             (*synth).storeid,
-            ((*synth).ticks as libc::c_float / 44100.0f32) as libc::c_double,
-            0.0f32 as libc::c_double,
+            ((*synth).ticks as libc::c_float / 44100.0f32) as f64,
+            0.0f32 as f64,
             k
         );
     }
@@ -3118,7 +3117,7 @@ pub unsafe extern "C" fn fluid_synth_alloc_voice(
         vel,
         (*synth).storeid,
         (*synth).ticks,
-        (*synth).gain as fluid_real_t,
+        (*synth).gain as f32,
     ) != FLUID_OK as libc::c_int
     {
         fluid_log!(FLUID_WARN, "Failed to initialize voice",);
@@ -3183,9 +3182,9 @@ pub unsafe extern "C" fn fluid_synth_kill_by_exclusive_class(
 ) {
     let mut i;
     let mut excl_class: libc::c_int = ((*new_voice).gen[GEN_EXCLUSIVECLASS as libc::c_int as usize]
-        .val as fluid_real_t
-        + (*new_voice).gen[GEN_EXCLUSIVECLASS as libc::c_int as usize].mod_0 as fluid_real_t
-        + (*new_voice).gen[GEN_EXCLUSIVECLASS as libc::c_int as usize].nrpn as fluid_real_t)
+        .val as f32
+        + (*new_voice).gen[GEN_EXCLUSIVECLASS as libc::c_int as usize].mod_0 as f32
+        + (*new_voice).gen[GEN_EXCLUSIVECLASS as libc::c_int as usize].nrpn as f32)
         as libc::c_int;
     if excl_class == 0 as libc::c_int {
         return;
@@ -3198,11 +3197,11 @@ pub unsafe extern "C" fn fluid_synth_kill_by_exclusive_class(
         {
             if !((*existing_voice).chan as libc::c_int != (*new_voice).chan as libc::c_int) {
                 if !(((*existing_voice).gen[GEN_EXCLUSIVECLASS as libc::c_int as usize].val
-                    as fluid_real_t
+                    as f32
                     + (*existing_voice).gen[GEN_EXCLUSIVECLASS as libc::c_int as usize].mod_0
-                        as fluid_real_t
+                        as f32
                     + (*existing_voice).gen[GEN_EXCLUSIVECLASS as libc::c_int as usize].nrpn
-                        as fluid_real_t) as libc::c_int
+                        as f32) as libc::c_int
                     != excl_class)
                 {
                     if !(fluid_voice_get_id(existing_voice) == fluid_voice_get_id(new_voice)) {
@@ -3335,7 +3334,7 @@ pub unsafe extern "C" fn fluid_synth_sfreload(
         list = if !list.is_null() {
             (*list).next
         } else {
-            0 as *mut fluid_list_t
+            0 as *mut List
         };
         index += 1
     }
@@ -3366,7 +3365,7 @@ pub unsafe extern "C" fn fluid_synth_sfreload(
         list = if !list.is_null() {
             (*list).next
         } else {
-            0 as *mut fluid_list_t
+            0 as *mut List
         }
     }
     fluid_log!(
@@ -3417,7 +3416,7 @@ pub unsafe extern "C" fn fluid_synth_get_sfont_by_id(
     mut synth: *mut fluid_synth_t,
     mut id: libc::c_uint,
 ) -> *mut fluid_sfont_t {
-    let mut list: *mut fluid_list_t = (*synth).sfont;
+    let mut list: *mut List = (*synth).sfont;
     let mut sfont;
     while !list.is_null() {
         sfont = if !list.is_null() {
@@ -3431,7 +3430,7 @@ pub unsafe extern "C" fn fluid_synth_get_sfont_by_id(
         list = if !list.is_null() {
             (*list).next
         } else {
-            0 as *mut fluid_list_t
+            0 as *mut List
         }
     }
     return 0 as *mut fluid_sfont_t;
@@ -3441,7 +3440,7 @@ pub unsafe extern "C" fn fluid_synth_get_sfont_by_name(
     mut synth: *mut fluid_synth_t,
     mut name: *mut libc::c_char,
 ) -> *mut fluid_sfont_t {
-    let mut list: *mut fluid_list_t = (*synth).sfont;
+    let mut list: *mut List = (*synth).sfont;
     let mut sfont;
     while !list.is_null() {
         sfont = if !list.is_null() {
@@ -3460,7 +3459,7 @@ pub unsafe extern "C" fn fluid_synth_get_sfont_by_name(
         list = if !list.is_null() {
             (*list).next
         } else {
-            0 as *mut fluid_list_t
+            0 as *mut List
         }
     }
     return 0 as *mut fluid_sfont_t;
@@ -3529,20 +3528,20 @@ pub unsafe extern "C" fn fluid_synth_get_chorus_nr(mut synth: *mut fluid_synth_t
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_get_chorus_level(
     mut synth: *mut fluid_synth_t,
-) -> libc::c_double {
-    return fluid_chorus_get_level((*synth).chorus) as libc::c_double;
+) -> f64 {
+    return fluid_chorus_get_level((*synth).chorus) as f64;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_get_chorus_speed_Hz(
     mut synth: *mut fluid_synth_t,
-) -> libc::c_double {
-    return fluid_chorus_get_speed_Hz((*synth).chorus) as libc::c_double;
+) -> f64 {
+    return fluid_chorus_get_speed_Hz((*synth).chorus) as f64;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_get_chorus_depth_ms(
     mut synth: *mut fluid_synth_t,
-) -> libc::c_double {
-    return fluid_chorus_get_depth_ms((*synth).chorus) as libc::c_double;
+) -> f64 {
+    return fluid_chorus_get_depth_ms((*synth).chorus) as f64;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_get_chorus_type(mut synth: *mut fluid_synth_t) -> libc::c_int {
@@ -3551,26 +3550,26 @@ pub unsafe extern "C" fn fluid_synth_get_chorus_type(mut synth: *mut fluid_synth
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_get_reverb_roomsize(
     mut synth: *mut fluid_synth_t,
-) -> libc::c_double {
-    return fluid_revmodel_getroomsize((*synth).reverb) as libc::c_double;
+) -> f64 {
+    return fluid_revmodel_getroomsize((*synth).reverb) as f64;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_get_reverb_damp(
     mut synth: *mut fluid_synth_t,
-) -> libc::c_double {
-    return fluid_revmodel_getdamp((*synth).reverb) as libc::c_double;
+) -> f64 {
+    return fluid_revmodel_getdamp((*synth).reverb) as f64;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_get_reverb_level(
     mut synth: *mut fluid_synth_t,
-) -> libc::c_double {
-    return fluid_revmodel_getlevel((*synth).reverb) as libc::c_double;
+) -> f64 {
+    return fluid_revmodel_getlevel((*synth).reverb) as f64;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_get_reverb_width(
     mut synth: *mut fluid_synth_t,
-) -> libc::c_double {
-    return fluid_revmodel_getwidth((*synth).reverb) as libc::c_double;
+) -> f64 {
+    return fluid_revmodel_getwidth((*synth).reverb) as f64;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_release_voice_on_same_note(
@@ -3736,7 +3735,7 @@ pub unsafe extern "C" fn fluid_synth_create_key_tuning(
     mut bank: libc::c_int,
     mut prog: libc::c_int,
     mut name: *const libc::c_char,
-    mut pitch: *mut libc::c_double,
+    mut pitch: *mut f64,
 ) -> libc::c_int {
     let mut tuning: *mut fluid_tuning_t = fluid_synth_create_tuning(synth, bank, prog, name);
     if tuning.is_null() {
@@ -3753,7 +3752,7 @@ pub unsafe extern "C" fn fluid_synth_create_octave_tuning(
     mut bank: libc::c_int,
     mut prog: libc::c_int,
     mut name: *const libc::c_char,
-    mut pitch: *const libc::c_double,
+    mut pitch: *const f64,
 ) -> libc::c_int {
     let mut tuning;
     if synth.is_null() {
@@ -3784,7 +3783,7 @@ pub unsafe extern "C" fn fluid_synth_activate_octave_tuning(
     mut bank: libc::c_int,
     mut prog: libc::c_int,
     mut name: *const libc::c_char,
-    mut pitch: *const libc::c_double,
+    mut pitch: *const f64,
     _apply: libc::c_int,
 ) -> libc::c_int {
     return fluid_synth_create_octave_tuning(synth, bank, prog, name, pitch);
@@ -3796,7 +3795,7 @@ pub unsafe extern "C" fn fluid_synth_tune_notes(
     mut prog: libc::c_int,
     mut len: libc::c_int,
     mut key: *mut libc::c_int,
-    mut pitch: *mut libc::c_double,
+    mut pitch: *mut f64,
     _apply: libc::c_int,
 ) -> libc::c_int {
     let mut tuning;
@@ -3936,7 +3935,7 @@ pub unsafe extern "C" fn fluid_synth_tuning_dump(
     mut prog: libc::c_int,
     mut name: *mut libc::c_char,
     mut len: libc::c_int,
-    mut pitch: *mut libc::c_double,
+    mut pitch: *mut f64,
 ) -> libc::c_int {
     let mut tuning: *mut fluid_tuning_t = fluid_synth_get_tuning(synth, bank, prog);
     if tuning.is_null() {
@@ -3956,10 +3955,10 @@ pub unsafe extern "C" fn fluid_synth_tuning_dump(
             &mut *(*tuning)
                 .pitch
                 .as_mut_ptr()
-                .offset(0 as libc::c_int as isize) as *mut libc::c_double
+                .offset(0 as libc::c_int as isize) as *mut f64
                 as *const libc::c_void,
             (128 as libc::c_int as libc::size_t)
-                .wrapping_mul(::std::mem::size_of::<libc::c_double>() as libc::size_t),
+                .wrapping_mul(::std::mem::size_of::<f64>() as libc::size_t),
         );
     }
     return FLUID_OK as libc::c_int;
@@ -3967,7 +3966,7 @@ pub unsafe extern "C" fn fluid_synth_tuning_dump(
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_get_settings(
     mut synth: *mut fluid_synth_t,
-) -> *mut fluid_settings_t {
+) -> *mut Settings {
     return (*synth).settings;
 }
 #[no_mangle]
@@ -3990,7 +3989,7 @@ pub unsafe extern "C" fn fluid_synth_getstr(
 pub unsafe extern "C" fn fluid_synth_setnum(
     mut synth: *mut fluid_synth_t,
     mut name: *mut libc::c_char,
-    mut val: libc::c_double,
+    mut val: f64,
 ) -> libc::c_int {
     return fluid_settings_setnum((*synth).settings, name, val);
 }
@@ -3998,7 +3997,7 @@ pub unsafe extern "C" fn fluid_synth_setnum(
 pub unsafe extern "C" fn fluid_synth_getnum(
     mut synth: *mut fluid_synth_t,
     mut name: *mut libc::c_char,
-    mut val: *mut libc::c_double,
+    mut val: *mut f64,
 ) -> libc::c_int {
     return fluid_settings_getnum((*synth).settings, name, val);
 }
@@ -4156,7 +4155,7 @@ pub unsafe extern "C" fn fluid_synth_get_bank_offset0(
     mut synth: *mut fluid_synth_t,
     mut sfont_id: libc::c_int,
 ) -> *mut fluid_bank_offset_t {
-    let mut list: *mut fluid_list_t = (*synth).bank_offsets;
+    let mut list: *mut List = (*synth).bank_offsets;
     let mut offset;
     while !list.is_null() {
         offset = if !list.is_null() {
@@ -4170,7 +4169,7 @@ pub unsafe extern "C" fn fluid_synth_get_bank_offset0(
         list = if !list.is_null() {
             (*list).next
         } else {
-            0 as *mut fluid_list_t
+            0 as *mut List
         }
     }
     return 0 as *mut fluid_bank_offset_t;

@@ -1,29 +1,23 @@
-#![allow(
-    non_camel_case_types,
-    non_snake_case,
-    non_upper_case_globals,
-    unused_mut
-)]
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct fluid_hashtable_t {
+pub struct HashTable {
     pub size: libc::c_uint,
     pub nnodes: libc::c_uint,
-    pub nodes: *mut *mut fluid_hashnode_t,
-    pub del: fluid_hash_delete_t,
+    pub nodes: *mut *mut HashNode,
+    pub del: DeleteFn,
 }
-pub type fluid_hash_delete_t =
+pub type DeleteFn =
     Option<unsafe extern "C" fn(_: *mut libc::c_void, _: libc::c_int) -> ()>;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct fluid_hashnode_t {
+pub struct HashNode {
     pub key: *mut libc::c_char,
     pub value: *mut libc::c_void,
     pub type_0: libc::c_int,
-    pub next: *mut fluid_hashnode_t,
+    pub next: *mut HashNode,
 }
 
-pub type fluid_hash_iter_t = Option<
+pub type IterFn = Option<
     unsafe extern "C" fn(
         _: *mut libc::c_char,
         _: *mut libc::c_void,
@@ -33,29 +27,29 @@ pub type fluid_hash_iter_t = Option<
 >;
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_hashtable(
-    mut del: fluid_hash_delete_t,
-) -> *mut fluid_hashtable_t {
-    let mut hash_table: *mut fluid_hashtable_t;
+    del: DeleteFn,
+) -> *mut HashTable {
+    let mut hash_table: *mut HashTable;
     let mut i: libc::c_uint;
-    hash_table = libc::malloc(::std::mem::size_of::<fluid_hashtable_t>() as libc::size_t)
-        as *mut fluid_hashtable_t;
+    hash_table = libc::malloc(::std::mem::size_of::<HashTable>() as libc::size_t)
+        as *mut HashTable;
     (*hash_table).size = 7 as libc::c_int as libc::c_uint;
     (*hash_table).nnodes = 0 as libc::c_int as libc::c_uint;
     (*hash_table).nodes = libc::malloc(
         ((*hash_table).size as libc::size_t)
-            .wrapping_mul(::std::mem::size_of::<*mut fluid_hashnode_t>() as libc::size_t),
-    ) as *mut *mut fluid_hashnode_t;
+            .wrapping_mul(::std::mem::size_of::<*mut HashNode>() as libc::size_t),
+    ) as *mut *mut HashNode;
     (*hash_table).del = del;
     i = 0 as libc::c_int as libc::c_uint;
     while i < (*hash_table).size {
         let ref mut fresh0 = *(*hash_table).nodes.offset(i as isize);
-        *fresh0 = 0 as *mut fluid_hashnode_t;
+        *fresh0 = 0 as *mut HashNode;
         i = i.wrapping_add(1)
     }
     return hash_table;
 }
 #[no_mangle]
-pub unsafe extern "C" fn delete_fluid_hashtable(mut hash_table: *mut fluid_hashtable_t) {
+pub unsafe extern "C" fn delete_fluid_hashtable(hash_table: *mut HashTable) {
     let mut i: libc::c_uint;
     if hash_table.is_null() {
         return;
@@ -69,14 +63,14 @@ pub unsafe extern "C" fn delete_fluid_hashtable(mut hash_table: *mut fluid_hasht
     libc::free(hash_table as *mut libc::c_void);
 }
 unsafe extern "C" fn fluid_hashtable_lookup_node(
-    mut hash_table: *mut fluid_hashtable_t,
-    mut key: *mut libc::c_char,
-) -> *mut *mut fluid_hashnode_t {
-    let mut node: *mut *mut fluid_hashnode_t;
+    hash_table: *mut HashTable,
+    key: *mut libc::c_char,
+) -> *mut *mut HashNode {
+    let mut node: *mut *mut HashNode;
     node = &mut *(*hash_table).nodes.offset(
         (fluid_str_hash as unsafe extern "C" fn(_: *mut libc::c_char) -> libc::c_uint)(key)
             .wrapping_rem((*hash_table).size) as isize,
-    ) as *mut *mut fluid_hashnode_t;
+    ) as *mut *mut HashNode;
     while !(*node).is_null() && libc::strcmp((**node).key, key) != 0 as libc::c_int {
         node = &mut (**node).next
     }
@@ -84,12 +78,12 @@ unsafe extern "C" fn fluid_hashtable_lookup_node(
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_hashtable_lookup(
-    mut hash_table: *mut fluid_hashtable_t,
-    mut key: *mut libc::c_char,
-    mut value: *mut *mut libc::c_void,
-    mut type_0: *mut libc::c_int,
+    hash_table: *mut HashTable,
+    key: *mut libc::c_char,
+    value: *mut *mut libc::c_void,
+    type_0: *mut libc::c_int,
 ) -> libc::c_int {
-    let mut node: *mut fluid_hashnode_t;
+    let node: *mut HashNode;
     node = *fluid_hashtable_lookup_node(hash_table, key);
     if !node.is_null() {
         if !value.is_null() {
@@ -105,12 +99,12 @@ pub unsafe extern "C" fn fluid_hashtable_lookup(
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_hashtable_insert(
-    mut hash_table: *mut fluid_hashtable_t,
-    mut key: *mut libc::c_char,
-    mut value: *mut libc::c_void,
-    mut type_0: libc::c_int,
+    mut hash_table: *mut HashTable,
+    key: *mut libc::c_char,
+    value: *mut libc::c_void,
+    type_0: libc::c_int,
 ) {
-    let mut node: *mut *mut fluid_hashnode_t;
+    let mut node: *mut *mut HashNode;
     node = fluid_hashtable_lookup_node(hash_table, key);
     if !(*node).is_null() {
         (**node).value = value;
@@ -128,12 +122,12 @@ pub unsafe extern "C" fn fluid_hashtable_insert(
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_hashtable_replace(
-    mut hash_table: *mut fluid_hashtable_t,
-    mut key: *mut libc::c_char,
-    mut value: *mut libc::c_void,
-    mut type_0: libc::c_int,
+    mut hash_table: *mut HashTable,
+    key: *mut libc::c_char,
+    value: *mut libc::c_void,
+    type_0: libc::c_int,
 ) {
-    let mut node: *mut *mut fluid_hashnode_t;
+    let mut node: *mut *mut HashNode;
     node = fluid_hashtable_lookup_node(hash_table, key);
     if !(*node).is_null() {
         if (*hash_table).del.is_some() {
@@ -153,11 +147,11 @@ pub unsafe extern "C" fn fluid_hashtable_replace(
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_hashtable_remove(
-    mut hash_table: *mut fluid_hashtable_t,
-    mut key: *mut libc::c_char,
+    mut hash_table: *mut HashTable,
+    key: *mut libc::c_char,
 ) -> libc::c_int {
-    let mut node: *mut *mut fluid_hashnode_t;
-    let mut dest: *mut fluid_hashnode_t;
+    let node: *mut *mut HashNode;
+    let dest: *mut HashNode;
     node = fluid_hashtable_lookup_node(hash_table, key);
     if !(*node).is_null() {
         dest = *node;
@@ -176,11 +170,11 @@ pub unsafe extern "C" fn fluid_hashtable_remove(
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_hashtable_foreach(
-    mut hash_table: *mut fluid_hashtable_t,
-    mut func: fluid_hash_iter_t,
-    mut data: *mut libc::c_void,
+    hash_table: *mut HashTable,
+    func: IterFn,
+    data: *mut libc::c_void,
 ) {
-    let mut node: *mut fluid_hashnode_t;
+    let mut node: *mut HashNode;
     let mut i: libc::c_uint;
     i = 0 as libc::c_int as libc::c_uint;
     while i < (*hash_table).size {
@@ -199,14 +193,14 @@ pub unsafe extern "C" fn fluid_hashtable_foreach(
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_hashtable_size(
-    mut hash_table: *mut fluid_hashtable_t,
+    hash_table: *mut HashTable,
 ) -> libc::c_uint {
     return (*hash_table).nnodes;
 }
-unsafe extern "C" fn fluid_hashtable_resize(mut hash_table: *mut fluid_hashtable_t) {
-    let mut new_nodes: *mut *mut fluid_hashnode_t;
-    let mut node: *mut fluid_hashnode_t;
-    let mut next: *mut fluid_hashnode_t;
+unsafe extern "C" fn fluid_hashtable_resize(mut hash_table: *mut HashTable) {
+    let new_nodes: *mut *mut HashNode;
+    let mut node: *mut HashNode;
+    let mut next: *mut HashNode;
     let mut hash_val: libc::c_uint;
     let mut new_size: libc::c_int;
     let mut i: libc::c_uint;
@@ -220,13 +214,13 @@ unsafe extern "C" fn fluid_hashtable_resize(mut hash_table: *mut fluid_hashtable
     };
     new_nodes = libc::malloc(
         (new_size as libc::size_t)
-            .wrapping_mul(::std::mem::size_of::<*mut fluid_hashnode_t>() as libc::size_t),
-    ) as *mut *mut fluid_hashnode_t;
+            .wrapping_mul(::std::mem::size_of::<*mut HashNode>() as libc::size_t),
+    ) as *mut *mut HashNode;
     libc::memset(
         new_nodes as *mut libc::c_void,
         0 as libc::c_int,
         (new_size as libc::size_t)
-            .wrapping_mul(::std::mem::size_of::<*mut fluid_hashnode_t>() as libc::size_t),
+            .wrapping_mul(::std::mem::size_of::<*mut HashNode>() as libc::size_t),
     );
     i = 0 as libc::c_int as libc::c_uint;
     while i < (*hash_table).size {
@@ -246,13 +240,13 @@ unsafe extern "C" fn fluid_hashtable_resize(mut hash_table: *mut fluid_hashtable
     (*hash_table).size = new_size as libc::c_uint;
 }
 unsafe extern "C" fn new_fluid_hashnode(
-    mut key: *mut libc::c_char,
-    mut value: *mut libc::c_void,
-    mut type_0: libc::c_int,
-) -> *mut fluid_hashnode_t {
-    let mut hash_node: *mut fluid_hashnode_t;
-    hash_node = libc::malloc(::std::mem::size_of::<fluid_hashnode_t>() as libc::size_t)
-        as *mut fluid_hashnode_t;
+    key: *mut libc::c_char,
+    value: *mut libc::c_void,
+    type_0: libc::c_int,
+) -> *mut HashNode {
+    let mut hash_node: *mut HashNode;
+    hash_node = libc::malloc(::std::mem::size_of::<HashNode>() as libc::size_t)
+        as *mut HashNode;
     (*hash_node).key = libc::strcpy(
         libc::malloc(libc::strlen(key).wrapping_add(1 as libc::c_int as libc::size_t))
             as *mut libc::c_char,
@@ -260,12 +254,12 @@ unsafe extern "C" fn new_fluid_hashnode(
     );
     (*hash_node).value = value;
     (*hash_node).type_0 = type_0;
-    (*hash_node).next = 0 as *mut fluid_hashnode_t;
+    (*hash_node).next = 0 as *mut HashNode;
     return hash_node;
 }
 unsafe extern "C" fn delete_fluid_hashnode(
-    mut hash_node: *mut fluid_hashnode_t,
-    mut del: fluid_hash_delete_t,
+    hash_node: *mut HashNode,
+    del: DeleteFn,
 ) {
     if del.is_some() {
         Some(del.expect("non-null function pointer")).expect("non-null function pointer")(
@@ -279,17 +273,17 @@ unsafe extern "C" fn delete_fluid_hashnode(
     libc::free(hash_node as *mut libc::c_void);
 }
 unsafe extern "C" fn delete_fluid_hashnodes(
-    mut hash_node: *mut fluid_hashnode_t,
-    mut del: fluid_hash_delete_t,
+    mut hash_node: *mut HashNode,
+    del: DeleteFn,
 ) {
     while !hash_node.is_null() {
-        let mut next: *mut fluid_hashnode_t = (*hash_node).next;
+        let next: *mut HashNode = (*hash_node).next;
         delete_fluid_hashnode(hash_node, del);
         hash_node = next
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn fluid_str_hash(mut key: *mut libc::c_char) -> libc::c_uint {
+pub unsafe extern "C" fn fluid_str_hash(key: *mut libc::c_char) -> libc::c_uint {
     let mut p: *mut libc::c_char = key;
     let mut h: libc::c_uint = *p as libc::c_uint;
     if h != 0 {

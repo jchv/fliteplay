@@ -88,7 +88,7 @@ pub struct fluid_sample_t {
     pub valid: libc::c_int,
     pub data: *mut libc::c_short,
     pub amplitude_that_reaches_noise_floor_is_valid: libc::c_int,
-    pub amplitude_that_reaches_noise_floor: libc::c_double,
+    pub amplitude_that_reaches_noise_floor: f64,
     pub refcount: libc::c_uint,
     pub notify: Option<unsafe extern "C" fn(_: *mut fluid_sample_t, _: libc::c_int) -> libc::c_int>,
     pub userdata: *mut libc::c_void,
