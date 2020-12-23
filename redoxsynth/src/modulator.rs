@@ -16,7 +16,7 @@ use crate::sfont::_fluid_preset_t;
 use crate::sfont::_fluid_sample_t;
 use crate::sfont::_fluid_sfont_t;
 use crate::synth::_fluid_synth_t;
-use crate::fluid_tuning::_fluid_tuning_t;
+use crate::tuning::_fluid_tuning_t;
 use crate::fluid_voice::_fluid_env_data_t;
 use crate::fluid_voice::_fluid_voice_t;
 

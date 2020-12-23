@@ -11,7 +11,7 @@ use crate::channel::_fluid_channel_t;
 use crate::sfont::_fluid_preset_t;
 use crate::sfont::_fluid_sfont_t;
 use crate::synth::_fluid_synth_t;
-use crate::fluid_tuning::_fluid_tuning_t;
+use crate::tuning::_fluid_tuning_t;
 pub type fluid_synth_t = _fluid_synth_t;
 pub type fluid_sfont_t = _fluid_sfont_t;
 pub type fluid_preset_t = _fluid_preset_t;
