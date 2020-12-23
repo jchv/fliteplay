@@ -24,7 +24,7 @@ mod gen;
 mod hash;
 mod list;
 mod modulator;
-mod fluid_ramsfont;
+mod ramsfont;
 mod fluid_rev;
 mod fluid_settings;
 mod fluid_sfont;
