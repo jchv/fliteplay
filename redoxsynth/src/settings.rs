@@ -17,7 +17,7 @@ use crate::list::_fluid_list_t;
 use crate::list::delete_fluid_list;
 use crate::list::fluid_list_append;
 use crate::list::fluid_list_remove_link;
-use crate::fluid_synth::fluid_synth_settings;
+use crate::synth::fluid_synth_settings;
 use crate::fluid_sys::fluid_strtok;
 use std::ffi::CStr;
 

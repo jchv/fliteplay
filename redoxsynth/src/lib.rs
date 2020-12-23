@@ -28,7 +28,7 @@ mod ramsfont;
 mod reverb;
 mod settings;
 mod sfont;
-mod fluid_synth;
+mod synth;
 mod fluid_sys;
 mod fluid_tuning;
 mod fluid_voice;

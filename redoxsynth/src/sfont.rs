@@ -7,7 +7,7 @@
     unused_assignments,
     unused_mut
 )]
-use crate::fluid_synth::_fluid_synth_t;
+use crate::synth::_fluid_synth_t;
 
 #[derive(Copy, Clone)]
 #[repr(C)]

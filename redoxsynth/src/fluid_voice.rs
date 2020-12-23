@@ -38,7 +38,7 @@ use crate::reverb::_fluid_revmodel_t;
 use crate::sfont::_fluid_preset_t;
 use crate::sfont::_fluid_sample_t;
 use crate::sfont::_fluid_sfont_t;
-use crate::fluid_synth::_fluid_synth_t;
+use crate::synth::_fluid_synth_t;
 use crate::fluid_tuning::_fluid_tuning_t;
 
 pub type fluid_settings_t = _fluid_hashtable_t;
