@@ -21,7 +21,7 @@ mod conv;
 mod defsfont;
 mod dsp_float;
 mod gen;
-mod fluid_hash;
+mod hash;
 mod fluid_list;
 mod fluid_mod;
 mod fluid_ramsfont;

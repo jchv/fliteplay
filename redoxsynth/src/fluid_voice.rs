@@ -27,7 +27,7 @@ use crate::dsp_float::fluid_dsp_float_interpolate_linear;
 use crate::dsp_float::fluid_dsp_float_interpolate_none;
 use crate::gen::_fluid_gen_t;
 use crate::gen::fluid_gen_init;
-use crate::fluid_hash::_fluid_hashtable_t;
+use crate::hash::_fluid_hashtable_t;
 use crate::fluid_list::_fluid_list_t;
 use crate::fluid_mod::_fluid_mod_t;
 use crate::fluid_mod::fluid_mod_clone;

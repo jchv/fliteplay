@@ -7,12 +7,12 @@
     unused_assignments,
     unused_mut
 )]
-use crate::fluid_hash::_fluid_hashtable_t;
-use crate::fluid_hash::delete_fluid_hashtable;
-use crate::fluid_hash::fluid_hashtable_insert;
-use crate::fluid_hash::fluid_hashtable_lookup;
-use crate::fluid_hash::fluid_hashtable_replace;
-use crate::fluid_hash::new_fluid_hashtable;
+use crate::hash::_fluid_hashtable_t;
+use crate::hash::delete_fluid_hashtable;
+use crate::hash::fluid_hashtable_insert;
+use crate::hash::fluid_hashtable_lookup;
+use crate::hash::fluid_hashtable_replace;
+use crate::hash::new_fluid_hashtable;
 use crate::fluid_list::_fluid_list_t;
 use crate::fluid_list::delete_fluid_list;
 use crate::fluid_list::fluid_list_append;
