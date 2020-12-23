@@ -18,7 +18,7 @@ use crate::list::delete_fluid_list;
 use crate::list::fluid_list_append;
 use crate::list::fluid_list_remove_link;
 use crate::synth::fluid_synth_settings;
-use crate::fluid_sys::fluid_strtok;
+use crate::sys::fluid_strtok;
 use std::ffi::CStr;
 
 pub type fluid_settings_t = _fluid_hashtable_t;

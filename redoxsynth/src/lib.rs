@@ -29,7 +29,7 @@ mod reverb;
 mod settings;
 mod sfont;
 mod synth;
-mod fluid_sys;
+mod sys;
 mod fluid_tuning;
 mod fluid_voice;
 
