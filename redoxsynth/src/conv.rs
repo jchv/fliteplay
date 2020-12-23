@@ -2,7 +2,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 pub type fluid_real_t = libc::c_float;
@@ -22,8 +21,8 @@ pub static mut fluid_convex_tab: [fluid_real_t; 128] = [0.; 128];
 pub static mut fluid_pan_tab: [fluid_real_t; 1002] = [0.; 1002];
 #[no_mangle]
 pub unsafe extern "C" fn fluid_conversion_config() {
-    let mut i: libc::c_int = 0;
-    let mut x: libc::c_double = 0.;
+    let mut i: libc::c_int;
+    let mut x: libc::c_double;
     i = 0 as libc::c_int;
     while i < 1200 as libc::c_int {
         fluid_ct2hz_tab[i as usize] =
@@ -46,7 +45,6 @@ pub unsafe extern "C" fn fluid_conversion_config() {
     fluid_concave_tab[127 as libc::c_int as usize] = 1.0f64 as fluid_real_t;
     fluid_convex_tab[0 as libc::c_int as usize] = 0 as libc::c_int as fluid_real_t;
     fluid_convex_tab[127 as libc::c_int as usize] = 1.0f64 as fluid_real_t;
-    x = f64::log10(128.0f64 / 127.0f64);
     i = 1 as libc::c_int;
     while i < 127 as libc::c_int {
         x = -20.0f64 / 96.0f64 * f64::ln((i * i) as libc::c_double / (127.0f64 * 127.0f64))

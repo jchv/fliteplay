@@ -2,7 +2,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 use crate::channel::fluid_channel_t;
@@ -757,7 +756,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
 ];
 #[no_mangle]
 pub unsafe extern "C" fn fluid_gen_set_default_values(mut gen: *mut fluid_gen_t) -> libc::c_int {
-    let mut i: libc::c_int = 0;
+    let mut i: libc::c_int;
     i = 0 as libc::c_int;
     while i < GEN_LAST as libc::c_int {
         (*gen.offset(i as isize)).flags = GEN_UNUSED as libc::c_int as libc::c_uchar;
@@ -773,7 +772,7 @@ pub unsafe extern "C" fn fluid_gen_init(
     mut gen: *mut fluid_gen_t,
     mut channel: *mut fluid_channel_t,
 ) -> libc::c_int {
-    let mut i: libc::c_int = 0;
+    let mut i: libc::c_int;
     fluid_gen_set_default_values(gen);
     i = 0 as libc::c_int;
     while i < GEN_LAST as libc::c_int {

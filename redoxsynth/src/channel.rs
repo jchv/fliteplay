@@ -2,7 +2,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 use crate::gen::fluid_gen_scale_nrpn;
@@ -79,8 +78,7 @@ pub unsafe extern "C" fn new_fluid_channel(
     mut synth: *mut fluid_synth_t,
     mut num: libc::c_int,
 ) -> *mut fluid_channel_t {
-    let mut chan: *mut fluid_channel_t = 0 as *mut fluid_channel_t;
-    chan = libc::malloc(::std::mem::size_of::<fluid_channel_t>() as libc::size_t)
+    let mut chan = libc::malloc(::std::mem::size_of::<fluid_channel_t>() as libc::size_t)
         as *mut fluid_channel_t;
     if chan.is_null() {
         fluid_log!(FLUID_ERR, "Out of memory",);
@@ -115,10 +113,9 @@ pub unsafe extern "C" fn fluid_channel_init_ctrl(
     mut chan: *mut fluid_channel_t,
     mut is_all_ctrl_off: libc::c_int,
 ) {
-    let mut i: libc::c_int = 0;
     (*chan).channel_pressure = 0 as libc::c_int as libc::c_short;
     (*chan).pitch_bend = 0x2000 as libc::c_int as libc::c_short;
-    i = 0 as libc::c_int;
+    let mut i = 0 as libc::c_int;
     while i < GEN_LAST as libc::c_int {
         (*chan).gen[i as usize] = 0.0f32;
         (*chan).gen_abs[i as usize] = 0 as libc::c_int as libc::c_char;

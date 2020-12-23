@@ -2,7 +2,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 #[derive(Copy, Clone)]
@@ -15,7 +14,7 @@ pub type fluid_compare_func_t =
     Option<unsafe extern "C" fn(_: *mut libc::c_void, _: *mut libc::c_void) -> libc::c_int>;
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_list() -> *mut fluid_list_t {
-    let mut list: *mut fluid_list_t = 0 as *mut fluid_list_t;
+    let mut list: *mut fluid_list_t;
     list = libc::malloc(::std::mem::size_of::<fluid_list_t>() as libc::size_t) as *mut fluid_list_t;
     (*list).data = 0 as *mut libc::c_void;
     (*list).next = 0 as *mut fluid_list_t;
@@ -23,7 +22,7 @@ pub unsafe extern "C" fn new_fluid_list() -> *mut fluid_list_t {
 }
 #[no_mangle]
 pub unsafe extern "C" fn delete_fluid_list(mut list: *mut fluid_list_t) {
-    let mut next: *mut fluid_list_t = 0 as *mut fluid_list_t;
+    let mut next: *mut fluid_list_t;
     while !list.is_null() {
         next = (*list).next;
         libc::free(list as *mut libc::c_void);
@@ -41,8 +40,8 @@ pub unsafe extern "C" fn fluid_list_append(
     mut list: *mut fluid_list_t,
     mut data: *mut libc::c_void,
 ) -> *mut fluid_list_t {
-    let mut new_list: *mut fluid_list_t = 0 as *mut fluid_list_t;
-    let mut last: *mut fluid_list_t = 0 as *mut fluid_list_t;
+    let mut new_list: *mut fluid_list_t;
+    let mut last: *mut fluid_list_t;
     new_list = new_fluid_list();
     (*new_list).data = data;
     if !list.is_null() {
@@ -58,7 +57,7 @@ pub unsafe extern "C" fn fluid_list_prepend(
     mut list: *mut fluid_list_t,
     mut data: *mut libc::c_void,
 ) -> *mut fluid_list_t {
-    let mut new_list: *mut fluid_list_t = 0 as *mut fluid_list_t;
+    let mut new_list: *mut fluid_list_t;
     new_list = new_fluid_list();
     (*new_list).data = data;
     (*new_list).next = list;
@@ -84,8 +83,8 @@ pub unsafe extern "C" fn fluid_list_remove(
     mut list: *mut fluid_list_t,
     mut data: *mut libc::c_void,
 ) -> *mut fluid_list_t {
-    let mut tmp: *mut fluid_list_t = 0 as *mut fluid_list_t;
-    let mut prev: *mut fluid_list_t = 0 as *mut fluid_list_t;
+    let mut tmp: *mut fluid_list_t;
+    let mut prev: *mut fluid_list_t;
     prev = 0 as *mut fluid_list_t;
     tmp = list;
     while !tmp.is_null() {
@@ -111,8 +110,8 @@ pub unsafe extern "C" fn fluid_list_remove_link(
     mut list: *mut fluid_list_t,
     mut link: *mut fluid_list_t,
 ) -> *mut fluid_list_t {
-    let mut tmp: *mut fluid_list_t = 0 as *mut fluid_list_t;
-    let mut prev: *mut fluid_list_t = 0 as *mut fluid_list_t;
+    let mut tmp: *mut fluid_list_t;
+    let mut prev: *mut fluid_list_t;
     prev = 0 as *mut fluid_list_t;
     tmp = list;
     while !tmp.is_null() {
@@ -141,7 +140,7 @@ unsafe extern "C" fn fluid_list_sort_merge(
         data: 0 as *mut libc::c_void,
         next: 0 as *mut fluid_list_t,
     };
-    let mut l: *mut fluid_list_t = 0 as *mut fluid_list_t;
+    let mut l: *mut fluid_list_t;
     l = &mut list;
     while !l1.is_null() && !l2.is_null() {
         if compare_func.expect("non-null function pointer")((*l1).data, (*l2).data)
@@ -164,8 +163,8 @@ pub unsafe extern "C" fn fluid_list_sort(
     mut list: *mut fluid_list_t,
     mut compare_func: fluid_compare_func_t,
 ) -> *mut fluid_list_t {
-    let mut l1: *mut fluid_list_t = 0 as *mut fluid_list_t;
-    let mut l2: *mut fluid_list_t = 0 as *mut fluid_list_t;
+    let mut l1: *mut fluid_list_t;
+    let mut l2: *mut fluid_list_t;
     if list.is_null() {
         return 0 as *mut fluid_list_t;
     }
@@ -217,8 +216,8 @@ pub unsafe extern "C" fn fluid_list_insert_at(
     mut n: libc::c_int,
     mut data: *mut libc::c_void,
 ) -> *mut fluid_list_t {
-    let mut new_list: *mut fluid_list_t = 0 as *mut fluid_list_t;
-    let mut cur: *mut fluid_list_t = 0 as *mut fluid_list_t;
+    let mut new_list: *mut fluid_list_t;
+    let mut cur: *mut fluid_list_t;
     let mut prev: *mut fluid_list_t = 0 as *mut fluid_list_t;
     new_list = new_fluid_list();
     (*new_list).data = data;

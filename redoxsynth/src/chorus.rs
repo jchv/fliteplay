@@ -2,7 +2,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 pub type fluid_chorus_mod = libc::c_uint;
@@ -34,9 +33,9 @@ pub struct fluid_chorus_t {
 }
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_chorus(mut sample_rate: fluid_real_t) -> *mut fluid_chorus_t {
-    let mut i: libc::c_int = 0;
-    let mut ii: libc::c_int = 0;
-    let mut chorus: *mut fluid_chorus_t = 0 as *mut fluid_chorus_t;
+    let mut i;
+    let mut ii;
+    let mut chorus;
     chorus = libc::malloc(::std::mem::size_of::<fluid_chorus_t>() as libc::size_t)
         as *mut fluid_chorus_t;
     if chorus.is_null() {
@@ -99,7 +98,6 @@ pub unsafe extern "C" fn new_fluid_chorus(mut sample_rate: fluid_real_t) -> *mut
 #[no_mangle]
 pub unsafe extern "C" fn fluid_chorus_init(mut chorus: *mut fluid_chorus_t) -> libc::c_int {
     let mut i: libc::c_int = 0;
-    i = 0 as libc::c_int;
     while i < (1 as libc::c_int) << 12 as libc::c_int - 1 as libc::c_int {
         *(*chorus).chorusbuf.offset(i as isize) = 0.0f64 as fluid_real_t;
         i += 1
@@ -182,8 +180,8 @@ pub unsafe extern "C" fn delete_fluid_chorus(mut chorus: *mut fluid_chorus_t) {
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_chorus_update(mut chorus: *mut fluid_chorus_t) -> libc::c_int {
-    let mut i: libc::c_int = 0;
-    let mut modulation_depth_samples: libc::c_int = 0;
+    let mut i: libc::c_int;
+    let mut modulation_depth_samples: libc::c_int;
     if (*chorus).new_number_blocks < 0 as libc::c_int {
         fluid_log!(
             FLUID_WARN,
@@ -292,10 +290,10 @@ pub unsafe extern "C" fn fluid_chorus_processmix(
     mut left_out: *mut fluid_real_t,
     mut right_out: *mut fluid_real_t,
 ) {
-    let mut sample_index: libc::c_int = 0;
-    let mut i: libc::c_int = 0;
-    let mut d_in: fluid_real_t = 0.;
-    let mut d_out: fluid_real_t = 0.;
+    let mut sample_index: libc::c_int;
+    let mut i: libc::c_int;
+    let mut d_in: fluid_real_t;
+    let mut d_out: fluid_real_t;
     sample_index = 0 as libc::c_int;
     while sample_index < 64 as libc::c_int {
         d_in = *in_0.offset(sample_index as isize);
@@ -303,7 +301,7 @@ pub unsafe extern "C" fn fluid_chorus_processmix(
         *(*chorus).chorusbuf.offset((*chorus).counter as isize) = d_in;
         i = 0 as libc::c_int;
         while i < (*chorus).number_blocks {
-            let mut ii: libc::c_int = 0;
+            let mut ii: libc::c_int;
             let mut pos_subsamples: libc::c_int =
                 ((1 as libc::c_int) << 8 as libc::c_int - 1 as libc::c_int) * (*chorus).counter
                     - *(*chorus)
@@ -344,10 +342,10 @@ pub unsafe extern "C" fn fluid_chorus_processreplace(
     mut left_out: *mut fluid_real_t,
     mut right_out: *mut fluid_real_t,
 ) {
-    let mut sample_index: libc::c_int = 0;
-    let mut i: libc::c_int = 0;
-    let mut d_in: fluid_real_t = 0.;
-    let mut d_out: fluid_real_t = 0.;
+    let mut sample_index: libc::c_int;
+    let mut i: libc::c_int;
+    let mut d_in: fluid_real_t;
+    let mut d_out: fluid_real_t;
     sample_index = 0 as libc::c_int;
     while sample_index < 64 as libc::c_int {
         d_in = *in_0.offset(sample_index as isize);
@@ -355,7 +353,7 @@ pub unsafe extern "C" fn fluid_chorus_processreplace(
         *(*chorus).chorusbuf.offset((*chorus).counter as isize) = d_in;
         i = 0 as libc::c_int;
         while i < (*chorus).number_blocks {
-            let mut ii: libc::c_int = 0;
+            let mut ii: libc::c_int;
             let mut pos_subsamples: libc::c_int =
                 ((1 as libc::c_int) << 8 as libc::c_int - 1 as libc::c_int) * (*chorus).counter
                     - *(*chorus)
@@ -393,8 +391,8 @@ pub unsafe extern "C" fn fluid_chorus_sine(
     mut len: libc::c_int,
     mut depth: libc::c_int,
 ) {
-    let mut i: libc::c_int = 0;
-    let mut val: libc::c_double = 0.;
+    let mut i: libc::c_int;
+    let mut val: libc::c_double;
     i = 0 as libc::c_int;
     while i < len {
         val = f64::sin(i as libc::c_double / len as libc::c_double * 2.0f64 * std::f64::consts::PI);
@@ -415,8 +413,8 @@ pub unsafe extern "C" fn fluid_chorus_triangle(
 ) {
     let mut i: libc::c_int = 0 as libc::c_int;
     let mut ii: libc::c_int = len - 1 as libc::c_int;
-    let mut val: libc::c_double = 0.;
-    let mut val2: libc::c_double = 0.;
+    let mut val: libc::c_double;
+    let mut val2: libc::c_double;
     while i <= ii {
         val = i as libc::c_double * 2.0f64 / len as libc::c_double
             * depth as libc::c_double

@@ -2,7 +2,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 use crate::defsfont::delete_fluid_inst_zone;
@@ -98,8 +97,8 @@ pub type C2RustUnnamed = libc::c_int;
 pub type fluid_loop = libc::c_uint;
 #[no_mangle]
 pub unsafe extern "C" fn fluid_ramsfont_create_sfont() -> *mut fluid_sfont_t {
-    let mut sfont: *mut fluid_sfont_t = 0 as *mut fluid_sfont_t;
-    let mut ramsfont: *mut fluid_ramsfont_t = 0 as *mut fluid_ramsfont_t;
+    let mut sfont: *mut fluid_sfont_t;
+    let mut ramsfont: *mut fluid_ramsfont_t;
     ramsfont = new_fluid_ramsfont();
     if ramsfont.is_null() {
         return 0 as *mut fluid_sfont_t;
@@ -155,8 +154,8 @@ pub unsafe extern "C" fn fluid_ramsfont_sfont_get_preset(
     mut bank: libc::c_uint,
     mut prenum: libc::c_uint,
 ) -> *mut fluid_preset_t {
-    let mut preset: *mut fluid_preset_t = 0 as *mut fluid_preset_t;
-    let mut rampreset: *mut fluid_rampreset_t = 0 as *mut fluid_rampreset_t;
+    let mut preset: *mut fluid_preset_t;
+    let mut rampreset: *mut fluid_rampreset_t;
     rampreset = fluid_ramsfont_get_preset((*sfont).data as *mut fluid_ramsfont_t, bank, prenum);
     if rampreset.is_null() {
         return 0 as *mut fluid_preset_t;
@@ -279,7 +278,7 @@ pub unsafe extern "C" fn fluid_rampreset_preset_noteon(
 }
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_ramsfont() -> *mut fluid_ramsfont_t {
-    let mut sfont: *mut fluid_ramsfont_t = 0 as *mut fluid_ramsfont_t;
+    let mut sfont: *mut fluid_ramsfont_t;
     sfont = libc::malloc(::std::mem::size_of::<fluid_ramsfont_t>() as libc::size_t)
         as *mut fluid_ramsfont_t;
     if sfont.is_null() {
@@ -293,8 +292,8 @@ pub unsafe extern "C" fn new_fluid_ramsfont() -> *mut fluid_ramsfont_t {
 }
 #[no_mangle]
 pub unsafe extern "C" fn delete_fluid_ramsfont(mut sfont: *mut fluid_ramsfont_t) -> libc::c_int {
-    let mut list: *mut fluid_list_t = 0 as *mut fluid_list_t;
-    let mut preset: *mut fluid_rampreset_t = 0 as *mut fluid_rampreset_t;
+    let mut list: *mut fluid_list_t;
+    let mut preset: *mut fluid_rampreset_t;
     list = (*sfont).sample;
     while !list.is_null() {
         let mut sam: *mut fluid_sample_t = if !list.is_null() {
@@ -360,8 +359,8 @@ pub unsafe extern "C" fn fluid_ramsfont_add_preset(
     mut sfont: *mut fluid_ramsfont_t,
     mut preset: *mut fluid_rampreset_t,
 ) -> libc::c_int {
-    let mut cur: *mut fluid_rampreset_t = 0 as *mut fluid_rampreset_t;
-    let mut prev: *mut fluid_rampreset_t = 0 as *mut fluid_rampreset_t;
+    let mut cur: *mut fluid_rampreset_t;
+    let mut prev: *mut fluid_rampreset_t;
     if (*sfont).preset.is_null() {
         (*preset).next = 0 as *mut fluid_rampreset_t;
         (*sfont).preset = preset
@@ -398,7 +397,7 @@ pub unsafe extern "C" fn fluid_ramsfont_add_izone(
     mut lokey: libc::c_int,
     mut hikey: libc::c_int,
 ) -> libc::c_int {
-    let mut err: libc::c_int = 0;
+    let mut err: libc::c_int;
     let mut preset: *mut fluid_rampreset_t = fluid_ramsfont_get_preset(sfont, bank, num);
     if preset.is_null() {
         preset = new_fluid_rampreset(sfont);
@@ -428,7 +427,7 @@ pub unsafe extern "C" fn fluid_ramsfont_remove_izone(
     mut num: libc::c_uint,
     mut sample: *mut fluid_sample_t,
 ) -> libc::c_int {
-    let mut err: libc::c_int = 0;
+    let mut err: libc::c_int;
     let mut preset: *mut fluid_rampreset_t = fluid_ramsfont_get_preset(sfont, bank, num);
     if preset.is_null() {
         return FLUID_FAILED as libc::c_int;
@@ -526,8 +525,8 @@ pub unsafe extern "C" fn new_fluid_rampreset(
 #[no_mangle]
 pub unsafe extern "C" fn delete_fluid_rampreset(mut preset: *mut fluid_rampreset_t) -> libc::c_int {
     let mut err: libc::c_int = FLUID_OK as libc::c_int;
-    let mut zone: *mut fluid_preset_zone_t = 0 as *mut fluid_preset_zone_t;
-    let mut data: *mut fluid_rampreset_voice_t = 0 as *mut fluid_rampreset_voice_t;
+    let mut zone: *mut fluid_preset_zone_t;
+    let mut data: *mut fluid_rampreset_voice_t;
     if !(*preset).global_zone.is_null() {
         if delete_fluid_preset_zone((*preset).global_zone) != FLUID_OK as libc::c_int {
             err = FLUID_FAILED as libc::c_int
@@ -544,7 +543,7 @@ pub unsafe extern "C" fn delete_fluid_rampreset(mut preset: *mut fluid_rampreset
     }
     if !(*preset).presetvoices.is_null() {
         let mut tmp: *mut fluid_list_t = (*preset).presetvoices;
-        let mut next: *mut fluid_list_t = 0 as *mut fluid_list_t;
+        let mut next: *mut fluid_list_t;
         while !tmp.is_null() {
             data = (*tmp).data as *mut fluid_rampreset_voice_t;
             libc::free(data as *mut libc::c_void);
@@ -603,7 +602,7 @@ pub unsafe extern "C" fn fluid_rampreset_add_sample(
     mut hikey: libc::c_int,
 ) -> libc::c_int {
     if (*preset).zone.is_null() {
-        let mut zone: *mut fluid_preset_zone_t = 0 as *mut fluid_preset_zone_t;
+        let mut zone: *mut fluid_preset_zone_t;
         zone =
             new_fluid_preset_zone(b"\x00" as *const u8 as *const libc::c_char as *mut libc::c_char);
         if zone.is_null() {
@@ -641,8 +640,8 @@ pub unsafe extern "C" fn fluid_rampreset_izoneforsample(
     mut preset: *mut fluid_rampreset_t,
     mut sample: *mut fluid_sample_t,
 ) -> *mut fluid_inst_zone_t {
-    let mut inst: *mut fluid_inst_t = 0 as *mut fluid_inst_t;
-    let mut izone: *mut fluid_inst_zone_t = 0 as *mut fluid_inst_zone_t;
+    let mut inst: *mut fluid_inst_t;
+    let mut izone: *mut fluid_inst_zone_t;
     if (*preset).zone.is_null() {
         return 0 as *mut fluid_inst_zone_t;
     }
@@ -665,8 +664,8 @@ pub unsafe extern "C" fn fluid_rampreset_izone_set_loop(
     mut loopend: libc::c_float,
 ) -> libc::c_int {
     let mut izone: *mut fluid_inst_zone_t = fluid_rampreset_izoneforsample(preset, sample);
-    let mut coarse: libc::c_short = 0;
-    let mut fine: libc::c_short = 0;
+    let mut coarse: libc::c_short;
+    let mut fine: libc::c_short;
     if izone.is_null() {
         return FLUID_FAILED as libc::c_int;
     }
@@ -775,9 +774,9 @@ pub unsafe extern "C" fn fluid_rampreset_remove_izone(
     mut preset: *mut fluid_rampreset_t,
     mut sample: *mut fluid_sample_t,
 ) -> libc::c_int {
-    let mut inst: *mut fluid_inst_t = 0 as *mut fluid_inst_t;
-    let mut izone: *mut fluid_inst_zone_t = 0 as *mut fluid_inst_zone_t;
-    let mut prev: *mut fluid_inst_zone_t = 0 as *mut fluid_inst_zone_t;
+    let mut inst: *mut fluid_inst_t;
+    let mut izone: *mut fluid_inst_zone_t;
+    let mut prev: *mut fluid_inst_zone_t;
     let mut found: libc::c_int = 0 as libc::c_int;
     if (*preset).zone.is_null() {
         return FLUID_FAILED as libc::c_int;
@@ -849,7 +848,7 @@ pub unsafe extern "C" fn fluid_rampreset_updatevoices(
 ) {
     let mut tmp: *mut fluid_list_t = (*preset).presetvoices;
     let mut prev: *mut fluid_list_t = 0 as *mut fluid_list_t;
-    let mut next: *mut fluid_list_t = 0 as *mut fluid_list_t;
+    let mut next: *mut fluid_list_t;
     while !tmp.is_null() {
         let mut presetvoice: *mut fluid_rampreset_voice_t =
             (*tmp).data as *mut fluid_rampreset_voice_t;
@@ -881,16 +880,16 @@ pub unsafe extern "C" fn fluid_rampreset_noteon(
     mut key: libc::c_int,
     mut vel: libc::c_int,
 ) -> libc::c_int {
-    let mut preset_zone: *mut fluid_preset_zone_t = 0 as *mut fluid_preset_zone_t;
-    let mut inst: *mut fluid_inst_t = 0 as *mut fluid_inst_t;
-    let mut inst_zone: *mut fluid_inst_zone_t = 0 as *mut fluid_inst_zone_t;
-    let mut global_inst_zone: *mut fluid_inst_zone_t = 0 as *mut fluid_inst_zone_t;
-    let mut sample: *mut fluid_sample_t = 0 as *mut fluid_sample_t;
-    let mut voice: *mut fluid_voice_t = 0 as *mut fluid_voice_t;
-    let mut mod_0: *mut fluid_mod_t = 0 as *mut fluid_mod_t;
+    let mut preset_zone: *mut fluid_preset_zone_t;
+    let mut inst: *mut fluid_inst_t;
+    let mut inst_zone: *mut fluid_inst_zone_t;
+    let mut global_inst_zone: *mut fluid_inst_zone_t;
+    let mut sample: *mut fluid_sample_t;
+    let mut voice: *mut fluid_voice_t;
+    let mut mod_0: *mut fluid_mod_t;
     let mut mod_list: [*mut fluid_mod_t; 64] = [0 as *mut fluid_mod_t; 64];
-    let mut mod_list_count: libc::c_int = 0;
-    let mut i: libc::c_int = 0;
+    let mut mod_list_count: libc::c_int;
+    let mut i: libc::c_int;
     preset_zone = (*preset).zone;
     while !preset_zone.is_null() {
         if fluid_preset_zone_inside_range(preset_zone, key, vel) != 0 {
@@ -1046,7 +1045,7 @@ pub unsafe extern "C" fn fluid_sample_set_sound_data(
     mut copy_data: libc::c_short,
     mut rootkey: libc::c_int,
 ) -> libc::c_int {
-    let mut storedNbFrames: libc::c_uint = 0;
+    let mut storedNbFrames: libc::c_uint;
     if !(*sample).data.is_null() {
         libc::free((*sample).data as *mut libc::c_void);
     }
@@ -1093,7 +1092,7 @@ pub unsafe extern "C" fn fluid_sample_set_sound_data(
 }
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_ramsample() -> *mut fluid_sample_t {
-    let mut sample: *mut fluid_sample_t = 0 as *mut fluid_sample_t;
+    let mut sample: *mut fluid_sample_t;
     sample = libc::malloc(::std::mem::size_of::<fluid_sample_t>() as libc::size_t)
         as *mut fluid_sample_t;
     if sample.is_null() {

@@ -2,7 +2,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 pub type fluid_real_t = libc::c_float;
@@ -76,7 +75,7 @@ pub unsafe extern "C" fn fluid_allpass_setbuffer(
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_allpass_init(mut allpass: *mut fluid_allpass) {
-    let mut i: libc::c_int = 0;
+    let mut i: libc::c_int;
     let mut len: libc::c_int = (*allpass).bufsize;
     let mut buf: *mut fluid_real_t = (*allpass).buffer;
     i = 0 as libc::c_int;
@@ -111,7 +110,7 @@ pub unsafe extern "C" fn fluid_comb_setbuffer(
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_comb_init(mut comb: *mut fluid_comb) {
-    let mut i: libc::c_int = 0;
+    let mut i: libc::c_int;
     let mut buf: *mut fluid_real_t = (*comb).buffer;
     let mut len: libc::c_int = (*comb).bufsize;
     i = 0 as libc::c_int;
@@ -139,7 +138,7 @@ pub unsafe extern "C" fn fluid_comb_getfeedback(mut comb: *mut fluid_comb) -> fl
 }
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_revmodel() -> *mut fluid_revmodel_t {
-    let mut rev: *mut fluid_revmodel_t = 0 as *mut fluid_revmodel_t;
+    let mut rev: *mut fluid_revmodel_t;
     rev = libc::malloc(::std::mem::size_of::<fluid_revmodel_t>() as libc::size_t)
         as *mut fluid_revmodel_t;
     if rev.is_null() {
@@ -360,7 +359,7 @@ pub unsafe extern "C" fn delete_fluid_revmodel(mut rev: *mut fluid_revmodel_t) {
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_revmodel_init(mut rev: *mut fluid_revmodel_t) {
-    let mut i: libc::c_int = 0;
+    let mut i: libc::c_int;
     i = 0 as libc::c_int;
     while i < 8 as libc::c_int {
         fluid_comb_init(&mut *(*rev).combL.as_mut_ptr().offset(i as isize));
@@ -385,11 +384,11 @@ pub unsafe extern "C" fn fluid_revmodel_processreplace(
     mut left_out: *mut fluid_real_t,
     mut right_out: *mut fluid_real_t,
 ) {
-    let mut i: libc::c_int = 0;
-    let mut k: libc::c_int = 0 as libc::c_int;
-    let mut outL: fluid_real_t = 0.;
-    let mut outR: fluid_real_t = 0.;
-    let mut input: fluid_real_t = 0.;
+    let mut i: libc::c_int;
+    let mut k: libc::c_int;
+    let mut outL: fluid_real_t;
+    let mut outR: fluid_real_t;
+    let mut input: fluid_real_t;
     k = 0 as libc::c_int;
     while k < 64 as libc::c_int {
         outR = 0 as libc::c_int as fluid_real_t;
@@ -431,8 +430,8 @@ pub unsafe extern "C" fn fluid_revmodel_processreplace(
         }
         i = 0 as libc::c_int;
         while i < 4 as libc::c_int {
-            let mut output: fluid_real_t = 0.;
-            let mut bufout: fluid_real_t = 0.;
+            let mut output: fluid_real_t;
+            let mut bufout: fluid_real_t;
             bufout = *(*rev).allpassL[i as usize]
                 .buffer
                 .offset((*rev).allpassL[i as usize].bufidx as isize);
@@ -446,8 +445,8 @@ pub unsafe extern "C" fn fluid_revmodel_processreplace(
                 (*rev).allpassL[i as usize].bufidx = 0 as libc::c_int
             }
             outL = output;
-            let mut output_0: fluid_real_t = 0.;
-            let mut bufout_0: fluid_real_t = 0.;
+            let mut output_0: fluid_real_t;
+            let mut bufout_0: fluid_real_t;
             bufout_0 = *(*rev).allpassR[i as usize]
                 .buffer
                 .offset((*rev).allpassR[i as usize].bufidx as isize);
@@ -477,11 +476,11 @@ pub unsafe extern "C" fn fluid_revmodel_processmix(
     mut left_out: *mut fluid_real_t,
     mut right_out: *mut fluid_real_t,
 ) {
-    let mut i: libc::c_int = 0;
-    let mut k: libc::c_int = 0 as libc::c_int;
-    let mut outL: fluid_real_t = 0.;
-    let mut outR: fluid_real_t = 0.;
-    let mut input: fluid_real_t = 0.;
+    let mut i: libc::c_int;
+    let mut k: libc::c_int;
+    let mut outL: fluid_real_t;
+    let mut outR: fluid_real_t;
+    let mut input: fluid_real_t;
     k = 0 as libc::c_int;
     while k < 64 as libc::c_int {
         outR = 0 as libc::c_int as fluid_real_t;
@@ -523,8 +522,8 @@ pub unsafe extern "C" fn fluid_revmodel_processmix(
         }
         i = 0 as libc::c_int;
         while i < 4 as libc::c_int {
-            let mut output: fluid_real_t = 0.;
-            let mut bufout: fluid_real_t = 0.;
+            let mut output: fluid_real_t;
+            let mut bufout: fluid_real_t;
             bufout = *(*rev).allpassL[i as usize]
                 .buffer
                 .offset((*rev).allpassL[i as usize].bufidx as isize);
@@ -538,8 +537,8 @@ pub unsafe extern "C" fn fluid_revmodel_processmix(
                 (*rev).allpassL[i as usize].bufidx = 0 as libc::c_int
             }
             outL = output;
-            let mut output_0: fluid_real_t = 0.;
-            let mut bufout_0: fluid_real_t = 0.;
+            let mut output_0: fluid_real_t;
+            let mut bufout_0: fluid_real_t;
             bufout_0 = *(*rev).allpassR[i as usize]
                 .buffer
                 .offset((*rev).allpassR[i as usize].bufidx as isize);
@@ -566,7 +565,7 @@ pub unsafe extern "C" fn fluid_revmodel_processmix(
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_revmodel_update(mut rev: *mut fluid_revmodel_t) {
-    let mut i: libc::c_int = 0;
+    let mut i: libc::c_int;
     (*rev).wet1 = (*rev).wet * ((*rev).width / 2 as libc::c_int as libc::c_float + 0.5f32);
     (*rev).wet2 = (*rev).wet
         * ((1 as libc::c_int as libc::c_float - (*rev).width) / 2 as libc::c_int as libc::c_float);

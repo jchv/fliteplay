@@ -2,7 +2,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 use crate::channel::fluid_channel_get_cc;
@@ -102,7 +101,7 @@ pub unsafe extern "C" fn fluid_mod_get_value(
     mut chan: *mut fluid_channel_t,
     mut voice: *mut fluid_voice_t,
 ) -> fluid_real_t {
-    let mut v1: fluid_real_t = 0.0f64 as fluid_real_t;
+    let mut v1: fluid_real_t;
     let mut v2: fluid_real_t = 1.0f64 as fluid_real_t;
     let mut range1: fluid_real_t = 127.0f64 as fluid_real_t;
     let mut range2: fluid_real_t = 127.0f64 as fluid_real_t;

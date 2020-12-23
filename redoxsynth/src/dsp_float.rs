@@ -2,7 +2,6 @@
     non_camel_case_types,
     non_snake_case,
     non_upper_case_globals,
-    unused_assignments,
     unused_mut
 )]
 use crate::voice::fluid_voice_t;
@@ -21,11 +20,11 @@ static mut interp_coeff: [[fluid_real_t; 4]; 256] = [[0.; 4]; 256];
 static mut sinc_table7: [[fluid_real_t; 7]; 256] = [[0.; 7]; 256];
 #[no_mangle]
 pub unsafe extern "C" fn fluid_dsp_float_config() {
-    let mut i: libc::c_int = 0;
-    let mut i2: libc::c_int = 0;
-    let mut x: libc::c_double = 0.;
-    let mut v: libc::c_double = 0.;
-    let mut i_shifted: libc::c_double = 0.;
+    let mut i: libc::c_int;
+    let mut i2: libc::c_int;
+    let mut x: libc::c_double;
+    let mut v: libc::c_double;
+    let mut i_shifted: libc::c_double;
     i = 0 as libc::c_int;
     while i < 256 as libc::c_int {
         x = i as libc::c_double / 256 as libc::c_int as libc::c_double;
@@ -71,15 +70,15 @@ pub unsafe extern "C" fn fluid_dsp_float_interpolate_none(
     mut voice: *mut fluid_voice_t,
 ) -> libc::c_int {
     let mut dsp_phase: fluid_phase_t = (*voice).phase;
-    let mut dsp_phase_incr: fluid_phase_t = 0;
+    let mut dsp_phase_incr: fluid_phase_t;
     let mut dsp_data: *mut libc::c_short = (*(*voice).sample).data;
     let mut dsp_buf: *mut fluid_real_t = (*voice).dsp_buf;
     let mut dsp_amp: fluid_real_t = (*voice).amp;
     let mut dsp_amp_incr: fluid_real_t = (*voice).amp_incr;
     let mut dsp_i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let mut dsp_phase_index: libc::c_uint = 0;
-    let mut end_index: libc::c_uint = 0;
-    let mut looping: libc::c_int = 0;
+    let mut dsp_phase_index: libc::c_uint;
+    let mut end_index: libc::c_uint;
+    let mut looping: libc::c_int;
     dsp_phase_incr = ((*voice).phase_incr as libc::c_ulonglong) << 32 as libc::c_int
         | (((*voice).phase_incr as libc::c_double
             - (*voice).phase_incr as libc::c_int as libc::c_double)
@@ -131,17 +130,17 @@ pub unsafe extern "C" fn fluid_dsp_float_interpolate_linear(
     mut voice: *mut fluid_voice_t,
 ) -> libc::c_int {
     let mut dsp_phase: fluid_phase_t = (*voice).phase;
-    let mut dsp_phase_incr: fluid_phase_t = 0;
+    let mut dsp_phase_incr: fluid_phase_t;
     let mut dsp_data: *mut libc::c_short = (*(*voice).sample).data;
     let mut dsp_buf: *mut fluid_real_t = (*voice).dsp_buf;
     let mut dsp_amp: fluid_real_t = (*voice).amp;
     let mut dsp_amp_incr: fluid_real_t = (*voice).amp_incr;
     let mut dsp_i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let mut dsp_phase_index: libc::c_uint = 0;
-    let mut end_index: libc::c_uint = 0;
-    let mut point: libc::c_short = 0;
-    let mut coeffs: *mut fluid_real_t = 0 as *mut fluid_real_t;
-    let mut looping: libc::c_int = 0;
+    let mut dsp_phase_index: libc::c_uint;
+    let mut end_index: libc::c_uint;
+    let mut point: libc::c_short;
+    let mut coeffs: *mut fluid_real_t;
+    let mut looping: libc::c_int;
     dsp_phase_incr = ((*voice).phase_incr as libc::c_ulonglong) << 32 as libc::c_int
         | (((*voice).phase_incr as libc::c_double
             - (*voice).phase_incr as libc::c_int as libc::c_double)
@@ -229,20 +228,20 @@ pub unsafe extern "C" fn fluid_dsp_float_interpolate_4th_order(
     mut voice: *mut fluid_voice_t,
 ) -> libc::c_int {
     let mut dsp_phase: fluid_phase_t = (*voice).phase;
-    let mut dsp_phase_incr: fluid_phase_t = 0;
+    let mut dsp_phase_incr: fluid_phase_t;
     let mut dsp_data: *mut libc::c_short = (*(*voice).sample).data;
     let mut dsp_buf: *mut fluid_real_t = (*voice).dsp_buf;
     let mut dsp_amp: fluid_real_t = (*voice).amp;
     let mut dsp_amp_incr: fluid_real_t = (*voice).amp_incr;
     let mut dsp_i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let mut dsp_phase_index: libc::c_uint = 0;
-    let mut start_index: libc::c_uint = 0;
-    let mut end_index: libc::c_uint = 0;
-    let mut start_point: libc::c_short = 0;
-    let mut end_point1: libc::c_short = 0;
-    let mut end_point2: libc::c_short = 0;
-    let mut coeffs: *mut fluid_real_t = 0 as *mut fluid_real_t;
-    let mut looping: libc::c_int = 0;
+    let mut dsp_phase_index: libc::c_uint;
+    let mut start_index: libc::c_uint;
+    let mut end_index: libc::c_uint;
+    let mut start_point: libc::c_short;
+    let mut end_point1: libc::c_short;
+    let mut end_point2: libc::c_short;
+    let mut coeffs: *mut fluid_real_t;
+    let mut looping: libc::c_int;
     dsp_phase_incr = ((*voice).phase_incr as libc::c_ulonglong) << 32 as libc::c_int
         | (((*voice).phase_incr as libc::c_double
             - (*voice).phase_incr as libc::c_int as libc::c_double)
@@ -410,19 +409,19 @@ pub unsafe extern "C" fn fluid_dsp_float_interpolate_7th_order(
     mut voice: *mut fluid_voice_t,
 ) -> libc::c_int {
     let mut dsp_phase: fluid_phase_t = (*voice).phase;
-    let mut dsp_phase_incr: fluid_phase_t = 0;
+    let mut dsp_phase_incr: fluid_phase_t;
     let mut dsp_data: *mut libc::c_short = (*(*voice).sample).data;
     let mut dsp_buf: *mut fluid_real_t = (*voice).dsp_buf;
     let mut dsp_amp: fluid_real_t = (*voice).amp;
     let mut dsp_amp_incr: fluid_real_t = (*voice).amp_incr;
     let mut dsp_i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let mut dsp_phase_index: libc::c_uint = 0;
-    let mut start_index: libc::c_uint = 0;
-    let mut end_index: libc::c_uint = 0;
+    let mut dsp_phase_index: libc::c_uint;
+    let mut start_index: libc::c_uint;
+    let mut end_index: libc::c_uint;
     let mut start_points: [libc::c_short; 3] = [0; 3];
     let mut end_points: [libc::c_short; 3] = [0; 3];
-    let mut coeffs: *mut fluid_real_t = 0 as *mut fluid_real_t;
-    let mut looping: libc::c_int = 0;
+    let mut coeffs: *mut fluid_real_t;
+    let mut looping: libc::c_int;
     dsp_phase_incr = ((*voice).phase_incr as libc::c_ulonglong) << 32 as libc::c_int
         | (((*voice).phase_incr as libc::c_double
             - (*voice).phase_incr as libc::c_int as libc::c_double)
