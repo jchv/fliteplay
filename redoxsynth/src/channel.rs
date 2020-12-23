@@ -1,6 +1,6 @@
 use crate::gen::fluid_gen_scale_nrpn;
 use crate::settings::fluid_settings_str_equal;
-use crate::sfont::fluid_preset_t;
+use crate::sfont::Preset;
 use crate::synth::fluid_synth_all_notes_off;
 use crate::synth::fluid_synth_all_sounds_off;
 use crate::synth::fluid_synth_damp_voices;
@@ -9,7 +9,7 @@ use crate::synth::fluid_synth_modulate_voices;
 use crate::synth::fluid_synth_modulate_voices_all;
 use crate::synth::fluid_synth_set_gen;
 use crate::synth::fluid_synth_t;
-use crate::tuning::fluid_tuning_t;
+use crate::tuning::Tuning;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Channel {
@@ -17,7 +17,7 @@ pub struct Channel {
     pub sfontnum: libc::c_uint,
     pub banknum: libc::c_uint,
     pub prognum: libc::c_uint,
-    pub preset: *mut fluid_preset_t,
+    pub preset: *mut Preset,
     pub synth: *mut fluid_synth_t,
     pub key_pressure: [libc::c_char; 128],
     pub channel_pressure: libc::c_short,
@@ -26,7 +26,7 @@ pub struct Channel {
     pub cc: [libc::c_short; 128],
     pub bank_msb: libc::c_uchar,
     pub interp_method: libc::c_int,
-    pub tuning: *mut fluid_tuning_t,
+    pub tuning: *mut Tuning,
     pub nrpn_select: libc::c_short,
     pub nrpn_active: libc::c_short,
     pub gen: [f32; 60],
@@ -78,7 +78,7 @@ pub unsafe extern "C" fn new_fluid_channel(
     }
     (*chan).synth = synth;
     (*chan).channum = num;
-    (*chan).preset = 0 as *mut fluid_preset_t;
+    (*chan).preset = 0 as *mut Preset;
     fluid_channel_init(chan);
     fluid_channel_init_ctrl(chan, 0 as libc::c_int);
     return chan;
@@ -96,7 +96,7 @@ pub unsafe extern "C" fn fluid_channel_init(mut chan: *mut Channel) {
     }
     (*chan).preset = fluid_synth_find_preset((*chan).synth, (*chan).banknum, (*chan).prognum);
     (*chan).interp_method = INTERPOLATION_DEFAULT as libc::c_int;
-    (*chan).tuning = 0 as *mut fluid_tuning_t;
+    (*chan).tuning = 0 as *mut Tuning;
     (*chan).nrpn_select = 0 as libc::c_int as libc::c_short;
     (*chan).nrpn_active = 0 as libc::c_int as libc::c_short;
 }
@@ -181,7 +181,7 @@ pub unsafe extern "C" fn delete_fluid_channel(chan: *mut Channel) -> libc::c_int
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_set_preset(
     mut chan: *mut Channel,
-    preset: *mut fluid_preset_t,
+    preset: *mut Preset,
 ) -> libc::c_int {
     if !(*chan).preset.is_null() && (*(*chan).preset).notify.is_some() {
         Some((*(*chan).preset).notify.expect("non-null function pointer"))
@@ -211,7 +211,7 @@ pub unsafe extern "C" fn fluid_channel_set_preset(
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_get_preset(
     chan: *mut Channel,
-) -> *mut fluid_preset_t {
+) -> *mut Preset {
     return (*chan).preset;
 }
 #[no_mangle]

@@ -77,10 +77,10 @@ use crate::settings::fluid_settings_setint;
 use crate::settings::fluid_settings_setnum;
 use crate::settings::fluid_settings_setstr;
 use crate::settings::fluid_settings_str_equal;
-use crate::sfont::fluid_preset_t;
-use crate::sfont::fluid_sample_t;
-use crate::sfont::fluid_sfloader_t;
-use crate::sfont::fluid_sfont_t;
+use crate::sfont::Preset;
+use crate::sfont::Sample;
+use crate::sfont::SoundfontLoader;
+use crate::sfont::SoundFont;
 use crate::sys::fluid_error;
 use crate::sys::fluid_sys_config;
 use crate::tuning::fluid_tuning_get_name;
@@ -88,10 +88,10 @@ use crate::tuning::fluid_tuning_set_all;
 use crate::tuning::fluid_tuning_set_name;
 use crate::tuning::fluid_tuning_set_octave;
 use crate::tuning::fluid_tuning_set_pitch;
-use crate::tuning::fluid_tuning_t;
+use crate::tuning::Tuning;
 use crate::tuning::new_fluid_tuning;
 use crate::voice::delete_fluid_voice;
-use crate::voice::fluid_voice_add_mod;
+use crate::voice::FluidVoiceAddMod;
 use crate::voice::fluid_voice_get_channel;
 use crate::voice::fluid_voice_get_id;
 use crate::voice::fluid_voice_init;
@@ -146,8 +146,8 @@ pub struct fluid_synth_t {
     pub cur: libc::c_int,
     pub dither_index: libc::c_int,
     pub outbuf: [libc::c_char; 256],
-    pub tuning: *mut *mut *mut fluid_tuning_t,
-    pub cur_tuning: *mut fluid_tuning_t,
+    pub tuning: *mut *mut *mut Tuning,
+    pub cur_tuning: *mut Tuning,
     pub min_note_length_ticks: libc::c_uint,
 }
 pub const FLUID_OK: C2RustUnnamed = 0;
@@ -209,7 +209,7 @@ pub const MIDI_SYSEX_TUNING_BULK_DUMP_REQ: MidiSysexTuningMsgId = 0;
 pub const MIDI_SYSEX_TUNING_BULK_DUMP_REQ_BANK: MidiSysexTuningMsgId = 3;
 pub const MIDI_SYSEX_UNIV_REALTIME: MidiSysexManuf = 127;
 pub const GEN_LAST: GenType = 60;
-pub const FLUID_VOICE_DEFAULT: fluid_voice_add_mod = 2;
+pub const FLUID_VOICE_DEFAULT: FluidVoiceAddMod = 2;
 pub const FLUID_VOICE_ENVATTACK: VoiceEnvelopeIndex = 1;
 pub const GEN_EXCLUSIVECLASS: GenType = 57;
 pub type ModFlags = libc::c_uint;
@@ -903,7 +903,7 @@ pub unsafe extern "C" fn new_fluid_synth(
     (*synth).sfont = 0 as *mut List;
     (*synth).noteid = 0 as libc::c_int as libc::c_uint;
     (*synth).ticks = 0 as libc::c_int as libc::c_uint;
-    (*synth).tuning = 0 as *mut *mut *mut fluid_tuning_t;
+    (*synth).tuning = 0 as *mut *mut *mut Tuning;
     loader = new_fluid_defsfloader();
     if loader.is_null() {
         fluid_log!(FLUID_WARN, "Failed to create the default SoundFont loader",);
@@ -1200,7 +1200,7 @@ pub unsafe extern "C" fn delete_fluid_synth(mut synth: *mut fluid_synth_t) -> li
             (*list).data
         } else {
             0 as *mut libc::c_void
-        } as *mut fluid_sfont_t;
+        } as *mut SoundFont;
         if !sfont.is_null() && (*sfont).free.is_some() {
             Some((*sfont).free.expect("non-null function pointer"))
                 .expect("non-null function pointer")(sfont);
@@ -1234,7 +1234,7 @@ pub unsafe extern "C" fn delete_fluid_synth(mut synth: *mut fluid_synth_t) -> li
             (*list).data
         } else {
             0 as *mut libc::c_void
-        } as *mut fluid_sfloader_t;
+        } as *mut SoundfontLoader;
         if !loader.is_null() {
             if !(*loader).fileapi.is_null() && (*(*loader).fileapi).free.is_some() {
                 Some(
@@ -2117,7 +2117,7 @@ pub unsafe extern "C" fn fluid_synth_get_preset(
     mut sfontnum: libc::c_uint,
     mut banknum: libc::c_uint,
     mut prognum: libc::c_uint,
-) -> *mut fluid_preset_t {
+) -> *mut Preset {
     let mut preset;
     let mut sfont;
     let mut offset;
@@ -2134,7 +2134,7 @@ pub unsafe extern "C" fn fluid_synth_get_preset(
             return preset;
         }
     }
-    return 0 as *mut fluid_preset_t;
+    return 0 as *mut Preset;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_get_preset2(
@@ -2142,7 +2142,7 @@ pub unsafe extern "C" fn fluid_synth_get_preset2(
     mut sfont_name: *mut libc::c_char,
     mut banknum: libc::c_uint,
     mut prognum: libc::c_uint,
-) -> *mut fluid_preset_t {
+) -> *mut Preset {
     let mut preset;
     let mut sfont;
     let mut offset;
@@ -2159,14 +2159,14 @@ pub unsafe extern "C" fn fluid_synth_get_preset2(
             return preset;
         }
     }
-    return 0 as *mut fluid_preset_t;
+    return 0 as *mut Preset;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_find_preset(
     mut synth: *mut fluid_synth_t,
     mut banknum: libc::c_uint,
     mut prognum: libc::c_uint,
-) -> *mut fluid_preset_t {
+) -> *mut Preset {
     let mut preset;
     let mut sfont;
     let mut list: *mut List = (*synth).sfont;
@@ -2176,7 +2176,7 @@ pub unsafe extern "C" fn fluid_synth_find_preset(
             (*list).data
         } else {
             0 as *mut libc::c_void
-        } as *mut fluid_sfont_t;
+        } as *mut SoundFont;
         offset = fluid_synth_get_bank_offset(synth, (*sfont).id as libc::c_int);
         preset = Some((*sfont).get_preset.expect("non-null function pointer"))
             .expect("non-null function pointer")(
@@ -2194,7 +2194,7 @@ pub unsafe extern "C" fn fluid_synth_find_preset(
             0 as *mut List
         }
     }
-    return 0 as *mut fluid_preset_t;
+    return 0 as *mut Preset;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_program_change(
@@ -3040,7 +3040,7 @@ pub unsafe extern "C" fn fluid_synth_free_voice_by_kill(
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_alloc_voice(
     mut synth: *mut fluid_synth_t,
-    mut sample: *mut fluid_sample_t,
+    mut sample: *mut Sample,
     mut chan: libc::c_int,
     mut key: libc::c_int,
     mut vel: libc::c_int,
@@ -3119,52 +3119,52 @@ pub unsafe extern "C" fn fluid_synth_alloc_voice(
         fluid_log!(FLUID_WARN, "Failed to initialize voice",);
         return 0 as *mut fluid_voice_t;
     }
-    fluid_voice_add_mod(
+    FluidVoiceAddMod(
         voice,
         &mut default_vel2att_mod,
         FLUID_VOICE_DEFAULT as libc::c_int,
     );
-    fluid_voice_add_mod(
+    FluidVoiceAddMod(
         voice,
         &mut default_vel2filter_mod,
         FLUID_VOICE_DEFAULT as libc::c_int,
     );
-    fluid_voice_add_mod(
+    FluidVoiceAddMod(
         voice,
         &mut default_at2viblfo_mod,
         FLUID_VOICE_DEFAULT as libc::c_int,
     );
-    fluid_voice_add_mod(
+    FluidVoiceAddMod(
         voice,
         &mut default_mod2viblfo_mod,
         FLUID_VOICE_DEFAULT as libc::c_int,
     );
-    fluid_voice_add_mod(
+    FluidVoiceAddMod(
         voice,
         &mut default_att_mod,
         FLUID_VOICE_DEFAULT as libc::c_int,
     );
-    fluid_voice_add_mod(
+    FluidVoiceAddMod(
         voice,
         &mut default_pan_mod,
         FLUID_VOICE_DEFAULT as libc::c_int,
     );
-    fluid_voice_add_mod(
+    FluidVoiceAddMod(
         voice,
         &mut default_expr_mod,
         FLUID_VOICE_DEFAULT as libc::c_int,
     );
-    fluid_voice_add_mod(
+    FluidVoiceAddMod(
         voice,
         &mut default_reverb_mod,
         FLUID_VOICE_DEFAULT as libc::c_int,
     );
-    fluid_voice_add_mod(
+    FluidVoiceAddMod(
         voice,
         &mut default_chorus_mod,
         FLUID_VOICE_DEFAULT as libc::c_int,
     );
-    fluid_voice_add_mod(
+    FluidVoiceAddMod(
         voice,
         &mut DEFAULT_PITCH_BEND_MOD,
         FLUID_VOICE_DEFAULT as libc::c_int,
@@ -3220,7 +3220,7 @@ pub unsafe extern "C" fn fluid_synth_start_voice(
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_add_sfloader(
     mut synth: *mut fluid_synth_t,
-    mut loader: *mut fluid_sfloader_t,
+    mut loader: *mut SoundfontLoader,
 ) {
     (*synth).loaders = fluid_list_prepend((*synth).loaders, loader as *mut libc::c_void);
 }
@@ -3243,7 +3243,7 @@ pub unsafe extern "C" fn fluid_synth_sfload(
             (*list).data
         } else {
             0 as *mut libc::c_void
-        } as *mut fluid_sfloader_t;
+        } as *mut SoundfontLoader;
         sfont = Some((*loader).load.expect("non-null function pointer"))
             .expect("non-null function pointer")(loader, filename);
         if sfont.is_null() {
@@ -3270,7 +3270,7 @@ pub unsafe extern "C" fn fluid_synth_sfunload(
     mut id: libc::c_uint,
     mut reset_presets: libc::c_int,
 ) -> libc::c_int {
-    let mut sfont: *mut fluid_sfont_t = fluid_synth_get_sfont_by_id(synth, id);
+    let mut sfont: *mut SoundFont = fluid_synth_get_sfont_by_id(synth, id);
     if sfont.is_null() {
         fluid_log!(FLUID_ERR, "No SoundFont with id = {}", id);
         return FLUID_FAILED as libc::c_int;
@@ -3323,7 +3323,7 @@ pub unsafe extern "C" fn fluid_synth_sfreload(
                 (*list).data
             } else {
                 0 as *mut libc::c_void
-            }) as *mut fluid_sfont_t
+            }) as *mut SoundFont
         {
             break;
         }
@@ -3348,7 +3348,7 @@ pub unsafe extern "C" fn fluid_synth_sfreload(
             (*list).data
         } else {
             0 as *mut libc::c_void
-        } as *mut fluid_sfloader_t;
+        } as *mut SoundfontLoader;
         sfont = Some((*loader).load.expect("non-null function pointer"))
             .expect("non-null function pointer")(loader, filename.as_mut_ptr());
         if !sfont.is_null() {
@@ -3374,7 +3374,7 @@ pub unsafe extern "C" fn fluid_synth_sfreload(
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_add_sfont(
     mut synth: *mut fluid_synth_t,
-    mut sfont: *mut fluid_sfont_t,
+    mut sfont: *mut SoundFont,
 ) -> libc::c_int {
     (*synth).sfont_id = (*synth).sfont_id.wrapping_add(1);
     (*sfont).id = (*synth).sfont_id;
@@ -3385,7 +3385,7 @@ pub unsafe extern "C" fn fluid_synth_add_sfont(
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_remove_sfont(
     mut synth: *mut fluid_synth_t,
-    mut sfont: *mut fluid_sfont_t,
+    mut sfont: *mut SoundFont,
 ) {
     let mut sfont_id: libc::c_int = (*sfont).id as libc::c_int;
     (*synth).sfont = fluid_list_remove((*synth).sfont, sfont as *mut libc::c_void);
@@ -3400,18 +3400,18 @@ pub unsafe extern "C" fn fluid_synth_sfcount(mut synth: *mut fluid_synth_t) -> l
 pub unsafe extern "C" fn fluid_synth_get_sfont(
     mut synth: *mut fluid_synth_t,
     mut num: libc::c_uint,
-) -> *mut fluid_sfont_t {
+) -> *mut SoundFont {
     return if !fluid_list_nth((*synth).sfont, num as libc::c_int).is_null() {
         (*fluid_list_nth((*synth).sfont, num as libc::c_int)).data
     } else {
         0 as *mut libc::c_void
-    } as *mut fluid_sfont_t;
+    } as *mut SoundFont;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_get_sfont_by_id(
     mut synth: *mut fluid_synth_t,
     mut id: libc::c_uint,
-) -> *mut fluid_sfont_t {
+) -> *mut SoundFont {
     let mut list: *mut List = (*synth).sfont;
     let mut sfont;
     while !list.is_null() {
@@ -3419,7 +3419,7 @@ pub unsafe extern "C" fn fluid_synth_get_sfont_by_id(
             (*list).data
         } else {
             0 as *mut libc::c_void
-        } as *mut fluid_sfont_t;
+        } as *mut SoundFont;
         if (*sfont).id == id {
             return sfont;
         }
@@ -3429,13 +3429,13 @@ pub unsafe extern "C" fn fluid_synth_get_sfont_by_id(
             0 as *mut List
         }
     }
-    return 0 as *mut fluid_sfont_t;
+    return 0 as *mut SoundFont;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_get_sfont_by_name(
     mut synth: *mut fluid_synth_t,
     mut name: *mut libc::c_char,
-) -> *mut fluid_sfont_t {
+) -> *mut SoundFont {
     let mut list: *mut List = (*synth).sfont;
     let mut sfont;
     while !list.is_null() {
@@ -3443,7 +3443,7 @@ pub unsafe extern "C" fn fluid_synth_get_sfont_by_name(
             (*list).data
         } else {
             0 as *mut libc::c_void
-        } as *mut fluid_sfont_t;
+        } as *mut SoundFont;
         if libc::strcmp(
             Some((*sfont).get_name.expect("non-null function pointer"))
                 .expect("non-null function pointer")(sfont),
@@ -3458,17 +3458,17 @@ pub unsafe extern "C" fn fluid_synth_get_sfont_by_name(
             0 as *mut List
         }
     }
-    return 0 as *mut fluid_sfont_t;
+    return 0 as *mut SoundFont;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_get_channel_preset(
     mut synth: *mut fluid_synth_t,
     mut chan: libc::c_int,
-) -> *mut fluid_preset_t {
+) -> *mut Preset {
     if chan >= 0 as libc::c_int && chan < (*synth).midi_channels {
         return fluid_channel_get_preset(*(*synth).channel.offset(chan as isize));
     }
-    return 0 as *mut fluid_preset_t;
+    return 0 as *mut Preset;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_get_voicelist(
@@ -3639,21 +3639,21 @@ unsafe extern "C" fn fluid_synth_get_tuning(
     mut synth: *mut fluid_synth_t,
     mut bank: libc::c_int,
     mut prog: libc::c_int,
-) -> *mut fluid_tuning_t {
+) -> *mut Tuning {
     if bank < 0 as libc::c_int || bank >= 128 as libc::c_int {
         fluid_log!(FLUID_WARN, "Bank number out of range",);
-        return 0 as *mut fluid_tuning_t;
+        return 0 as *mut Tuning;
     }
     if prog < 0 as libc::c_int || prog >= 128 as libc::c_int {
         fluid_log!(FLUID_WARN, "Program number out of range",);
-        return 0 as *mut fluid_tuning_t;
+        return 0 as *mut Tuning;
     }
     if (*synth).tuning.is_null()
         || (*(*synth).tuning.offset(bank as isize)).is_null()
         || (*(*(*synth).tuning.offset(bank as isize)).offset(prog as isize)).is_null()
     {
         fluid_log!(FLUID_WARN, "No tuning at bank {}, prog {}", bank, prog);
-        return 0 as *mut fluid_tuning_t;
+        return 0 as *mut Tuning;
     }
     return *(*(*synth).tuning.offset(bank as isize)).offset(prog as isize);
 }
@@ -3662,53 +3662,53 @@ unsafe extern "C" fn fluid_synth_create_tuning(
     mut bank: libc::c_int,
     mut prog: libc::c_int,
     mut name: *const libc::c_char,
-) -> *mut fluid_tuning_t {
+) -> *mut Tuning {
     if bank < 0 as libc::c_int || bank >= 128 as libc::c_int {
         fluid_log!(FLUID_WARN, "Bank number out of range",);
-        return 0 as *mut fluid_tuning_t;
+        return 0 as *mut Tuning;
     }
     if prog < 0 as libc::c_int || prog >= 128 as libc::c_int {
         fluid_log!(FLUID_WARN, "Program number out of range",);
-        return 0 as *mut fluid_tuning_t;
+        return 0 as *mut Tuning;
     }
     if (*synth).tuning.is_null() {
         (*synth).tuning = libc::malloc(
             (128 as libc::c_int as libc::size_t)
-                .wrapping_mul(::std::mem::size_of::<*mut *mut fluid_tuning_t>() as libc::size_t),
-        ) as *mut *mut *mut fluid_tuning_t;
+                .wrapping_mul(::std::mem::size_of::<*mut *mut Tuning>() as libc::size_t),
+        ) as *mut *mut *mut Tuning;
         if (*synth).tuning.is_null() {
             fluid_log!(FLUID_PANIC as libc::c_int, "Out of memory",);
-            return 0 as *mut fluid_tuning_t;
+            return 0 as *mut Tuning;
         }
         libc::memset(
             (*synth).tuning as *mut libc::c_void,
             0 as libc::c_int,
             (128 as libc::c_int as libc::size_t)
-                .wrapping_mul(::std::mem::size_of::<*mut *mut fluid_tuning_t>() as libc::size_t),
+                .wrapping_mul(::std::mem::size_of::<*mut *mut Tuning>() as libc::size_t),
         );
     }
     if (*(*synth).tuning.offset(bank as isize)).is_null() {
         let ref mut fresh31 = *(*synth).tuning.offset(bank as isize);
         *fresh31 = libc::malloc(
             (128 as libc::c_int as libc::size_t)
-                .wrapping_mul(::std::mem::size_of::<*mut fluid_tuning_t>() as libc::size_t),
-        ) as *mut *mut fluid_tuning_t;
+                .wrapping_mul(::std::mem::size_of::<*mut Tuning>() as libc::size_t),
+        ) as *mut *mut Tuning;
         if (*(*synth).tuning.offset(bank as isize)).is_null() {
             fluid_log!(FLUID_PANIC as libc::c_int, "Out of memory",);
-            return 0 as *mut fluid_tuning_t;
+            return 0 as *mut Tuning;
         }
         libc::memset(
             *(*synth).tuning.offset(bank as isize) as *mut libc::c_void,
             0 as libc::c_int,
             (128 as libc::c_int as libc::size_t)
-                .wrapping_mul(::std::mem::size_of::<*mut fluid_tuning_t>() as libc::size_t),
+                .wrapping_mul(::std::mem::size_of::<*mut Tuning>() as libc::size_t),
         );
     }
     if (*(*(*synth).tuning.offset(bank as isize)).offset(prog as isize)).is_null() {
         let ref mut fresh32 = *(*(*synth).tuning.offset(bank as isize)).offset(prog as isize);
         *fresh32 = new_fluid_tuning(name, bank, prog);
         if (*(*(*synth).tuning.offset(bank as isize)).offset(prog as isize)).is_null() {
-            return 0 as *mut fluid_tuning_t;
+            return 0 as *mut Tuning;
         }
     }
     if fluid_tuning_get_name(*(*(*synth).tuning.offset(bank as isize)).offset(prog as isize))
@@ -3733,7 +3733,7 @@ pub unsafe extern "C" fn fluid_synth_create_key_tuning(
     mut name: *const libc::c_char,
     mut pitch: *mut f64,
 ) -> libc::c_int {
-    let mut tuning: *mut fluid_tuning_t = fluid_synth_create_tuning(synth, bank, prog, name);
+    let mut tuning: *mut Tuning = fluid_synth_create_tuning(synth, bank, prog, name);
     if tuning.is_null() {
         return FLUID_FAILED as libc::c_int;
     }
@@ -3881,12 +3881,12 @@ pub unsafe extern "C" fn fluid_synth_reset_tuning(
         return FLUID_FAILED as libc::c_int;
     }
     let ref mut fresh34 = (**(*synth).channel.offset(chan as isize)).tuning;
-    *fresh34 = 0 as *mut fluid_tuning_t;
+    *fresh34 = 0 as *mut Tuning;
     return FLUID_OK as libc::c_int;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_tuning_iteration_start(mut synth: *mut fluid_synth_t) {
-    (*synth).cur_tuning = 0 as *mut fluid_tuning_t;
+    (*synth).cur_tuning = 0 as *mut Tuning;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_synth_tuning_iteration_next(
@@ -3933,7 +3933,7 @@ pub unsafe extern "C" fn fluid_synth_tuning_dump(
     mut len: libc::c_int,
     mut pitch: *mut f64,
 ) -> libc::c_int {
-    let mut tuning: *mut fluid_tuning_t = fluid_synth_get_tuning(synth, bank, prog);
+    let mut tuning: *mut Tuning = fluid_synth_get_tuning(synth, bank, prog);
     if tuning.is_null() {
         return FLUID_FAILED as libc::c_int;
     }
@@ -4100,7 +4100,7 @@ pub unsafe extern "C" fn fluid_synth_get_gen(
 pub unsafe extern "C" fn fluid_synth_start(
     mut synth: *mut fluid_synth_t,
     mut id: libc::c_uint,
-    mut preset: *mut fluid_preset_t,
+    mut preset: *mut Preset,
     _audio_chan: libc::c_int,
     mut midi_chan: libc::c_int,
     mut key: libc::c_int,

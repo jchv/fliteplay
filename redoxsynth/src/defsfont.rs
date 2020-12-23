@@ -14,15 +14,15 @@ use crate::modulator::fluid_mod_delete;
 use crate::modulator::fluid_mod_new;
 use crate::modulator::fluid_mod_t;
 use crate::modulator::fluid_mod_test_identity;
-use crate::sfont::fluid_fileapi_t;
-use crate::sfont::fluid_preset_t;
-use crate::sfont::fluid_sample_t;
-use crate::sfont::fluid_sfloader_t;
-use crate::sfont::fluid_sfont_t;
+use crate::sfont::FileApi;
+use crate::sfont::Preset;
+use crate::sfont::Sample;
+use crate::sfont::SoundfontLoader;
+use crate::sfont::SoundFont;
 use crate::synth::fluid_synth_alloc_voice;
 use crate::synth::fluid_synth_start_voice;
 use crate::synth::fluid_synth_t;
-use crate::voice::fluid_voice_add_mod;
+use crate::voice::FluidVoiceAddMod;
 use crate::voice::fluid_voice_gen_incr;
 use crate::voice::fluid_voice_gen_set;
 use crate::voice::fluid_voice_optimize_sample;
@@ -39,7 +39,7 @@ pub struct fluid_defsfont_t {
     pub sampledata: *mut libc::c_short,
     pub sample: *mut List,
     pub preset: *mut fluid_defpreset_t,
-    pub iter_preset: fluid_preset_t,
+    pub iter_preset: Preset,
     pub iter_cur: *mut fluid_defpreset_t,
 }
 #[derive(Copy, Clone)]
@@ -78,7 +78,7 @@ pub struct fluid_inst_t {
 pub struct fluid_inst_zone_t {
     pub next: *mut fluid_inst_zone_t,
     pub name: *mut libc::c_char,
-    pub sample: *mut fluid_sample_t,
+    pub sample: *mut Sample,
     pub keylo: libc::c_int,
     pub keyhi: libc::c_int,
     pub vello: libc::c_int,
@@ -234,7 +234,7 @@ pub const IFIL_ID: libc::c_uint = 7;
 pub const INFO_ID: libc::c_uint = 4;
 pub const SFBK_ID: libc::c_uint = 3;
 pub const RIFF_ID: libc::c_uint = 1;
-pub const FLUID_VOICE_ADD: fluid_voice_add_mod = 1;
+pub const FLUID_VOICE_ADD: FluidVoiceAddMod = 1;
 pub const GEN_OVERRIDEROOTKEY: GenType = 58;
 pub const GEN_EXCLUSIVECLASS: GenType = 57;
 pub const GEN_SAMPLEMODE: GenType = 54;
@@ -247,12 +247,12 @@ pub const GEN_STARTLOOPADDROFS: GenType = 2;
 pub const GEN_ENDADDROFS: GenType = 1;
 pub const GEN_STARTADDROFS: GenType = 0;
 pub const GEN_LAST: GenType = 60;
-pub const FLUID_VOICE_OVERWRITE: fluid_voice_add_mod = 0;
+pub const FLUID_VOICE_OVERWRITE: FluidVoiceAddMod = 0;
 pub type ModFlags = libc::c_uint;
 pub type GenType = libc::c_uint;
 pub type GenFlags = libc::c_uint;
 unsafe extern "C" fn default_fopen(
-    _fileapi: *mut fluid_fileapi_t,
+    _fileapi: *mut FileApi,
     path: *const libc::c_char,
 ) -> *mut libc::c_void {
     return libc::fopen(path, b"rb\x00" as *const u8 as *const libc::c_char) as *mut libc::c_void;
@@ -298,14 +298,14 @@ unsafe extern "C" fn safe_fseek(
     }
     return FLUID_OK as libc::c_int;
 }
-static mut DEFAULT_FILEAPI: fluid_fileapi_t = {
-    fluid_fileapi_t {
+static mut DEFAULT_FILEAPI: FileApi = {
+    FileApi {
         data: 0 as *const libc::c_void as *mut libc::c_void,
         free: None,
         fopen: Some(
             default_fopen
                 as unsafe extern "C" fn(
-                    _: *mut fluid_fileapi_t,
+                    _: *mut FileApi,
                     _: *const libc::c_char,
                 ) -> *mut libc::c_void,
         ),
@@ -333,16 +333,16 @@ static mut DEFAULT_FILEAPI: fluid_fileapi_t = {
         ),
     }
 };
-static mut FLUID_DEFAULT_FILEAPI: *mut fluid_fileapi_t =
-    unsafe { &DEFAULT_FILEAPI as *const fluid_fileapi_t as *mut fluid_fileapi_t };
+static mut FLUID_DEFAULT_FILEAPI: *mut FileApi =
+    unsafe { &DEFAULT_FILEAPI as *const FileApi as *mut FileApi };
 #[no_mangle]
-pub unsafe extern "C" fn fluid_init_default_fileapi(mut fileapi: *mut fluid_fileapi_t) {
+pub unsafe extern "C" fn fluid_init_default_fileapi(mut fileapi: *mut FileApi) {
     (*fileapi).data = 0 as *mut libc::c_void;
     (*fileapi).free = None;
     (*fileapi).fopen = Some(
         default_fopen
             as unsafe extern "C" fn(
-                _: *mut fluid_fileapi_t,
+                _: *mut FileApi,
                 _: *const libc::c_char,
             ) -> *mut libc::c_void,
     );
@@ -368,7 +368,7 @@ pub unsafe extern "C" fn fluid_init_default_fileapi(mut fileapi: *mut fluid_file
         Some(default_ftell as unsafe extern "C" fn(_: *mut libc::c_void) -> libc::c_long);
 }
 #[no_mangle]
-pub unsafe extern "C" fn fluid_set_default_fileapi(fileapi: *mut fluid_fileapi_t) {
+pub unsafe extern "C" fn fluid_set_default_fileapi(fileapi: *mut FileApi) {
     if !FLUID_DEFAULT_FILEAPI.is_null() && (*FLUID_DEFAULT_FILEAPI).free.is_some() {
         Some(
             (*FLUID_DEFAULT_FILEAPI)
@@ -378,37 +378,37 @@ pub unsafe extern "C" fn fluid_set_default_fileapi(fileapi: *mut fluid_fileapi_t
         .expect("non-null function pointer")(FLUID_DEFAULT_FILEAPI);
     }
     FLUID_DEFAULT_FILEAPI = if fileapi.is_null() {
-        &DEFAULT_FILEAPI as *const fluid_fileapi_t as *mut fluid_fileapi_t
+        &DEFAULT_FILEAPI as *const FileApi as *mut FileApi
     } else {
         fileapi
     };
 }
 #[no_mangle]
-pub unsafe extern "C" fn new_fluid_defsfloader() -> *mut fluid_sfloader_t {
-    let mut loader: *mut fluid_sfloader_t;
-    loader = libc::malloc(::std::mem::size_of::<fluid_sfloader_t>() as libc::size_t)
-        as *mut fluid_sfloader_t;
+pub unsafe extern "C" fn new_fluid_defsfloader() -> *mut SoundfontLoader {
+    let mut loader: *mut SoundfontLoader;
+    loader = libc::malloc(::std::mem::size_of::<SoundfontLoader>() as libc::size_t)
+        as *mut SoundfontLoader;
     if loader.is_null() {
         fluid_log!(FLUID_ERR, "Out of memory",);
-        return 0 as *mut fluid_sfloader_t;
+        return 0 as *mut SoundfontLoader;
     }
     (*loader).data = 0 as *mut libc::c_void;
     (*loader).fileapi = FLUID_DEFAULT_FILEAPI;
     (*loader).free = Some(
-        delete_fluid_defsfloader as unsafe extern "C" fn(_: *mut fluid_sfloader_t) -> libc::c_int,
+        delete_fluid_defsfloader as unsafe extern "C" fn(_: *mut SoundfontLoader) -> libc::c_int,
     );
     (*loader).load = Some(
         fluid_defsfloader_load
             as unsafe extern "C" fn(
-                _: *mut fluid_sfloader_t,
+                _: *mut SoundfontLoader,
                 _: *const libc::c_char,
-            ) -> *mut fluid_sfont_t,
+            ) -> *mut SoundFont,
     );
     return loader;
 }
 #[no_mangle]
 pub unsafe extern "C" fn delete_fluid_defsfloader(
-    loader: *mut fluid_sfloader_t,
+    loader: *mut SoundfontLoader,
 ) -> libc::c_int {
     if !loader.is_null() {
         libc::free(loader as *mut libc::c_void);
@@ -417,55 +417,55 @@ pub unsafe extern "C" fn delete_fluid_defsfloader(
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_defsfloader_load(
-    loader: *mut fluid_sfloader_t,
+    loader: *mut SoundfontLoader,
     filename: *const libc::c_char,
-) -> *mut fluid_sfont_t {
+) -> *mut SoundFont {
     let defsfont: *mut fluid_defsfont_t;
-    let mut sfont: *mut fluid_sfont_t;
+    let mut sfont: *mut SoundFont;
     defsfont = new_fluid_defsfont();
     if defsfont.is_null() {
-        return 0 as *mut fluid_sfont_t;
+        return 0 as *mut SoundFont;
     }
     sfont = if !(*loader).data.is_null() {
-        (*loader).data as *mut fluid_sfont_t
+        (*loader).data as *mut SoundFont
     } else {
-        libc::malloc(::std::mem::size_of::<fluid_sfont_t>() as libc::size_t) as *mut fluid_sfont_t
+        libc::malloc(::std::mem::size_of::<SoundFont>() as libc::size_t) as *mut SoundFont
     };
     if sfont.is_null() {
         fluid_log!(FLUID_ERR, "Out of memory",);
-        return 0 as *mut fluid_sfont_t;
+        return 0 as *mut SoundFont;
     }
     (*sfont).data = defsfont as *mut libc::c_void;
     (*sfont).free = Some(
-        fluid_defsfont_sfont_delete as unsafe extern "C" fn(_: *mut fluid_sfont_t) -> libc::c_int,
+        fluid_defsfont_sfont_delete as unsafe extern "C" fn(_: *mut SoundFont) -> libc::c_int,
     );
     (*sfont).get_name = Some(
         fluid_defsfont_sfont_get_name
-            as unsafe extern "C" fn(_: *mut fluid_sfont_t) -> *mut libc::c_char,
+            as unsafe extern "C" fn(_: *mut SoundFont) -> *mut libc::c_char,
     );
     (*sfont).get_preset = Some(
         fluid_defsfont_sfont_get_preset
             as unsafe extern "C" fn(
-                _: *mut fluid_sfont_t,
+                _: *mut SoundFont,
                 _: libc::c_uint,
                 _: libc::c_uint,
-            ) -> *mut fluid_preset_t,
+            ) -> *mut Preset,
     );
     (*sfont).iteration_start = Some(
-        fluid_defsfont_sfont_iteration_start as unsafe extern "C" fn(_: *mut fluid_sfont_t) -> (),
+        fluid_defsfont_sfont_iteration_start as unsafe extern "C" fn(_: *mut SoundFont) -> (),
     );
     (*sfont).iteration_next = Some(
         fluid_defsfont_sfont_iteration_next
-            as unsafe extern "C" fn(_: *mut fluid_sfont_t, _: *mut fluid_preset_t) -> libc::c_int,
+            as unsafe extern "C" fn(_: *mut SoundFont, _: *mut Preset) -> libc::c_int,
     );
     if fluid_defsfont_load(defsfont, filename, (*loader).fileapi) == FLUID_FAILED as libc::c_int {
         delete_fluid_defsfont(defsfont);
-        return 0 as *mut fluid_sfont_t;
+        return 0 as *mut SoundFont;
     }
     return sfont;
 }
 #[no_mangle]
-pub unsafe extern "C" fn fluid_defsfont_sfont_delete(sfont: *mut fluid_sfont_t) -> libc::c_int {
+pub unsafe extern "C" fn fluid_defsfont_sfont_delete(sfont: *mut SoundFont) -> libc::c_int {
     if delete_fluid_defsfont((*sfont).data as *mut fluid_defsfont_t) != 0 as libc::c_int {
         return -(1 as libc::c_int);
     }
@@ -474,50 +474,50 @@ pub unsafe extern "C" fn fluid_defsfont_sfont_delete(sfont: *mut fluid_sfont_t) 
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_defsfont_sfont_get_name(
-    sfont: *mut fluid_sfont_t,
+    sfont: *mut SoundFont,
 ) -> *mut libc::c_char {
     return fluid_defsfont_get_name((*sfont).data as *mut fluid_defsfont_t);
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_defsfont_sfont_get_preset(
-    sfont: *mut fluid_sfont_t,
+    sfont: *mut SoundFont,
     bank: libc::c_uint,
     prenum: libc::c_uint,
-) -> *mut fluid_preset_t {
-    let mut preset: *mut fluid_preset_t;
+) -> *mut Preset {
+    let mut preset: *mut Preset;
     let defpreset: *mut fluid_defpreset_t;
     defpreset = fluid_defsfont_get_preset((*sfont).data as *mut fluid_defsfont_t, bank, prenum);
     if defpreset.is_null() {
-        return 0 as *mut fluid_preset_t;
+        return 0 as *mut Preset;
     }
-    preset = libc::malloc(::std::mem::size_of::<fluid_preset_t>() as libc::size_t)
-        as *mut fluid_preset_t;
+    preset = libc::malloc(::std::mem::size_of::<Preset>() as libc::size_t)
+        as *mut Preset;
     if preset.is_null() {
         fluid_log!(FLUID_ERR, "Out of memory",);
-        return 0 as *mut fluid_preset_t;
+        return 0 as *mut Preset;
     }
     (*preset).sfont = sfont;
     (*preset).data = defpreset as *mut libc::c_void;
     (*preset).free = Some(
         fluid_defpreset_preset_delete
-            as unsafe extern "C" fn(_: *mut fluid_preset_t) -> libc::c_int,
+            as unsafe extern "C" fn(_: *mut Preset) -> libc::c_int,
     );
     (*preset).get_name = Some(
         fluid_defpreset_preset_get_name
-            as unsafe extern "C" fn(_: *mut fluid_preset_t) -> *mut libc::c_char,
+            as unsafe extern "C" fn(_: *mut Preset) -> *mut libc::c_char,
     );
     (*preset).get_banknum = Some(
         fluid_defpreset_preset_get_banknum
-            as unsafe extern "C" fn(_: *mut fluid_preset_t) -> libc::c_int,
+            as unsafe extern "C" fn(_: *mut Preset) -> libc::c_int,
     );
     (*preset).get_num = Some(
         fluid_defpreset_preset_get_num
-            as unsafe extern "C" fn(_: *mut fluid_preset_t) -> libc::c_int,
+            as unsafe extern "C" fn(_: *mut Preset) -> libc::c_int,
     );
     (*preset).noteon = Some(
         fluid_defpreset_preset_noteon
             as unsafe extern "C" fn(
-                _: *mut fluid_preset_t,
+                _: *mut Preset,
                 _: *mut fluid_synth_t,
                 _: libc::c_int,
                 _: libc::c_int,
@@ -528,34 +528,34 @@ pub unsafe extern "C" fn fluid_defsfont_sfont_get_preset(
     return preset;
 }
 #[no_mangle]
-pub unsafe extern "C" fn fluid_defsfont_sfont_iteration_start(sfont: *mut fluid_sfont_t) {
+pub unsafe extern "C" fn fluid_defsfont_sfont_iteration_start(sfont: *mut SoundFont) {
     fluid_defsfont_iteration_start((*sfont).data as *mut fluid_defsfont_t);
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_defsfont_sfont_iteration_next(
-    sfont: *mut fluid_sfont_t,
-    mut preset: *mut fluid_preset_t,
+    sfont: *mut SoundFont,
+    mut preset: *mut Preset,
 ) -> libc::c_int {
     (*preset).free = Some(
         fluid_defpreset_preset_delete
-            as unsafe extern "C" fn(_: *mut fluid_preset_t) -> libc::c_int,
+            as unsafe extern "C" fn(_: *mut Preset) -> libc::c_int,
     );
     (*preset).get_name = Some(
         fluid_defpreset_preset_get_name
-            as unsafe extern "C" fn(_: *mut fluid_preset_t) -> *mut libc::c_char,
+            as unsafe extern "C" fn(_: *mut Preset) -> *mut libc::c_char,
     );
     (*preset).get_banknum = Some(
         fluid_defpreset_preset_get_banknum
-            as unsafe extern "C" fn(_: *mut fluid_preset_t) -> libc::c_int,
+            as unsafe extern "C" fn(_: *mut Preset) -> libc::c_int,
     );
     (*preset).get_num = Some(
         fluid_defpreset_preset_get_num
-            as unsafe extern "C" fn(_: *mut fluid_preset_t) -> libc::c_int,
+            as unsafe extern "C" fn(_: *mut Preset) -> libc::c_int,
     );
     (*preset).noteon = Some(
         fluid_defpreset_preset_noteon
             as unsafe extern "C" fn(
-                _: *mut fluid_preset_t,
+                _: *mut Preset,
                 _: *mut fluid_synth_t,
                 _: libc::c_int,
                 _: libc::c_int,
@@ -567,32 +567,32 @@ pub unsafe extern "C" fn fluid_defsfont_sfont_iteration_next(
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_defpreset_preset_delete(
-    preset: *mut fluid_preset_t,
+    preset: *mut Preset,
 ) -> libc::c_int {
     libc::free(preset as *mut libc::c_void);
     return 0 as libc::c_int;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_defpreset_preset_get_name(
-    preset: *mut fluid_preset_t,
+    preset: *mut Preset,
 ) -> *mut libc::c_char {
     return fluid_defpreset_get_name((*preset).data as *mut fluid_defpreset_t);
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_defpreset_preset_get_banknum(
-    preset: *mut fluid_preset_t,
+    preset: *mut Preset,
 ) -> libc::c_int {
     return fluid_defpreset_get_banknum((*preset).data as *mut fluid_defpreset_t);
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_defpreset_preset_get_num(
-    preset: *mut fluid_preset_t,
+    preset: *mut Preset,
 ) -> libc::c_int {
     return fluid_defpreset_get_num((*preset).data as *mut fluid_defpreset_t);
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_defpreset_preset_noteon(
-    preset: *mut fluid_preset_t,
+    preset: *mut Preset,
     synth: *mut fluid_synth_t,
     chan: libc::c_int,
     key: libc::c_int,
@@ -627,14 +627,14 @@ pub unsafe extern "C" fn new_fluid_defsfont() -> *mut fluid_defsfont_t {
 pub unsafe extern "C" fn delete_fluid_defsfont(mut sfont: *mut fluid_defsfont_t) -> libc::c_int {
     let mut list: *mut List;
     let mut preset: *mut fluid_defpreset_t;
-    let mut sample: *mut fluid_sample_t;
+    let mut sample: *mut Sample;
     list = (*sfont).sample;
     while !list.is_null() {
         sample = if !list.is_null() {
             (*list).data
         } else {
             0 as *mut libc::c_void
-        } as *mut fluid_sample_t;
+        } as *mut Sample;
         if (*sample).refcount != 0 as libc::c_int as libc::c_uint {
             return -(1 as libc::c_int);
         }
@@ -653,7 +653,7 @@ pub unsafe extern "C" fn delete_fluid_defsfont(mut sfont: *mut fluid_defsfont_t)
             (*list).data
         } else {
             0 as *mut libc::c_void
-        } as *mut fluid_sample_t);
+        } as *mut Sample);
         list = if !list.is_null() {
             (*list).next
         } else {
@@ -696,14 +696,14 @@ pub unsafe extern "C" fn fluid_synth_set_preset_callback(callback: *mut libc::c_
 pub unsafe extern "C" fn fluid_defsfont_load(
     mut sfont: *mut fluid_defsfont_t,
     file: *const libc::c_char,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> libc::c_int {
     let mut current_block: u64;
     let sfdata: *mut SFData;
     let mut p: *mut List;
     let mut sfpreset: *mut SFPreset;
     let mut sfsample: *mut SFSample;
-    let mut sample: *mut fluid_sample_t;
+    let mut sample: *mut Sample;
     let mut preset: *mut fluid_defpreset_t;
     (*sfont).filename = libc::malloc(libc::strlen(file) + 1) as *mut libc::c_char;
     if (*sfont).filename.is_null() {
@@ -794,7 +794,7 @@ pub unsafe extern "C" fn fluid_defsfont_load(
 #[no_mangle]
 pub unsafe extern "C" fn fluid_defsfont_add_sample(
     mut sfont: *mut fluid_defsfont_t,
-    sample: *mut fluid_sample_t,
+    sample: *mut Sample,
 ) -> libc::c_int {
     (*sfont).sample = fluid_list_append((*sfont).sample, sample as *mut libc::c_void);
     return FLUID_OK as libc::c_int;
@@ -836,7 +836,7 @@ pub unsafe extern "C" fn fluid_defsfont_add_preset(
 #[no_mangle]
 pub unsafe extern "C" fn fluid_defsfont_load_sampledata(
     mut sfont: *mut fluid_defsfont_t,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> libc::c_int {
     let fd: *mut libc::FILE;
     let mut endian: libc::c_ushort;
@@ -901,16 +901,16 @@ pub unsafe extern "C" fn fluid_defsfont_load_sampledata(
 pub unsafe extern "C" fn fluid_defsfont_get_sample(
     sfont: *mut fluid_defsfont_t,
     s: *mut libc::c_char,
-) -> *mut fluid_sample_t {
+) -> *mut Sample {
     let mut list: *mut List;
-    let mut sample: *mut fluid_sample_t;
+    let mut sample: *mut Sample;
     list = (*sfont).sample;
     while !list.is_null() {
         sample = if !list.is_null() {
             (*list).data
         } else {
             0 as *mut libc::c_void
-        } as *mut fluid_sample_t;
+        } as *mut Sample;
         if libc::strcmp((*sample).name.as_mut_ptr(), s) == 0 as libc::c_int {
             return sample;
         }
@@ -920,7 +920,7 @@ pub unsafe extern "C" fn fluid_defsfont_get_sample(
             0 as *mut List
         }
     }
-    return 0 as *mut fluid_sample_t;
+    return 0 as *mut Sample;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_defsfont_get_preset(
@@ -944,7 +944,7 @@ pub unsafe extern "C" fn fluid_defsfont_iteration_start(mut sfont: *mut fluid_de
 #[no_mangle]
 pub unsafe extern "C" fn fluid_defsfont_iteration_next(
     mut sfont: *mut fluid_defsfont_t,
-    mut preset: *mut fluid_preset_t,
+    mut preset: *mut Preset,
 ) -> libc::c_int {
     if (*sfont).iter_cur.is_null() {
         return 0 as libc::c_int;
@@ -1031,7 +1031,7 @@ pub unsafe extern "C" fn fluid_defpreset_noteon(
     let mut inst: *mut fluid_inst_t;
     let mut inst_zone: *mut fluid_inst_zone_t;
     let mut global_inst_zone: *mut fluid_inst_zone_t;
-    let mut sample: *mut fluid_sample_t;
+    let mut sample: *mut Sample;
     let mut voice: *mut fluid_voice_t;
     let mut mod_0: *mut fluid_mod_t;
     let mut mod_list: [*mut fluid_mod_t; 64] = [0 as *mut fluid_mod_t; 64];
@@ -1103,7 +1103,7 @@ pub unsafe extern "C" fn fluid_defpreset_noteon(
                         while i < mod_list_count {
                             mod_0 = mod_list[i as usize];
                             if !mod_0.is_null() {
-                                fluid_voice_add_mod(
+                                FluidVoiceAddMod(
                                     voice,
                                     mod_0,
                                     FLUID_VOICE_OVERWRITE as libc::c_int,
@@ -1178,7 +1178,7 @@ pub unsafe extern "C" fn fluid_defpreset_noteon(
                             if !mod_0.is_null()
                                 && (*mod_0).amount != 0 as libc::c_int as f64
                             {
-                                fluid_voice_add_mod(voice, mod_0, FLUID_VOICE_ADD as libc::c_int);
+                                FluidVoiceAddMod(voice, mod_0, FLUID_VOICE_ADD as libc::c_int);
                             }
                             i += 1
                         }
@@ -1681,7 +1681,7 @@ pub unsafe extern "C" fn new_fluid_inst_zone(
         return 0 as *mut fluid_inst_zone_t;
     }
     libc::strcpy((*zone).name, name);
-    (*zone).sample = 0 as *mut fluid_sample_t;
+    (*zone).sample = 0 as *mut Sample;
     (*zone).keylo = 0 as libc::c_int;
     (*zone).keyhi = 128 as libc::c_int;
     (*zone).vello = 0 as libc::c_int;
@@ -1886,7 +1886,7 @@ pub unsafe extern "C" fn fluid_inst_zone_import_sfont(
 #[no_mangle]
 pub unsafe extern "C" fn fluid_inst_zone_get_sample(
     zone: *mut fluid_inst_zone_t,
-) -> *mut fluid_sample_t {
+) -> *mut Sample {
     return (*zone).sample;
 }
 #[no_mangle]
@@ -1901,34 +1901,34 @@ pub unsafe extern "C" fn fluid_inst_zone_inside_range(
         && (*zone).velhi >= vel) as libc::c_int;
 }
 #[no_mangle]
-pub unsafe extern "C" fn new_fluid_sample() -> *mut fluid_sample_t {
-    let mut sample: *mut fluid_sample_t;
-    sample = libc::malloc(::std::mem::size_of::<fluid_sample_t>() as libc::size_t)
-        as *mut fluid_sample_t;
+pub unsafe extern "C" fn new_fluid_sample() -> *mut Sample {
+    let mut sample: *mut Sample;
+    sample = libc::malloc(::std::mem::size_of::<Sample>() as libc::size_t)
+        as *mut Sample;
     if sample.is_null() {
         fluid_log!(FLUID_ERR, "Out of memory",);
-        return 0 as *mut fluid_sample_t;
+        return 0 as *mut Sample;
     }
     libc::memset(
         sample as *mut libc::c_void,
         0 as libc::c_int,
-        ::std::mem::size_of::<fluid_sample_t>() as libc::size_t,
+        ::std::mem::size_of::<Sample>() as libc::size_t,
     );
     (*sample).valid = 1 as libc::c_int;
     return sample;
 }
 #[no_mangle]
-pub unsafe extern "C" fn delete_fluid_sample(sample: *mut fluid_sample_t) -> libc::c_int {
+pub unsafe extern "C" fn delete_fluid_sample(sample: *mut Sample) -> libc::c_int {
     libc::free(sample as *mut libc::c_void);
     return FLUID_OK as libc::c_int;
 }
 #[no_mangle]
-pub unsafe extern "C" fn fluid_sample_in_rom(sample: *mut fluid_sample_t) -> libc::c_int {
+pub unsafe extern "C" fn fluid_sample_in_rom(sample: *mut Sample) -> libc::c_int {
     return (*sample).sampletype & 0x8000 as libc::c_int;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_sample_import_sfont(
-    mut sample: *mut fluid_sample_t,
+    mut sample: *mut Sample,
     sfsample: *mut SFSample,
     sfont: *mut fluid_defsfont_t,
 ) -> libc::c_int {
@@ -1988,7 +1988,7 @@ unsafe extern "C" fn chunkid(id: libc::c_uint) -> libc::c_int {
 #[no_mangle]
 pub unsafe extern "C" fn sfload_file(
     fname: *const libc::c_char,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> *mut SFData {
     let mut sf: *mut SFData;
     let fd: *mut libc::c_void;
@@ -2059,7 +2059,7 @@ unsafe extern "C" fn load_body(
     size: libc::c_uint,
     mut sf: *mut SFData,
     fd: *mut libc::c_void,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> libc::c_int {
     let mut chunk: SFChunk = SFChunk { id: 0, size: 0 };
     ({
@@ -2144,7 +2144,7 @@ unsafe extern "C" fn load_body(
 unsafe extern "C" fn read_listchunk(
     mut chunk: *mut SFChunk,
     fd: *mut libc::c_void,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> libc::c_int {
     ({
         if (*fapi).fread.expect("non-null function pointer")(
@@ -2175,7 +2175,7 @@ unsafe extern "C" fn process_info(
     mut size: libc::c_int,
     mut sf: *mut SFData,
     fd: *mut libc::c_void,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> libc::c_int {
     let mut chunk: SFChunk = SFChunk { id: 0, size: 0 };
     let mut id: libc::c_uchar;
@@ -2315,7 +2315,7 @@ unsafe extern "C" fn process_sdta(
     mut size: libc::c_int,
     mut sf: *mut SFData,
     fd: *mut libc::c_void,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> libc::c_int {
     let mut chunk: SFChunk = SFChunk { id: 0, size: 0 };
     if size == 0 as libc::c_int {
@@ -2358,7 +2358,7 @@ unsafe extern "C" fn pdtahelper(
     mut chunk: *mut SFChunk,
     size: *mut libc::c_int,
     fd: *mut libc::c_void,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> libc::c_int {
     let id: libc::c_uint;
     let expstr: *mut libc::c_char;
@@ -2409,7 +2409,7 @@ unsafe extern "C" fn process_pdta(
     mut size: libc::c_int,
     sf: *mut SFData,
     fd: *mut libc::c_void,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> libc::c_int {
     let mut chunk: SFChunk = SFChunk { id: 0, size: 0 };
     if pdtahelper(
@@ -2544,7 +2544,7 @@ unsafe extern "C" fn load_phdr(
     size: libc::c_int,
     mut sf: *mut SFData,
     fd: *mut libc::c_void,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> libc::c_int {
     let mut i: libc::c_int;
     let mut i2: libc::c_int;
@@ -2725,7 +2725,7 @@ unsafe extern "C" fn load_pbag(
     mut size: libc::c_int,
     sf: *mut SFData,
     fd: *mut libc::c_void,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> libc::c_int {
     let mut p: *mut List;
     let mut p2: *mut List;
@@ -2884,7 +2884,7 @@ unsafe extern "C" fn load_pmod(
     mut size: libc::c_int,
     sf: *mut SFData,
     fd: *mut libc::c_void,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> libc::c_int {
     let mut p: *mut List;
     let mut p2: *mut List;
@@ -3001,7 +3001,7 @@ unsafe extern "C" fn load_pgen(
     mut size: libc::c_int,
     sf: *mut SFData,
     fd: *mut libc::c_void,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> libc::c_int {
     let mut p: *mut List;
     let mut p2: *mut List;
@@ -3291,7 +3291,7 @@ unsafe extern "C" fn load_ihdr(
     mut size: libc::c_int,
     mut sf: *mut SFData,
     fd: *mut libc::c_void,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> libc::c_int {
     let mut i: libc::c_int;
     let mut i2: libc::c_int;
@@ -3405,7 +3405,7 @@ unsafe extern "C" fn load_ibag(
     mut size: libc::c_int,
     sf: *mut SFData,
     fd: *mut libc::c_void,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> libc::c_int {
     let mut p: *mut List;
     let mut p2: *mut List;
@@ -3570,7 +3570,7 @@ unsafe extern "C" fn load_imod(
     mut size: libc::c_int,
     sf: *mut SFData,
     fd: *mut libc::c_void,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> libc::c_int {
     let mut p: *mut List;
     let mut p2: *mut List;
@@ -3687,7 +3687,7 @@ unsafe extern "C" fn load_igen(
     mut size: libc::c_int,
     sf: *mut SFData,
     fd: *mut libc::c_void,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> libc::c_int {
     let mut p: *mut List;
     let mut p2: *mut List;
@@ -3971,7 +3971,7 @@ unsafe extern "C" fn load_shdr(
     mut size: libc::c_uint,
     mut sf: *mut SFData,
     fd: *mut libc::c_void,
-    fapi: *mut fluid_fileapi_t,
+    fapi: *mut FileApi,
 ) -> libc::c_int {
     let mut i: libc::c_uint;
     let mut p: *mut SFSample;
@@ -4275,7 +4275,7 @@ pub static mut badpgen: [libc::c_ushort; 14] = [
     0 as libc::c_int as libc::c_ushort,
 ];
 #[no_mangle]
-pub unsafe extern "C" fn sfont_close(mut sf: *mut SFData, fapi: *mut fluid_fileapi_t) {
+pub unsafe extern "C" fn sfont_close(mut sf: *mut SFData, fapi: *mut FileApi) {
     let mut p: *mut List;
     let mut p2: *mut List;
     if !(*sf).sffd.is_null() {

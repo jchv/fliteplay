@@ -1,16 +1,10 @@
-#![allow(
-    non_camel_case_types,
-    non_snake_case,
-    non_upper_case_globals,
-    unused_mut
-)]
-pub type fluid_log_level = libc::c_uint;
-pub const LAST_LOG_LEVEL: fluid_log_level = 5;
-pub type fluid_log_function_t =
+pub type LogLevel = libc::c_uint;
+pub const LAST_LOG_LEVEL: LogLevel = 5;
+pub type LogFn =
     Option<unsafe extern "C" fn(_: libc::c_int, _: *mut libc::c_char, _: *mut libc::c_void) -> ()>;
-static mut fluid_errbuf: [libc::c_char; 512] = [0; 512];
-static mut fluid_log_function: [fluid_log_function_t; 5] = [None; 5];
-static mut fluid_log_user_data: [*mut libc::c_void; 5] =
+static mut FLUID_ERRBUF: [libc::c_char; 512] = [0; 512];
+static mut FLUID_LOG_FUNCTION: [LogFn; 5] = [None; 5];
+static mut FLUID_LOG_USER_DATA: [*mut libc::c_void; 5] =
     [0 as *const libc::c_void as *mut libc::c_void; 5];
 #[no_mangle]
 pub unsafe extern "C" fn fluid_sys_config() {}
@@ -18,15 +12,15 @@ pub unsafe extern "C" fn fluid_sys_config() {}
 pub static mut fluid_debug_flags: libc::c_uint = 0 as libc::c_int as libc::c_uint;
 #[no_mangle]
 pub unsafe extern "C" fn fluid_set_log_function(
-    mut level: libc::c_int,
-    mut fun: fluid_log_function_t,
-    mut data: *mut libc::c_void,
-) -> fluid_log_function_t {
-    let mut old: fluid_log_function_t = None;
+    level: libc::c_int,
+    fun: LogFn,
+    data: *mut libc::c_void,
+) -> LogFn {
+    let mut old: LogFn = None;
     if level >= 0 as libc::c_int && level < LAST_LOG_LEVEL as libc::c_int {
-        old = fluid_log_function[level as usize];
-        fluid_log_function[level as usize] = fun;
-        fluid_log_user_data[level as usize] = data
+        old = FLUID_LOG_FUNCTION[level as usize];
+        FLUID_LOG_FUNCTION[level as usize] = fun;
+        FLUID_LOG_USER_DATA[level as usize] = data
     }
     return old;
 }
@@ -34,12 +28,12 @@ pub unsafe extern "C" fn fluid_set_log_function(
 pub unsafe extern "C" fn fluid_log_config() {}
 #[no_mangle]
 pub unsafe extern "C" fn fluid_strtok(
-    mut str: *mut *mut libc::c_char,
-    mut delim: *mut libc::c_char,
+    str: *mut *mut libc::c_char,
+    delim: *mut libc::c_char,
 ) -> *mut libc::c_char {
     let mut s;
     let mut d;
-    let mut token;
+    let token;
     let mut c;
     if str.is_null() || delim.is_null() || *delim == 0 {
         fluid_log!(FLUID_ERR, "Null pointer",);
@@ -88,11 +82,11 @@ pub unsafe extern "C" fn fluid_strtok(
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_error() -> *mut libc::c_char {
-    return fluid_errbuf.as_mut_ptr();
+    return FLUID_ERRBUF.as_mut_ptr();
 }
 #[no_mangle]
-pub unsafe extern "C" fn fluid_is_midifile(mut filename: *mut libc::c_char) -> libc::c_int {
-    let mut fp: *mut libc::FILE =
+pub unsafe extern "C" fn fluid_is_midifile(filename: *mut libc::c_char) -> libc::c_int {
+    let fp: *mut libc::FILE =
         libc::fopen(filename, b"rb\x00" as *const u8 as *const libc::c_char);
     let mut id: [libc::c_char; 4] = [0; 4];
     if fp.is_null() {
@@ -116,8 +110,8 @@ pub unsafe extern "C" fn fluid_is_midifile(mut filename: *mut libc::c_char) -> l
     ) == 0 as libc::c_int) as libc::c_int;
 }
 #[no_mangle]
-pub unsafe extern "C" fn fluid_is_soundfont(mut filename: *mut libc::c_char) -> libc::c_int {
-    let mut fp: *mut libc::FILE =
+pub unsafe extern "C" fn fluid_is_soundfont(filename: *mut libc::c_char) -> libc::c_int {
+    let fp: *mut libc::FILE =
         libc::fopen(filename, b"rb\x00" as *const u8 as *const libc::c_char);
     let mut id: [libc::c_char; 4] = [0; 4];
     if fp.is_null() {

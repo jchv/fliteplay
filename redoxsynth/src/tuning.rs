@@ -1,12 +1,6 @@
-#![allow(
-    non_camel_case_types,
-    non_snake_case,
-    non_upper_case_globals,
-    unused_mut
-)]
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct fluid_tuning_t {
+pub struct Tuning {
     pub name: *mut libc::c_char,
     pub bank: libc::c_int,
     pub prog: libc::c_int,
@@ -14,17 +8,17 @@ pub struct fluid_tuning_t {
 }
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_tuning(
-    mut name: *const libc::c_char,
-    mut bank: libc::c_int,
-    mut prog: libc::c_int,
-) -> *mut fluid_tuning_t {
+    name: *const libc::c_char,
+    bank: libc::c_int,
+    prog: libc::c_int,
+) -> *mut Tuning {
     let mut tuning;
     let mut i;
-    tuning = libc::malloc(::std::mem::size_of::<fluid_tuning_t>() as libc::size_t)
-        as *mut fluid_tuning_t;
+    tuning = libc::malloc(::std::mem::size_of::<Tuning>() as libc::size_t)
+        as *mut Tuning;
     if tuning.is_null() {
         fluid_log!(FLUID_PANIC as libc::c_int, "Out of memory",);
-        return 0 as *mut fluid_tuning_t;
+        return 0 as *mut Tuning;
     }
     (*tuning).name = 0 as *mut libc::c_char;
     if !name.is_null() {
@@ -44,15 +38,15 @@ pub unsafe extern "C" fn new_fluid_tuning(
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_tuning_duplicate(
-    mut tuning: *mut fluid_tuning_t,
-) -> *mut fluid_tuning_t {
+    tuning: *mut Tuning,
+) -> *mut Tuning {
     let mut new_tuning;
     let mut i;
-    new_tuning = libc::malloc(::std::mem::size_of::<fluid_tuning_t>() as libc::size_t)
-        as *mut fluid_tuning_t;
+    new_tuning = libc::malloc(::std::mem::size_of::<Tuning>() as libc::size_t)
+        as *mut Tuning;
     if new_tuning.is_null() {
         fluid_log!(FLUID_PANIC as libc::c_int, "Out of memory",);
-        return 0 as *mut fluid_tuning_t;
+        return 0 as *mut Tuning;
     }
     if !(*tuning).name.is_null() {
         (*new_tuning).name = libc::strcpy(
@@ -62,7 +56,7 @@ pub unsafe extern "C" fn fluid_tuning_duplicate(
         if (*new_tuning).name.is_null() {
             libc::free(new_tuning as *mut libc::c_void);
             fluid_log!(FLUID_PANIC as libc::c_int, "Out of memory",);
-            return 0 as *mut fluid_tuning_t;
+            return 0 as *mut Tuning;
         }
     } else {
         (*new_tuning).name = 0 as *mut libc::c_char
@@ -77,7 +71,7 @@ pub unsafe extern "C" fn fluid_tuning_duplicate(
     return new_tuning;
 }
 #[no_mangle]
-pub unsafe extern "C" fn delete_fluid_tuning(mut tuning: *mut fluid_tuning_t) {
+pub unsafe extern "C" fn delete_fluid_tuning(tuning: *mut Tuning) {
     if tuning.is_null() {
         return;
     }
@@ -88,8 +82,8 @@ pub unsafe extern "C" fn delete_fluid_tuning(mut tuning: *mut fluid_tuning_t) {
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_tuning_set_name(
-    mut tuning: *mut fluid_tuning_t,
-    mut name: *const libc::c_char,
+    mut tuning: *mut Tuning,
+    name: *const libc::c_char,
 ) {
     if !(*tuning).name.is_null() {
         libc::free((*tuning).name as *mut libc::c_void);
@@ -104,22 +98,22 @@ pub unsafe extern "C" fn fluid_tuning_set_name(
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_tuning_get_name(
-    mut tuning: *mut fluid_tuning_t,
+    tuning: *mut Tuning,
 ) -> *mut libc::c_char {
     return (*tuning).name;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_tuning_set_key(
-    mut tuning: *mut fluid_tuning_t,
-    mut key: libc::c_int,
-    mut pitch: f64,
+    mut tuning: *mut Tuning,
+    key: libc::c_int,
+    pitch: f64,
 ) {
     (*tuning).pitch[key as usize] = pitch;
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_tuning_set_octave(
-    mut tuning: *mut fluid_tuning_t,
-    mut pitch_deriv: *const f64,
+    mut tuning: *mut Tuning,
+    pitch_deriv: *const f64,
 ) {
     let mut i;
     i = 0 as libc::c_int;
@@ -131,8 +125,8 @@ pub unsafe extern "C" fn fluid_tuning_set_octave(
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_tuning_set_all(
-    mut tuning: *mut fluid_tuning_t,
-    mut pitch: *mut f64,
+    mut tuning: *mut Tuning,
+    pitch: *mut f64,
 ) {
     let mut i;
     i = 0 as libc::c_int;
@@ -143,9 +137,9 @@ pub unsafe extern "C" fn fluid_tuning_set_all(
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_tuning_set_pitch(
-    mut tuning: *mut fluid_tuning_t,
-    mut key: libc::c_int,
-    mut pitch: f64,
+    mut tuning: *mut Tuning,
+    key: libc::c_int,
+    pitch: f64,
 ) {
     if key >= 0 as libc::c_int && key < 128 as libc::c_int {
         (*tuning).pitch[key as usize] = pitch
