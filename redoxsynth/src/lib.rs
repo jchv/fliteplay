@@ -19,7 +19,7 @@ mod channel;
 mod chorus;
 mod conv;
 mod defsfont;
-mod fluid_dsp_float;
+mod dsp_float;
 mod fluid_gen;
 mod fluid_hash;
 mod fluid_list;
