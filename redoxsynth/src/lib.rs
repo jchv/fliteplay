@@ -22,7 +22,7 @@ mod defsfont;
 mod dsp_float;
 mod gen;
 mod hash;
-mod fluid_list;
+mod list;
 mod fluid_mod;
 mod fluid_ramsfont;
 mod fluid_rev;

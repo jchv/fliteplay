@@ -12,7 +12,7 @@ use crate::chorus::_fluid_chorus_t;
 use crate::gen::_fluid_gen_t;
 use crate::gen::fluid_gen_scale_nrpn;
 use crate::hash::_fluid_hashtable_t;
-use crate::fluid_list::_fluid_list_t;
+use crate::list::_fluid_list_t;
 use crate::fluid_mod::_fluid_mod_t;
 use crate::fluid_rev::_fluid_revmodel_t;
 use crate::fluid_settings::fluid_settings_str_equal;

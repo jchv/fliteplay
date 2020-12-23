@@ -11,15 +11,15 @@
 
 use crate::gen::_fluid_gen_t;
 use crate::gen::fluid_gen_set_default_values;
-use crate::fluid_list::_fluid_list_t;
-use crate::fluid_list::delete1_fluid_list;
-use crate::fluid_list::delete_fluid_list;
-use crate::fluid_list::fluid_list_append;
-use crate::fluid_list::fluid_list_nth;
-use crate::fluid_list::fluid_list_prepend;
-use crate::fluid_list::fluid_list_remove;
-use crate::fluid_list::fluid_list_remove_link;
-use crate::fluid_list::fluid_list_sort;
+use crate::list::_fluid_list_t;
+use crate::list::delete1_fluid_list;
+use crate::list::delete_fluid_list;
+use crate::list::fluid_list_append;
+use crate::list::fluid_list_nth;
+use crate::list::fluid_list_prepend;
+use crate::list::fluid_list_remove;
+use crate::list::fluid_list_remove_link;
+use crate::list::fluid_list_sort;
 use crate::fluid_mod::_fluid_mod_t;
 use crate::fluid_mod::fluid_mod_delete;
 use crate::fluid_mod::fluid_mod_new;
