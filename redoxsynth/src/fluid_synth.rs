@@ -44,7 +44,7 @@ use crate::chorus::fluid_chorus_set_type;
 use crate::chorus::fluid_chorus_update;
 use crate::chorus::new_fluid_chorus;
 use crate::conv::fluid_conversion_config;
-use crate::fluid_defsfont::new_fluid_defsfloader;
+use crate::defsfont::new_fluid_defsfloader;
 use crate::fluid_dsp_float::fluid_dsp_float_config;
 use crate::fluid_gen::_fluid_gen_t;
 use crate::fluid_gen::fluid_gen_scale;
