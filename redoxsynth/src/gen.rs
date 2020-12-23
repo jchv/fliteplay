@@ -7,14 +7,11 @@
     unused_assignments,
     unused_mut
 )]
-use crate::channel::_fluid_channel_t;
-use crate::sfont::_fluid_preset_t;
-use crate::sfont::_fluid_sfont_t;
-use crate::synth::_fluid_synth_t;
-use crate::tuning::_fluid_tuning_t;
-pub type fluid_synth_t = _fluid_synth_t;
-pub type fluid_sfont_t = _fluid_sfont_t;
-pub type fluid_preset_t = _fluid_preset_t;
+use crate::channel::fluid_channel_t;
+use crate::sfont::fluid_preset_t;
+use crate::sfont::fluid_sfont_t;
+use crate::synth::fluid_synth_t;
+use crate::tuning::fluid_tuning_t;
 pub type fluid_gen_type = libc::c_uint;
 pub const GEN_LAST: fluid_gen_type = 60;
 pub const GEN_PITCH: fluid_gen_type = 59;
@@ -79,22 +76,20 @@ pub const GEN_ENDADDROFS: fluid_gen_type = 1;
 pub const GEN_STARTADDROFS: fluid_gen_type = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct _fluid_gen_t {
+pub struct fluid_gen_t {
     pub flags: libc::c_uchar,
     pub val: libc::c_double,
     pub mod_0: libc::c_double,
     pub nrpn: libc::c_double,
 }
-pub type fluid_gen_t = _fluid_gen_t;
 pub type fluid_gen_flags = libc::c_uint;
 pub const GEN_ABS_NRPN: fluid_gen_flags = 2;
 pub const GEN_SET: fluid_gen_flags = 1;
 pub const GEN_UNUSED: fluid_gen_flags = 0;
 pub const FLUID_OK: C2RustUnnamed = 0;
-pub type fluid_gen_info_t = _fluid_gen_info_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct _fluid_gen_info_t {
+pub struct fluid_gen_info_t {
     pub num: libc::c_char,
     pub init: libc::c_char,
     pub nrpn_scale: libc::c_char,
@@ -105,14 +100,10 @@ pub struct _fluid_gen_info_t {
 pub type fluid_real_t = libc::c_float;
 pub type C2RustUnnamed = libc::c_int;
 pub const FLUID_FAILED: C2RustUnnamed = -1;
-
-pub type fluid_tuning_t = _fluid_tuning_t;
-pub type fluid_channel_t = _fluid_channel_t;
-
 #[no_mangle]
 pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_STARTADDROFS as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -123,7 +114,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_ENDADDROFS as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -134,7 +125,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_STARTLOOPADDROFS as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -145,7 +136,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_ENDLOOPADDROFS as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -156,7 +147,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_STARTADDRCOARSEOFS as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -167,7 +158,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_MODLFOTOPITCH as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -178,7 +169,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_VIBLFOTOPITCH as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -189,7 +180,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_MODENVTOPITCH as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -200,7 +191,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_FILTERFC as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -211,7 +202,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_FILTERQ as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -222,7 +213,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_MODLFOTOFILTERFC as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -233,7 +224,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_MODENVTOFILTERFC as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -244,7 +235,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_ENDADDRCOARSEOFS as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -255,7 +246,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_MODLFOTOVOL as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -266,7 +257,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_UNUSED1 as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 0 as libc::c_int as libc::c_char,
@@ -277,7 +268,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_CHORUSSEND as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -288,7 +279,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_REVERBSEND as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -299,7 +290,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_PAN as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -310,7 +301,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_UNUSED2 as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 0 as libc::c_int as libc::c_char,
@@ -321,7 +312,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_UNUSED3 as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 0 as libc::c_int as libc::c_char,
@@ -332,7 +323,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_UNUSED4 as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 0 as libc::c_int as libc::c_char,
@@ -343,7 +334,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_MODLFODELAY as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -354,7 +345,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_MODLFOFREQ as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 4 as libc::c_int as libc::c_char,
@@ -365,7 +356,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_VIBLFODELAY as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -376,7 +367,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_VIBLFOFREQ as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 4 as libc::c_int as libc::c_char,
@@ -387,7 +378,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_MODENVDELAY as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -398,7 +389,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_MODENVATTACK as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -409,7 +400,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_MODENVHOLD as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -420,7 +411,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_MODENVDECAY as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -431,7 +422,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_MODENVSUSTAIN as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -442,7 +433,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_MODENVRELEASE as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -453,7 +444,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_KEYTOMODENVHOLD as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -464,7 +455,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_KEYTOMODENVDECAY as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -475,7 +466,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_VOLENVDELAY as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -486,7 +477,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_VOLENVATTACK as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -497,7 +488,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_VOLENVHOLD as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -508,7 +499,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_VOLENVDECAY as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -519,7 +510,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_VOLENVSUSTAIN as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -530,7 +521,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_VOLENVRELEASE as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 2 as libc::c_int as libc::c_char,
@@ -541,7 +532,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_KEYTOVOLENVHOLD as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -552,7 +543,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_KEYTOVOLENVDECAY as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -563,7 +554,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_INSTRUMENT as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 0 as libc::c_int as libc::c_char,
@@ -574,7 +565,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_RESERVED1 as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 0 as libc::c_int as libc::c_char,
@@ -585,7 +576,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_KEYRANGE as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 0 as libc::c_int as libc::c_char,
@@ -596,7 +587,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_VELRANGE as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 0 as libc::c_int as libc::c_char,
@@ -607,7 +598,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_STARTLOOPADDRCOARSEOFS as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -618,7 +609,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_KEYNUM as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 0 as libc::c_int as libc::c_char,
@@ -629,7 +620,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_VELOCITY as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -640,7 +631,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_ATTENUATION as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -651,7 +642,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_RESERVED2 as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 0 as libc::c_int as libc::c_char,
@@ -662,7 +653,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_ENDLOOPADDRCOARSEOFS as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -673,7 +664,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_COARSETUNE as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -684,7 +675,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_FINETUNE as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -695,7 +686,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_SAMPLEID as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 0 as libc::c_int as libc::c_char,
@@ -706,7 +697,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_SAMPLEMODE as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 0 as libc::c_int as libc::c_char,
@@ -717,7 +708,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_RESERVED3 as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 0 as libc::c_int as libc::c_char,
@@ -728,7 +719,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_SCALETUNE as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 1 as libc::c_int as libc::c_char,
@@ -739,7 +730,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_EXCLUSIVECLASS as libc::c_int as libc::c_char,
             init: 0 as libc::c_int as libc::c_char,
             nrpn_scale: 0 as libc::c_int as libc::c_char,
@@ -750,7 +741,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_OVERRIDEROOTKEY as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 0 as libc::c_int as libc::c_char,
@@ -761,7 +752,7 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
     {
-        let mut init = _fluid_gen_info_t {
+        let mut init = fluid_gen_info_t {
             num: GEN_PITCH as libc::c_int as libc::c_char,
             init: 1 as libc::c_int as libc::c_char,
             nrpn_scale: 0 as libc::c_int as libc::c_char,
@@ -772,7 +763,6 @@ pub static mut fluid_gen_info: [fluid_gen_info_t; 60] = [
         init
     },
 ];
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_gen_set_default_values(mut gen: *mut fluid_gen_t) -> libc::c_int {
     let mut i: libc::c_int = 0;
@@ -786,7 +776,6 @@ pub unsafe extern "C" fn fluid_gen_set_default_values(mut gen: *mut fluid_gen_t)
     }
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_gen_init(
     mut gen: *mut fluid_gen_t,
@@ -812,7 +801,6 @@ pub unsafe extern "C" fn fluid_gen_scale(
     return fluid_gen_info[gen as usize].min
         + value * (fluid_gen_info[gen as usize].max - fluid_gen_info[gen as usize].min);
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_gen_scale_nrpn(
     mut gen: libc::c_int,

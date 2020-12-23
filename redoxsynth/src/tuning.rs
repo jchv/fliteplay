@@ -7,29 +7,21 @@
     unused_assignments,
     unused_mut
 )]
-
 pub type fluid_log_level = libc::c_uint;
-
 pub const LAST_LOG_LEVEL: fluid_log_level = 5;
-
 pub const FLUID_DBG: fluid_log_level = 4;
-
 pub const FLUID_INFO: fluid_log_level = 3;
-
 pub const FLUID_WARN: fluid_log_level = 2;
-
 pub const FLUID_ERR: fluid_log_level = 1;
 pub const FLUID_PANIC: fluid_log_level = 0;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct _fluid_tuning_t {
+pub struct fluid_tuning_t {
     pub name: *mut libc::c_char,
     pub bank: libc::c_int,
     pub prog: libc::c_int,
     pub pitch: [libc::c_double; 128],
 }
-pub type fluid_tuning_t = _fluid_tuning_t;
-
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_tuning(
     mut name: *const libc::c_char,
@@ -60,7 +52,6 @@ pub unsafe extern "C" fn new_fluid_tuning(
     }
     return tuning;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_tuning_duplicate(
     mut tuning: *mut fluid_tuning_t,
@@ -160,7 +151,6 @@ pub unsafe extern "C" fn fluid_tuning_set_all(
         i += 1
     }
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_tuning_set_pitch(
     mut tuning: *mut fluid_tuning_t,

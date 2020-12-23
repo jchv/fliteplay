@@ -7,19 +7,17 @@
     unused_assignments,
     unused_mut
 )]
-
 use crate::chorus::fluid_chorus_t;
-use crate::gen::_fluid_gen_t;
 use crate::gen::fluid_gen_scale_nrpn;
-use crate::hash::_fluid_hashtable_t;
-use crate::list::_fluid_list_t;
-use crate::modulator::_fluid_mod_t;
-use crate::reverb::_fluid_revmodel_t;
+use crate::gen::fluid_gen_t;
+use crate::hash::fluid_hashtable_t;
+use crate::list::fluid_list_t;
+use crate::modulator::fluid_mod_t;
+use crate::reverb::fluid_revmodel_t;
 use crate::settings::fluid_settings_str_equal;
-use crate::sfont::_fluid_preset_t;
-use crate::sfont::_fluid_sample_t;
-use crate::sfont::_fluid_sfont_t;
-use crate::synth::_fluid_synth_t;
+use crate::sfont::fluid_preset_t;
+use crate::sfont::fluid_sample_t;
+use crate::sfont::fluid_sfont_t;
 use crate::synth::fluid_synth_all_notes_off;
 use crate::synth::fluid_synth_all_sounds_off;
 use crate::synth::fluid_synth_damp_voices;
@@ -27,25 +25,16 @@ use crate::synth::fluid_synth_find_preset;
 use crate::synth::fluid_synth_modulate_voices;
 use crate::synth::fluid_synth_modulate_voices_all;
 use crate::synth::fluid_synth_set_gen;
-use crate::tuning::_fluid_tuning_t;
-use crate::voice::_fluid_env_data_t;
-use crate::voice::_fluid_voice_t;
-
-pub type fluid_settings_t = _fluid_hashtable_t;
-pub type fluid_tuning_t = _fluid_tuning_t;
-
-pub type fluid_revmodel_t = _fluid_revmodel_t;
+use crate::synth::fluid_synth_t;
+use crate::tuning::fluid_tuning_t;
+use crate::voice::fluid_env_data_t;
+use crate::voice::fluid_voice_t;
+pub type fluid_settings_t = fluid_hashtable_t;
 pub type fluid_real_t = libc::c_float;
-pub type fluid_voice_t = _fluid_voice_t;
-pub type fluid_env_data_t = _fluid_env_data_t;
 pub type fluid_phase_t = libc::c_ulonglong;
-pub type fluid_sample_t = _fluid_sample_t;
-pub type fluid_mod_t = _fluid_mod_t;
-pub type fluid_gen_t = _fluid_gen_t;
-pub type fluid_channel_t = _fluid_channel_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct _fluid_channel_t {
+pub struct fluid_channel_t {
     pub channum: libc::c_int,
     pub sfontnum: libc::c_uint,
     pub banknum: libc::c_uint,
@@ -65,38 +54,24 @@ pub struct _fluid_channel_t {
     pub gen: [fluid_real_t; 60],
     pub gen_abs: [libc::c_char; 60],
 }
-pub type fluid_synth_t = _fluid_synth_t;
-pub type fluid_preset_t = _fluid_preset_t;
-pub type fluid_sfont_t = _fluid_sfont_t;
-pub type fluid_list_t = _fluid_list_t;
 pub type fluid_interp = libc::c_uint;
 pub const FLUID_INTERP_HIGHEST: fluid_interp = 7;
 pub const FLUID_INTERP_7THORDER: fluid_interp = 7;
 pub const FLUID_INTERP_4THORDER: fluid_interp = 4;
-
 pub const FLUID_INTERP_DEFAULT: fluid_interp = 4;
-
 pub const FLUID_INTERP_LINEAR: fluid_interp = 1;
-
 pub const FLUID_INTERP_NONE: fluid_interp = 0;
 pub type C2RustUnnamed = libc::c_uint;
 pub const FLUID_SAMPLE_DONE: C2RustUnnamed = 2;
 pub const FLUID_PRESET_UNSELECTED: C2RustUnnamed = 1;
 pub const FLUID_PRESET_SELECTED: C2RustUnnamed = 0;
-
 pub type fluid_log_level = libc::c_uint;
-
 pub const LAST_LOG_LEVEL: fluid_log_level = 5;
-
 pub const FLUID_DBG: fluid_log_level = 4;
-
 pub const FLUID_INFO: fluid_log_level = 3;
-
 pub const FLUID_WARN: fluid_log_level = 2;
-
 pub const FLUID_ERR: fluid_log_level = 1;
 pub const FLUID_PANIC: fluid_log_level = 0;
-
 pub type fluid_mod_src = libc::c_uint;
 pub const FLUID_MOD_PITCHWHEELSENS: fluid_mod_src = 16;
 pub const FLUID_MOD_PITCHWHEEL: fluid_mod_src = 14;
@@ -250,7 +225,6 @@ pub const RPN_TUNING_PROGRAM_CHANGE: midi_rpn_event = 3;
 pub const RPN_CHANNEL_COARSE_TUNE: midi_rpn_event = 2;
 pub const RPN_CHANNEL_FINE_TUNE: midi_rpn_event = 1;
 pub const RPN_PITCH_BEND_RANGE: midi_rpn_event = 0;
-
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_channel(
     mut synth: *mut fluid_synth_t,
@@ -287,7 +261,6 @@ pub unsafe extern "C" fn fluid_channel_init(mut chan: *mut fluid_channel_t) {
     (*chan).nrpn_select = 0 as libc::c_int as libc::c_short;
     (*chan).nrpn_active = 0 as libc::c_int as libc::c_short;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_init_ctrl(
     mut chan: *mut fluid_channel_t,
@@ -332,13 +305,10 @@ pub unsafe extern "C" fn fluid_channel_init_ctrl(
         (*chan).key_pressure[i as usize] = 0 as libc::c_int as libc::c_char;
         i += 1
     }
-
     (*chan).cc[RPN_LSB as libc::c_int as usize] = 127 as libc::c_int as libc::c_short;
     (*chan).cc[RPN_MSB as libc::c_int as usize] = 127 as libc::c_int as libc::c_short;
-
     (*chan).cc[NRPN_LSB as libc::c_int as usize] = 127 as libc::c_int as libc::c_short;
     (*chan).cc[NRPN_MSB as libc::c_int as usize] = 127 as libc::c_int as libc::c_short;
-
     (*chan).cc[EXPRESSION_MSB as libc::c_int as usize] = 127 as libc::c_int as libc::c_short;
     (*chan).cc[EXPRESSION_LSB as libc::c_int as usize] = 127 as libc::c_int as libc::c_short;
     if is_all_ctrl_off == 0 {
@@ -359,7 +329,6 @@ pub unsafe extern "C" fn fluid_channel_reset(mut chan: *mut fluid_channel_t) {
     fluid_channel_init(chan);
     fluid_channel_init_ctrl(chan, 0 as libc::c_int);
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn delete_fluid_channel(mut chan: *mut fluid_channel_t) -> libc::c_int {
     if !(*chan).preset.is_null() {
@@ -371,7 +340,6 @@ pub unsafe extern "C" fn delete_fluid_channel(mut chan: *mut fluid_channel_t) ->
     libc::free(chan as *mut libc::c_void);
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_set_preset(
     mut chan: *mut fluid_channel_t,
@@ -402,19 +370,16 @@ pub unsafe extern "C" fn fluid_channel_set_preset(
     (*chan).preset = preset;
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_get_preset(
     mut chan: *mut fluid_channel_t,
 ) -> *mut fluid_preset_t {
     return (*chan).preset;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_get_banknum(mut chan: *mut fluid_channel_t) -> libc::c_uint {
     return (*chan).banknum;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_set_prognum(
     mut chan: *mut fluid_channel_t,
@@ -423,12 +388,10 @@ pub unsafe extern "C" fn fluid_channel_set_prognum(
     (*chan).prognum = prognum as libc::c_uint;
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_get_prognum(mut chan: *mut fluid_channel_t) -> libc::c_int {
     return (*chan).prognum as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_set_banknum(
     mut chan: *mut fluid_channel_t,
@@ -437,7 +400,6 @@ pub unsafe extern "C" fn fluid_channel_set_banknum(
     (*chan).banknum = banknum;
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_cc(
     mut chan: *mut fluid_channel_t,
@@ -462,7 +424,6 @@ pub unsafe extern "C" fn fluid_channel_cc(
                 return FLUID_OK as libc::c_int;
             }
             (*chan).bank_msb = (value & 0x7f as libc::c_int) as libc::c_uchar;
-
             fluid_channel_set_banknum(chan, (value & 0x7f as libc::c_int) as libc::c_uint);
         }
         32 => {
@@ -475,7 +436,6 @@ pub unsafe extern "C" fn fluid_channel_cc(
             {
                 return FLUID_OK as libc::c_int;
             }
-
             fluid_channel_set_banknum(
                 chan,
                 (value as libc::c_uint & 0x7f as libc::c_int as libc::c_uint)
@@ -569,7 +529,6 @@ pub unsafe extern "C" fn fluid_channel_cc(
     }
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_get_cc(
     mut chan: *mut fluid_channel_t,
@@ -581,7 +540,6 @@ pub unsafe extern "C" fn fluid_channel_get_cc(
         0 as libc::c_int
     };
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_pressure(
     mut chan: *mut fluid_channel_t,
@@ -596,7 +554,6 @@ pub unsafe extern "C" fn fluid_channel_pressure(
     );
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_pitch_bend(
     mut chan: *mut fluid_channel_t,
@@ -611,7 +568,6 @@ pub unsafe extern "C" fn fluid_channel_pitch_bend(
     );
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_pitch_wheel_sens(
     mut chan: *mut fluid_channel_t,
@@ -626,12 +582,10 @@ pub unsafe extern "C" fn fluid_channel_pitch_wheel_sens(
     );
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_get_num(mut chan: *mut fluid_channel_t) -> libc::c_int {
     return (*chan).channum;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_set_interp_method(
     mut chan: *mut fluid_channel_t,
@@ -639,7 +593,6 @@ pub unsafe extern "C" fn fluid_channel_set_interp_method(
 ) {
     (*chan).interp_method = new_method;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_get_interp_method(
     mut chan: *mut fluid_channel_t,
@@ -652,7 +605,6 @@ pub unsafe extern "C" fn fluid_channel_get_sfontnum(
 ) -> libc::c_uint {
     return (*chan).sfontnum;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_channel_set_sfontnum(
     mut chan: *mut fluid_channel_t,

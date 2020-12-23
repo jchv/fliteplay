@@ -7,28 +7,23 @@
     unused_assignments,
     unused_mut
 )]
-use crate::channel::_fluid_channel_t;
 use crate::channel::fluid_channel_get_cc;
+use crate::channel::fluid_channel_t;
 use crate::conv::fluid_concave;
 use crate::conv::fluid_convex;
-use crate::gen::_fluid_gen_t;
-use crate::sfont::_fluid_preset_t;
-use crate::sfont::_fluid_sample_t;
-use crate::sfont::_fluid_sfont_t;
-use crate::synth::_fluid_synth_t;
-use crate::tuning::_fluid_tuning_t;
-use crate::voice::_fluid_env_data_t;
-use crate::voice::_fluid_voice_t;
-
-pub type fluid_synth_t = _fluid_synth_t;
+use crate::gen::fluid_gen_t;
+use crate::sfont::fluid_preset_t;
+use crate::sfont::fluid_sample_t;
+use crate::sfont::fluid_sfont_t;
+use crate::synth::fluid_synth_t;
+use crate::tuning::fluid_tuning_t;
+use crate::voice::fluid_env_data_t;
+use crate::voice::fluid_voice_t;
 pub type fluid_real_t = libc::c_float;
-pub type fluid_env_data_t = _fluid_env_data_t;
 pub type fluid_phase_t = libc::c_ulonglong;
-pub type fluid_sample_t = _fluid_sample_t;
-pub type fluid_mod_t = _fluid_mod_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct _fluid_mod_t {
+pub struct fluid_mod_t {
     pub dest: libc::c_uchar,
     pub src1: libc::c_uchar,
     pub flags1: libc::c_uchar,
@@ -37,24 +32,11 @@ pub struct _fluid_mod_t {
     pub amount: libc::c_double,
     pub next: *mut fluid_mod_t,
 }
-
-pub type fluid_gen_t = _fluid_gen_t;
-pub type fluid_channel_t = _fluid_channel_t;
-pub type fluid_tuning_t = _fluid_tuning_t;
-pub type fluid_preset_t = _fluid_preset_t;
-pub type fluid_sfont_t = _fluid_sfont_t;
-pub type fluid_voice_t = _fluid_voice_t;
-
 pub type fluid_log_level = libc::c_uint;
-
 pub const LAST_LOG_LEVEL: fluid_log_level = 5;
-
 pub const FLUID_DBG: fluid_log_level = 4;
-
 pub const FLUID_INFO: fluid_log_level = 3;
-
 pub const FLUID_WARN: fluid_log_level = 2;
-
 pub const FLUID_ERR: fluid_log_level = 1;
 pub const FLUID_PANIC: fluid_log_level = 0;
 pub type fluid_mod_flags = libc::c_uint;
@@ -138,7 +120,6 @@ pub const GEN_ENDLOOPADDROFS: fluid_gen_type = 3;
 pub const GEN_STARTLOOPADDROFS: fluid_gen_type = 2;
 pub const GEN_ENDADDROFS: fluid_gen_type = 1;
 pub const GEN_STARTADDROFS: fluid_gen_type = 0;
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_mod_clone(mut mod_0: *mut fluid_mod_t, mut src: *mut fluid_mod_t) {
     (*mod_0).dest = (*src).dest;
@@ -148,7 +129,6 @@ pub unsafe extern "C" fn fluid_mod_clone(mut mod_0: *mut fluid_mod_t, mut src: *
     (*mod_0).flags2 = (*src).flags2;
     (*mod_0).amount = (*src).amount;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_mod_set_source1(
     mut mod_0: *mut fluid_mod_t,
@@ -158,7 +138,6 @@ pub unsafe extern "C" fn fluid_mod_set_source1(
     (*mod_0).src1 = src as libc::c_uchar;
     (*mod_0).flags1 = flags as libc::c_uchar;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_mod_set_source2(
     mut mod_0: *mut fluid_mod_t,
@@ -168,12 +147,10 @@ pub unsafe extern "C" fn fluid_mod_set_source2(
     (*mod_0).src2 = src as libc::c_uchar;
     (*mod_0).flags2 = flags as libc::c_uchar;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_mod_set_dest(mut mod_0: *mut fluid_mod_t, mut dest: libc::c_int) {
     (*mod_0).dest = dest as libc::c_uchar;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_mod_set_amount(
     mut mod_0: *mut fluid_mod_t,
@@ -205,7 +182,6 @@ pub unsafe extern "C" fn fluid_mod_get_dest(mut mod_0: *mut fluid_mod_t) -> libc
 pub unsafe extern "C" fn fluid_mod_get_amount(mut mod_0: *mut fluid_mod_t) -> libc::c_double {
     return (*mod_0).amount as fluid_real_t as libc::c_double;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_mod_get_value(
     mut mod_0: *mut fluid_mod_t,
@@ -219,7 +195,6 @@ pub unsafe extern "C" fn fluid_mod_get_value(
     if chan.is_null() {
         return 0.0f32;
     }
-
     if (*mod_0).src2 as libc::c_int == FLUID_MOD_VELOCITY as libc::c_int
         && (*mod_0).src1 as libc::c_int == FLUID_MOD_VELOCITY as libc::c_int
         && (*mod_0).flags1 as libc::c_int
@@ -348,7 +323,6 @@ pub unsafe extern "C" fn fluid_mod_get_value(
     } else {
         return 0.0f64 as fluid_real_t;
     }
-
     if v1 == 0.0f32 {
         return 0.0f32;
     }
@@ -463,7 +437,6 @@ pub unsafe extern "C" fn fluid_mod_get_value(
     }
     return (*mod_0).amount as fluid_real_t * v1 * v2;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_mod_new() -> *mut fluid_mod_t {
     let mut mod_0: *mut fluid_mod_t =
@@ -474,12 +447,10 @@ pub unsafe extern "C" fn fluid_mod_new() -> *mut fluid_mod_t {
     }
     return mod_0;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_mod_delete(mut mod_0: *mut fluid_mod_t) {
     libc::free(mod_0 as *mut libc::c_void);
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_mod_test_identity(
     mut mod1: *mut fluid_mod_t,
@@ -502,7 +473,6 @@ pub unsafe extern "C" fn fluid_mod_test_identity(
     }
     return 1 as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_dump_modulator(mut mod_0: *mut fluid_mod_t) {
     let mut src1: libc::c_int = (*mod_0).src1 as libc::c_int;
@@ -588,7 +558,6 @@ pub unsafe extern "C" fn fluid_dump_modulator(mut mod_0: *mut fluid_mod_t) {
             // printf(b"dest %i\x00" as *const u8 as *const libc::c_char, dest);
         }
     }
-
     // printf(
     //    b", amount %f flags %i src2 %i flags2 %i\n\x00" as *const u8 as *const libc::c_char,
     //    amount as libc::c_double,

@@ -7,9 +7,7 @@
     unused_assignments,
     unused_mut
 )]
-
 pub type fluid_real_t = libc::c_float;
-
 #[no_mangle]
 pub static mut fluid_ct2hz_tab: [fluid_real_t; 1200] = [0.; 1200];
 #[no_mangle]
@@ -24,7 +22,6 @@ pub static mut fluid_concave_tab: [fluid_real_t; 128] = [0.; 128];
 pub static mut fluid_convex_tab: [fluid_real_t; 128] = [0.; 128];
 #[no_mangle]
 pub static mut fluid_pan_tab: [fluid_real_t; 1002] = [0.; 1002];
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_conversion_config() {
     let mut i: libc::c_int = 0;
@@ -49,7 +46,6 @@ pub unsafe extern "C" fn fluid_conversion_config() {
     }
     fluid_concave_tab[0 as libc::c_int as usize] = 0.0f64 as fluid_real_t;
     fluid_concave_tab[127 as libc::c_int as usize] = 1.0f64 as fluid_real_t;
-
     fluid_convex_tab[0 as libc::c_int as usize] = 0 as libc::c_int as fluid_real_t;
     fluid_convex_tab[127 as libc::c_int as usize] = 1.0f64 as fluid_real_t;
     x = f64::log10(128.0f64 / 127.0f64);
@@ -61,7 +57,6 @@ pub unsafe extern "C" fn fluid_conversion_config() {
         fluid_concave_tab[(127 as libc::c_int - i) as usize] = x as fluid_real_t;
         i += 1
     }
-
     x = 3.141592654f64 / 2.0f64 / (1002 as libc::c_int as libc::c_double - 1.0f64);
     i = 0 as libc::c_int;
     while i < 1002 as libc::c_int {
@@ -69,7 +64,6 @@ pub unsafe extern "C" fn fluid_conversion_config() {
         i += 1
     }
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_ct2hz_real(mut cents: fluid_real_t) -> fluid_real_t {
     if cents < 0 as libc::c_int as libc::c_float {
@@ -126,7 +120,6 @@ pub unsafe extern "C" fn fluid_ct2hz_real(mut cents: fluid_real_t) -> fluid_real
         return 1.0f64 as fluid_real_t;
     };
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_ct2hz(mut cents: fluid_real_t) -> fluid_real_t {
     if cents >= 13500 as libc::c_int as libc::c_float {
@@ -136,7 +129,6 @@ pub unsafe extern "C" fn fluid_ct2hz(mut cents: fluid_real_t) -> fluid_real_t {
     }
     return fluid_ct2hz_real(cents);
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_cb2amp(mut cb: fluid_real_t) -> fluid_real_t {
     if cb < 0 as libc::c_int as libc::c_float {
@@ -147,7 +139,6 @@ pub unsafe extern "C" fn fluid_cb2amp(mut cb: fluid_real_t) -> fluid_real_t {
     }
     return fluid_cb2amp_tab[cb as libc::c_int as usize];
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_atten2amp(mut atten: fluid_real_t) -> fluid_real_t {
     if atten < 0 as libc::c_int as libc::c_float {
@@ -158,7 +149,6 @@ pub unsafe extern "C" fn fluid_atten2amp(mut atten: fluid_real_t) -> fluid_real_
         return fluid_atten2amp_tab[atten as libc::c_int as usize];
     };
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_tc2sec_delay(mut tc: fluid_real_t) -> fluid_real_t {
     if tc <= -32768.0f32 {
@@ -172,7 +162,6 @@ pub unsafe extern "C" fn fluid_tc2sec_delay(mut tc: fluid_real_t) -> fluid_real_
     }
     return f64::powf(2.0f64, tc as libc::c_double / 1200.0f64) as fluid_real_t;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_tc2sec_attack(mut tc: fluid_real_t) -> fluid_real_t {
     if tc as libc::c_double <= -32768.0f64 {
@@ -186,12 +175,10 @@ pub unsafe extern "C" fn fluid_tc2sec_attack(mut tc: fluid_real_t) -> fluid_real
     }
     return f64::powf(2.0f64, tc as libc::c_double / 1200.0f64) as fluid_real_t;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_tc2sec(mut tc: fluid_real_t) -> fluid_real_t {
     return f64::powf(2.0f64, tc as libc::c_double / 1200.0f64) as fluid_real_t;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_tc2sec_release(mut tc: fluid_real_t) -> fluid_real_t {
     if tc as libc::c_double <= -32768.0f64 {
@@ -205,19 +192,16 @@ pub unsafe extern "C" fn fluid_tc2sec_release(mut tc: fluid_real_t) -> fluid_rea
     }
     return f64::powf(2.0f64, tc as libc::c_double / 1200.0f64) as fluid_real_t;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_act2hz(mut c: fluid_real_t) -> fluid_real_t {
     return (8.176f64 * f64::powf(2.0f64, c as libc::c_double / 1200.0f64)) as fluid_real_t;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_hz2ct(mut f: fluid_real_t) -> fluid_real_t {
     return (6900 as libc::c_int as libc::c_double
         + 1200 as libc::c_int as libc::c_double * f64::ln(f as libc::c_double / 440.0f64)
             / f64::ln(2.0f64)) as fluid_real_t;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_pan(mut c: fluid_real_t, mut left: libc::c_int) -> fluid_real_t {
     if left != 0 {
@@ -231,7 +215,6 @@ pub unsafe extern "C" fn fluid_pan(mut c: fluid_real_t, mut left: libc::c_int) -
         return fluid_pan_tab[(c + 500 as libc::c_int as libc::c_float) as libc::c_int as usize];
     };
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_concave(mut val: fluid_real_t) -> fluid_real_t {
     if val < 0 as libc::c_int as libc::c_float {
@@ -243,7 +226,6 @@ pub unsafe extern "C" fn fluid_concave(mut val: fluid_real_t) -> fluid_real_t {
     }
     return fluid_concave_tab[val as libc::c_int as usize];
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_convex(mut val: fluid_real_t) -> fluid_real_t {
     if val < 0 as libc::c_int as libc::c_float {

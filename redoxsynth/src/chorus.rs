@@ -7,29 +7,20 @@
     unused_assignments,
     unused_mut
 )]
-
 pub type fluid_chorus_mod = libc::c_uint;
 pub const FLUID_CHORUS_MOD_TRIANGLE: fluid_chorus_mod = 1;
 pub const FLUID_CHORUS_MOD_SINE: fluid_chorus_mod = 0;
-
 pub type fluid_log_level = libc::c_uint;
-
 pub const LAST_LOG_LEVEL: fluid_log_level = 5;
-
 pub const FLUID_DBG: fluid_log_level = 4;
-
 pub const FLUID_INFO: fluid_log_level = 3;
-
 pub const FLUID_WARN: fluid_log_level = 2;
-
 pub const FLUID_ERR: fluid_log_level = 1;
 pub const FLUID_PANIC: fluid_log_level = 0;
-
 pub type fluid_real_t = libc::c_float;
 pub type C2RustUnnamed = libc::c_int;
 pub const FLUID_FAILED: C2RustUnnamed = -1;
 pub const FLUID_OK: C2RustUnnamed = 0;
-
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct fluid_chorus_t {
@@ -51,7 +42,6 @@ pub struct fluid_chorus_t {
     pub sample_rate: fluid_real_t,
     pub sinc_table: [[fluid_real_t; 128]; 5],
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_chorus(mut sample_rate: fluid_real_t) -> *mut fluid_chorus_t {
     let mut i: libc::c_int = 0;
@@ -96,7 +86,6 @@ pub unsafe extern "C" fn new_fluid_chorus(mut sample_rate: fluid_real_t) -> *mut
         }
         i += 1
     }
-
     (*chorus).lookup_tab = libc::malloc(
         (((*chorus).sample_rate as libc::c_double / 0.29f64) as libc::c_int as libc::size_t)
             .wrapping_mul(::std::mem::size_of::<libc::c_int>() as libc::size_t),
@@ -132,17 +121,14 @@ pub unsafe extern "C" fn fluid_chorus_init(mut chorus: *mut fluid_chorus_t) -> l
     fluid_chorus_set_type(chorus, FLUID_CHORUS_MOD_SINE as libc::c_int);
     return fluid_chorus_update(chorus);
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_chorus_set_nr(mut chorus: *mut fluid_chorus_t, mut nr: libc::c_int) {
     (*chorus).new_number_blocks = nr;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_chorus_get_nr(mut chorus: *mut fluid_chorus_t) -> libc::c_int {
     return (*chorus).number_blocks;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_chorus_set_level(
     mut chorus: *mut fluid_chorus_t,
@@ -150,12 +136,10 @@ pub unsafe extern "C" fn fluid_chorus_set_level(
 ) {
     (*chorus).new_level = level;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_chorus_get_level(mut chorus: *mut fluid_chorus_t) -> fluid_real_t {
     return (*chorus).level;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_chorus_set_speed_Hz(
     mut chorus: *mut fluid_chorus_t,
@@ -163,14 +147,12 @@ pub unsafe extern "C" fn fluid_chorus_set_speed_Hz(
 ) {
     (*chorus).new_speed_Hz = speed_Hz;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_chorus_get_speed_Hz(
     mut chorus: *mut fluid_chorus_t,
 ) -> fluid_real_t {
     return (*chorus).speed_Hz;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_chorus_set_depth_ms(
     mut chorus: *mut fluid_chorus_t,
@@ -178,14 +160,12 @@ pub unsafe extern "C" fn fluid_chorus_set_depth_ms(
 ) {
     (*chorus).new_depth_ms = depth_ms;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_chorus_get_depth_ms(
     mut chorus: *mut fluid_chorus_t,
 ) -> fluid_real_t {
     return (*chorus).depth_ms;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_chorus_set_type(
     mut chorus: *mut fluid_chorus_t,
@@ -193,7 +173,6 @@ pub unsafe extern "C" fn fluid_chorus_set_type(
 ) {
     (*chorus).new_type = type_0;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_chorus_get_type(mut chorus: *mut fluid_chorus_t) -> libc::c_int {
     return (*chorus).type_0;
@@ -211,7 +190,6 @@ pub unsafe extern "C" fn delete_fluid_chorus(mut chorus: *mut fluid_chorus_t) {
     }
     libc::free(chorus as *mut libc::c_void);
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_chorus_update(mut chorus: *mut fluid_chorus_t) -> libc::c_int {
     let mut i: libc::c_int = 0;
@@ -267,7 +245,6 @@ pub unsafe extern "C" fn fluid_chorus_update(mut chorus: *mut fluid_chorus_t) ->
     }
     (*chorus).modulation_period_samples =
         ((*chorus).sample_rate / (*chorus).new_speed_Hz) as libc::c_long;
-
     modulation_depth_samples = ((*chorus).new_depth_ms as libc::c_double / 1000.0f64
         * (*chorus).sample_rate as libc::c_double) as libc::c_int;
     if modulation_depth_samples > (1 as libc::c_int) << 12 as libc::c_int - 1 as libc::c_int {
@@ -333,7 +310,6 @@ pub unsafe extern "C" fn fluid_chorus_processmix(
     while sample_index < 64 as libc::c_int {
         d_in = *in_0.offset(sample_index as isize);
         d_out = 0.0f32;
-
         *(*chorus).chorusbuf.offset((*chorus).counter as isize) = d_in;
         i = 0 as libc::c_int;
         while i < (*chorus).number_blocks {
@@ -371,7 +347,6 @@ pub unsafe extern "C" fn fluid_chorus_processmix(
         sample_index += 1
     }
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_chorus_processreplace(
     mut chorus: *mut fluid_chorus_t,
@@ -387,7 +362,6 @@ pub unsafe extern "C" fn fluid_chorus_processreplace(
     while sample_index < 64 as libc::c_int {
         d_in = *in_0.offset(sample_index as isize);
         d_out = 0.0f32;
-
         *(*chorus).chorusbuf.offset((*chorus).counter as isize) = d_in;
         i = 0 as libc::c_int;
         while i < (*chorus).number_blocks {
@@ -423,7 +397,6 @@ pub unsafe extern "C" fn fluid_chorus_processreplace(
         sample_index += 1
     }
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_chorus_sine(
     mut buf: *mut libc::c_int,
@@ -444,7 +417,6 @@ pub unsafe extern "C" fn fluid_chorus_sine(
         i += 1
     }
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_chorus_triangle(
     mut buf: *mut libc::c_int,
@@ -472,7 +444,6 @@ pub unsafe extern "C" fn fluid_chorus_triangle(
         *buf.offset(fresh3 as isize) = val2 as libc::c_int
     }
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_chorus_reset(mut chorus: *mut fluid_chorus_t) {
     fluid_chorus_init(chorus);

@@ -7,10 +7,9 @@
     unused_assignments,
     unused_mut
 )]
-
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct _fluid_hashtable_t {
+pub struct fluid_hashtable_t {
     pub size: libc::c_uint,
     pub nnodes: libc::c_uint,
     pub nodes: *mut *mut fluid_hashnode_t,
@@ -18,16 +17,14 @@ pub struct _fluid_hashtable_t {
 }
 pub type fluid_hash_delete_t =
     Option<unsafe extern "C" fn(_: *mut libc::c_void, _: libc::c_int) -> ()>;
-pub type fluid_hashnode_t = _fluid_hashnode_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct _fluid_hashnode_t {
+pub struct fluid_hashnode_t {
     pub key: *mut libc::c_char,
     pub value: *mut libc::c_void,
     pub type_0: libc::c_int,
     pub next: *mut fluid_hashnode_t,
 }
-pub type fluid_hashtable_t = _fluid_hashtable_t;
 
 pub type fluid_hash_iter_t = Option<
     unsafe extern "C" fn(
@@ -37,7 +34,6 @@ pub type fluid_hash_iter_t = Option<
         _: *mut libc::c_void,
     ) -> libc::c_int,
 >;
-
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_hashtable(
     mut del: fluid_hash_delete_t,
@@ -61,7 +57,6 @@ pub unsafe extern "C" fn new_fluid_hashtable(
     }
     return hash_table;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn delete_fluid_hashtable(mut hash_table: *mut fluid_hashtable_t) {
     let mut i: libc::c_uint = 0;
@@ -90,7 +85,6 @@ unsafe extern "C" fn fluid_hashtable_lookup_node(
     }
     return node;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_hashtable_lookup(
     mut hash_table: *mut fluid_hashtable_t,
@@ -112,7 +106,6 @@ pub unsafe extern "C" fn fluid_hashtable_lookup(
         return 0 as libc::c_int;
     };
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_hashtable_insert(
     mut hash_table: *mut fluid_hashtable_t,
@@ -136,7 +129,6 @@ pub unsafe extern "C" fn fluid_hashtable_insert(
         }
     };
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_hashtable_replace(
     mut hash_table: *mut fluid_hashtable_t,
@@ -162,7 +154,6 @@ pub unsafe extern "C" fn fluid_hashtable_replace(
         }
     };
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_hashtable_remove(
     mut hash_table: *mut fluid_hashtable_t,
@@ -186,7 +177,6 @@ pub unsafe extern "C" fn fluid_hashtable_remove(
     }
     return 0 as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_hashtable_foreach(
     mut hash_table: *mut fluid_hashtable_t,
@@ -210,7 +200,6 @@ pub unsafe extern "C" fn fluid_hashtable_foreach(
         i = i.wrapping_add(1)
     }
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_hashtable_size(
     mut hash_table: *mut fluid_hashtable_t,
@@ -232,7 +221,6 @@ unsafe extern "C" fn fluid_hashtable_resize(mut hash_table: *mut fluid_hashtable
     } else {
         new_size
     };
-
     new_nodes = libc::malloc(
         (new_size as libc::size_t)
             .wrapping_mul(::std::mem::size_of::<*mut fluid_hashnode_t>() as libc::size_t),
@@ -303,7 +291,6 @@ unsafe extern "C" fn delete_fluid_hashnodes(
         hash_node = next
     }
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_str_hash(mut key: *mut libc::c_char) -> libc::c_uint {
     let mut p: *mut libc::c_char = key;

@@ -7,11 +7,10 @@
     unused_assignments,
     unused_mut
 )]
-
 pub type fluid_real_t = libc::c_float;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct _fluid_revmodel_t {
+pub struct fluid_revmodel_t {
     pub roomsize: fluid_real_t,
     pub damp: fluid_real_t,
     pub wet: fluid_real_t,
@@ -48,20 +47,17 @@ pub struct _fluid_revmodel_t {
     pub bufallpassL4: [fluid_real_t; 225],
     pub bufallpassR4: [fluid_real_t; 248],
 }
-pub type fluid_allpass = _fluid_allpass;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct _fluid_allpass {
+pub struct fluid_allpass {
     pub feedback: fluid_real_t,
     pub buffer: *mut fluid_real_t,
     pub bufsize: libc::c_int,
     pub bufidx: libc::c_int,
 }
-pub type fluid_comb = _fluid_comb;
-
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct _fluid_comb {
+pub struct fluid_comb {
     pub feedback: fluid_real_t,
     pub filterstore: fluid_real_t,
     pub damp1: fluid_real_t,
@@ -70,7 +66,6 @@ pub struct _fluid_comb {
     pub bufsize: libc::c_int,
     pub bufidx: libc::c_int,
 }
-pub type fluid_revmodel_t = _fluid_revmodel_t;
 #[no_mangle]
 pub unsafe extern "C" fn fluid_allpass_setbuffer(
     mut allpass: *mut fluid_allpass,
@@ -152,7 +147,6 @@ pub unsafe extern "C" fn new_fluid_revmodel() -> *mut fluid_revmodel_t {
     if rev.is_null() {
         return 0 as *mut fluid_revmodel_t;
     }
-
     fluid_comb_setbuffer(
         &mut *(*rev).combL.as_mut_ptr().offset(0 as libc::c_int as isize),
         (*rev).bufcombL1.as_mut_ptr(),
@@ -297,7 +291,6 @@ pub unsafe extern "C" fn new_fluid_revmodel() -> *mut fluid_revmodel_t {
         (*rev).bufallpassR4.as_mut_ptr(),
         225 as libc::c_int + 23 as libc::c_int,
     );
-
     fluid_allpass_setfeedback(
         &mut *(*rev)
             .allpassL
@@ -403,7 +396,6 @@ pub unsafe extern "C" fn fluid_revmodel_processreplace(
     while k < 64 as libc::c_int {
         outR = 0 as libc::c_int as fluid_real_t;
         outL = outR;
-
         input = (((2 as libc::c_int as libc::c_float * *in_0.offset(k as isize)) as libc::c_double
             + 1e-8f64)
             * (*rev).gain as libc::c_double) as fluid_real_t;
@@ -475,7 +467,6 @@ pub unsafe extern "C" fn fluid_revmodel_processreplace(
         }
         outL = (outL as libc::c_double - 1e-8f64) as fluid_real_t;
         outR = (outR as libc::c_double - 1e-8f64) as fluid_real_t;
-
         *left_out.offset(k as isize) = outL * (*rev).wet1 + outR * (*rev).wet2;
         *right_out.offset(k as isize) = outR * (*rev).wet1 + outL * (*rev).wet2;
         k += 1
@@ -497,7 +488,6 @@ pub unsafe extern "C" fn fluid_revmodel_processmix(
     while k < 64 as libc::c_int {
         outR = 0 as libc::c_int as fluid_real_t;
         outL = outR;
-
         input = (((2 as libc::c_int as libc::c_float * *in_0.offset(k as isize)) as libc::c_double
             + 1e-8f64)
             * (*rev).gain as libc::c_double) as fluid_real_t;
@@ -607,7 +597,6 @@ pub unsafe extern "C" fn fluid_revmodel_update(mut rev: *mut fluid_revmodel_t) {
         i += 1
     }
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_revmodel_setroomsize(
     mut rev: *mut fluid_revmodel_t,
@@ -661,7 +650,6 @@ pub unsafe extern "C" fn fluid_revmodel_setwidth(
     (*rev).width = value;
     fluid_revmodel_update(rev);
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_revmodel_getwidth(mut rev: *mut fluid_revmodel_t) -> fluid_real_t {
     return (*rev).width;

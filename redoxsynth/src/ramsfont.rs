@@ -7,85 +7,66 @@
     unused_assignments,
     unused_mut
 )]
-
-use crate::channel::_fluid_channel_t;
+use crate::channel::fluid_channel_t;
 use crate::chorus::fluid_chorus_t;
-use crate::defsfont::_fluid_inst_t;
-use crate::defsfont::_fluid_inst_zone_t;
-use crate::defsfont::_fluid_preset_zone_t;
 use crate::defsfont::delete_fluid_inst_zone;
 use crate::defsfont::delete_fluid_preset_zone;
 use crate::defsfont::fluid_inst_add_zone;
 use crate::defsfont::fluid_inst_get_global_zone;
 use crate::defsfont::fluid_inst_get_zone;
+use crate::defsfont::fluid_inst_t;
 use crate::defsfont::fluid_inst_zone_get_sample;
 use crate::defsfont::fluid_inst_zone_inside_range;
 use crate::defsfont::fluid_inst_zone_next;
+use crate::defsfont::fluid_inst_zone_t;
 use crate::defsfont::fluid_preset_zone_get_inst;
 use crate::defsfont::fluid_preset_zone_inside_range;
 use crate::defsfont::fluid_preset_zone_next;
+use crate::defsfont::fluid_preset_zone_t;
 use crate::defsfont::fluid_sample_in_rom;
 use crate::defsfont::new_fluid_inst;
 use crate::defsfont::new_fluid_inst_zone;
 use crate::defsfont::new_fluid_preset_zone;
-use crate::gen::_fluid_gen_t;
-use crate::hash::_fluid_hashtable_t;
-use crate::list::_fluid_list_t;
+use crate::gen::fluid_gen_t;
+use crate::hash::fluid_hashtable_t;
 use crate::list::delete_fluid_list;
 use crate::list::fluid_list_append;
 use crate::list::fluid_list_remove;
-use crate::modulator::_fluid_mod_t;
+use crate::list::fluid_list_t;
+use crate::modulator::fluid_mod_t;
 use crate::modulator::fluid_mod_test_identity;
-use crate::reverb::_fluid_revmodel_t;
-use crate::sfont::_fluid_preset_t;
-use crate::sfont::_fluid_sample_t;
-use crate::sfont::_fluid_sfont_t;
-use crate::synth::_fluid_synth_t;
+use crate::reverb::fluid_revmodel_t;
+use crate::sfont::fluid_preset_t;
+use crate::sfont::fluid_sample_t;
+use crate::sfont::fluid_sfont_t;
 use crate::synth::fluid_synth_alloc_voice;
 use crate::synth::fluid_synth_start_voice;
-use crate::tuning::_fluid_tuning_t;
-use crate::voice::_fluid_env_data_t;
-use crate::voice::_fluid_voice_t;
+use crate::synth::fluid_synth_t;
+use crate::tuning::fluid_tuning_t;
+use crate::voice::fluid_env_data_t;
 use crate::voice::fluid_voice_add_mod;
 use crate::voice::fluid_voice_gen_incr;
 use crate::voice::fluid_voice_gen_set;
 use crate::voice::fluid_voice_get_id;
 use crate::voice::fluid_voice_is_playing;
 use crate::voice::fluid_voice_off;
+use crate::voice::fluid_voice_t;
 use crate::voice::fluid_voice_update_param;
-
-pub type fluid_settings_t = _fluid_hashtable_t;
-pub type fluid_tuning_t = _fluid_tuning_t;
-
-
-pub type fluid_revmodel_t = _fluid_revmodel_t;
+pub type fluid_settings_t = fluid_hashtable_t;
 pub type fluid_real_t = libc::c_float;
-pub type fluid_voice_t = _fluid_voice_t;
-pub type fluid_env_data_t = _fluid_env_data_t;
 pub type fluid_phase_t = libc::c_ulonglong;
-pub type fluid_sample_t = _fluid_sample_t;
-pub type fluid_mod_t = _fluid_mod_t;
-pub type fluid_gen_t = _fluid_gen_t;
-pub type fluid_channel_t = _fluid_channel_t;
-pub type fluid_list_t = _fluid_list_t;
-pub type fluid_synth_t = _fluid_synth_t;
-pub type fluid_sfont_t = _fluid_sfont_t;
-pub type fluid_preset_t = _fluid_preset_t;
-
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct _fluid_ramsfont_t {
+pub struct fluid_ramsfont_t {
     pub name: [libc::c_char; 21],
     pub sample: *mut fluid_list_t,
     pub preset: *mut fluid_rampreset_t,
     pub iter_preset: fluid_preset_t,
     pub iter_cur: *mut fluid_rampreset_t,
 }
-pub type fluid_rampreset_t = _fluid_rampreset_t;
-
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct _fluid_rampreset_t {
+pub struct fluid_rampreset_t {
     pub next: *mut fluid_rampreset_t,
     pub sfont: *mut fluid_ramsfont_t,
     pub name: [libc::c_char; 21],
@@ -95,51 +76,31 @@ pub struct _fluid_rampreset_t {
     pub zone: *mut fluid_preset_zone_t,
     pub presetvoices: *mut fluid_list_t,
 }
-pub type fluid_preset_zone_t = _fluid_preset_zone_t;
-pub type fluid_inst_t = _fluid_inst_t;
-pub type fluid_inst_zone_t = _fluid_inst_zone_t;
-pub type fluid_ramsfont_t = _fluid_ramsfont_t;
 pub const FLUID_OK: C2RustUnnamed = 0;
 pub const FLUID_VOICE_ADD: fluid_voice_add_mod = 1;
-
 pub const GEN_OVERRIDEROOTKEY: fluid_gen_type = 58;
-
 pub const GEN_EXCLUSIVECLASS: fluid_gen_type = 57;
-
 pub const GEN_SAMPLEMODE: fluid_gen_type = 54;
-
 pub const GEN_ENDLOOPADDRCOARSEOFS: fluid_gen_type = 50;
-
 pub const GEN_VELOCITY: fluid_gen_type = 47;
-
 pub const GEN_KEYNUM: fluid_gen_type = 46;
-
 pub const GEN_STARTLOOPADDRCOARSEOFS: fluid_gen_type = 45;
-
 pub const GEN_ENDADDRCOARSEOFS: fluid_gen_type = 12;
-
 pub const GEN_STARTADDRCOARSEOFS: fluid_gen_type = 4;
-
 pub const GEN_ENDLOOPADDROFS: fluid_gen_type = 3;
-
 pub const GEN_STARTLOOPADDROFS: fluid_gen_type = 2;
-
 pub const GEN_ENDADDROFS: fluid_gen_type = 1;
 pub const GEN_STARTADDROFS: fluid_gen_type = 0;
-
 pub const GEN_LAST: fluid_gen_type = 60;
 pub const FLUID_VOICE_OVERWRITE: fluid_voice_add_mod = 0;
 pub const FLUID_FAILED: C2RustUnnamed = -1;
 pub const FLUID_ERR: fluid_log_level = 1;
-
-pub type fluid_rampreset_voice_t = _fluid_rampreset_voice_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct _fluid_rampreset_voice_t {
+pub struct fluid_rampreset_voice_t {
     pub voice: *mut fluid_voice_t,
     pub voiceID: libc::c_uint,
 }
-
 pub const GEN_SET: fluid_gen_flags = 1;
 pub const FLUID_LOOP_DURING_RELEASE: fluid_loop = 1;
 pub const GEN_UNUSED: fluid_gen_flags = 0;
@@ -150,112 +111,61 @@ pub const FLUID_DBG: fluid_log_level = 4;
 pub const FLUID_INFO: fluid_log_level = 3;
 pub const FLUID_WARN: fluid_log_level = 2;
 pub const FLUID_PANIC: fluid_log_level = 0;
-
 pub type fluid_gen_type = libc::c_uint;
-
 pub const GEN_PITCH: fluid_gen_type = 59;
-
 pub const GEN_SCALETUNE: fluid_gen_type = 56;
-
 pub const GEN_RESERVED3: fluid_gen_type = 55;
-
 pub const GEN_SAMPLEID: fluid_gen_type = 53;
-
 pub const GEN_FINETUNE: fluid_gen_type = 52;
-
 pub const GEN_COARSETUNE: fluid_gen_type = 51;
-
 pub const GEN_RESERVED2: fluid_gen_type = 49;
-
 pub const GEN_ATTENUATION: fluid_gen_type = 48;
-
 pub const GEN_VELRANGE: fluid_gen_type = 44;
-
 pub const GEN_KEYRANGE: fluid_gen_type = 43;
-
 pub const GEN_RESERVED1: fluid_gen_type = 42;
-
 pub const GEN_INSTRUMENT: fluid_gen_type = 41;
-
 pub const GEN_KEYTOVOLENVDECAY: fluid_gen_type = 40;
-
 pub const GEN_KEYTOVOLENVHOLD: fluid_gen_type = 39;
-
 pub const GEN_VOLENVRELEASE: fluid_gen_type = 38;
-
 pub const GEN_VOLENVSUSTAIN: fluid_gen_type = 37;
-
 pub const GEN_VOLENVDECAY: fluid_gen_type = 36;
-
 pub const GEN_VOLENVHOLD: fluid_gen_type = 35;
-
 pub const GEN_VOLENVATTACK: fluid_gen_type = 34;
-
 pub const GEN_VOLENVDELAY: fluid_gen_type = 33;
-
 pub const GEN_KEYTOMODENVDECAY: fluid_gen_type = 32;
-
 pub const GEN_KEYTOMODENVHOLD: fluid_gen_type = 31;
-
 pub const GEN_MODENVRELEASE: fluid_gen_type = 30;
-
 pub const GEN_MODENVSUSTAIN: fluid_gen_type = 29;
-
 pub const GEN_MODENVDECAY: fluid_gen_type = 28;
-
 pub const GEN_MODENVHOLD: fluid_gen_type = 27;
-
 pub const GEN_MODENVATTACK: fluid_gen_type = 26;
-
 pub const GEN_MODENVDELAY: fluid_gen_type = 25;
-
 pub const GEN_VIBLFOFREQ: fluid_gen_type = 24;
-
 pub const GEN_VIBLFODELAY: fluid_gen_type = 23;
-
 pub const GEN_MODLFOFREQ: fluid_gen_type = 22;
-
 pub const GEN_MODLFODELAY: fluid_gen_type = 21;
-
 pub const GEN_UNUSED4: fluid_gen_type = 20;
-
 pub const GEN_UNUSED3: fluid_gen_type = 19;
-
 pub const GEN_UNUSED2: fluid_gen_type = 18;
-
 pub const GEN_PAN: fluid_gen_type = 17;
-
 pub const GEN_REVERBSEND: fluid_gen_type = 16;
-
 pub const GEN_CHORUSSEND: fluid_gen_type = 15;
-
 pub const GEN_UNUSED1: fluid_gen_type = 14;
-
 pub const GEN_MODLFOTOVOL: fluid_gen_type = 13;
-
 pub const GEN_MODENVTOFILTERFC: fluid_gen_type = 11;
-
 pub const GEN_MODLFOTOFILTERFC: fluid_gen_type = 10;
-
 pub const GEN_FILTERQ: fluid_gen_type = 9;
-
 pub const GEN_FILTERFC: fluid_gen_type = 8;
-
 pub const GEN_MODENVTOPITCH: fluid_gen_type = 7;
-
 pub const GEN_VIBLFOTOPITCH: fluid_gen_type = 6;
-
 pub const GEN_MODLFOTOPITCH: fluid_gen_type = 5;
-
 pub type fluid_gen_flags = libc::c_uint;
-
 pub const GEN_ABS_NRPN: fluid_gen_flags = 2;
 pub const FLUID_VOICE_DEFAULT: fluid_voice_add_mod = 2;
 pub type C2RustUnnamed = libc::c_int;
 pub type fluid_loop = libc::c_uint;
 pub const FLUID_LOOP_UNTIL_RELEASE: fluid_loop = 3;
 pub const FLUID_NOTUSED: fluid_loop = 2;
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_ramsfont_create_sfont() -> *mut fluid_sfont_t {
     let mut sfont: *mut fluid_sfont_t = 0 as *mut fluid_sfont_t;
@@ -295,7 +205,6 @@ pub unsafe extern "C" fn fluid_ramsfont_create_sfont() -> *mut fluid_sfont_t {
     );
     return sfont;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_ramsfont_sfont_delete(mut sfont: *mut fluid_sfont_t) -> libc::c_int {
     if delete_fluid_ramsfont((*sfont).data as *mut fluid_ramsfont_t) != 0 as libc::c_int {
@@ -438,7 +347,6 @@ pub unsafe extern "C" fn fluid_rampreset_preset_noteon(
         vel,
     );
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_ramsfont() -> *mut fluid_ramsfont_t {
     let mut sfont: *mut fluid_ramsfont_t = 0 as *mut fluid_ramsfont_t;
@@ -453,7 +361,6 @@ pub unsafe extern "C" fn new_fluid_ramsfont() -> *mut fluid_ramsfont_t {
     (*sfont).preset = 0 as *mut fluid_rampreset_t;
     return sfont;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn delete_fluid_ramsfont(mut sfont: *mut fluid_ramsfont_t) -> libc::c_int {
     let mut list: *mut fluid_list_t = 0 as *mut fluid_list_t;
@@ -500,14 +407,12 @@ pub unsafe extern "C" fn delete_fluid_ramsfont(mut sfont: *mut fluid_ramsfont_t)
     libc::free(sfont as *mut libc::c_void);
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_ramsfont_get_name(
     mut sfont: *mut fluid_ramsfont_t,
 ) -> *mut libc::c_char {
     return (*sfont).name.as_mut_ptr();
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_ramsfont_set_name(
     mut sfont: *mut fluid_ramsfont_t,
@@ -520,7 +425,6 @@ pub unsafe extern "C" fn fluid_ramsfont_set_name(
     );
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_ramsfont_add_preset(
     mut sfont: *mut fluid_ramsfont_t,
@@ -555,7 +459,6 @@ pub unsafe extern "C" fn fluid_ramsfont_add_preset(
     }
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_ramsfont_add_izone(
     mut sfont: *mut fluid_ramsfont_t,
@@ -607,7 +510,6 @@ pub unsafe extern "C" fn fluid_ramsfont_remove_izone(
     (*sfont).sample = fluid_list_remove((*sfont).sample, sample as *mut libc::c_void);
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_ramsfont_izone_set_gen(
     mut sfont: *mut fluid_ramsfont_t,
@@ -623,7 +525,6 @@ pub unsafe extern "C" fn fluid_ramsfont_izone_set_gen(
     }
     return fluid_rampreset_izone_set_gen(preset, sample, gen_type, value);
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_ramsfont_izone_set_loop(
     mut sfont: *mut fluid_ramsfont_t,
@@ -640,7 +541,6 @@ pub unsafe extern "C" fn fluid_ramsfont_izone_set_loop(
     }
     return fluid_rampreset_izone_set_loop(preset, sample, on, loopstart, loopend);
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_ramsfont_get_preset(
     mut sfont: *mut fluid_ramsfont_t,
@@ -656,12 +556,10 @@ pub unsafe extern "C" fn fluid_ramsfont_get_preset(
     }
     return 0 as *mut fluid_rampreset_t;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_ramsfont_iteration_start(mut sfont: *mut fluid_ramsfont_t) {
     (*sfont).iter_cur = (*sfont).preset;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_ramsfont_iteration_next(
     mut sfont: *mut fluid_ramsfont_t,
@@ -674,7 +572,6 @@ pub unsafe extern "C" fn fluid_ramsfont_iteration_next(
     (*sfont).iter_cur = fluid_rampreset_next((*sfont).iter_cur);
     return 1 as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_rampreset(
     mut sfont: *mut fluid_ramsfont_t,
@@ -696,7 +593,6 @@ pub unsafe extern "C" fn new_fluid_rampreset(
     (*preset).presetvoices = 0 as *mut fluid_list_t;
     return preset;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn delete_fluid_rampreset(mut preset: *mut fluid_rampreset_t) -> libc::c_int {
     let mut err: libc::c_int = FLUID_OK as libc::c_int;
@@ -749,14 +645,12 @@ pub unsafe extern "C" fn fluid_rampreset_get_name(
 ) -> *mut libc::c_char {
     return (*preset).name.as_mut_ptr();
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_rampreset_next(
     mut preset: *mut fluid_rampreset_t,
 ) -> *mut fluid_rampreset_t {
     return (*preset).next;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_rampreset_add_zone(
     mut preset: *mut fluid_rampreset_t,
@@ -771,7 +665,6 @@ pub unsafe extern "C" fn fluid_rampreset_add_zone(
     }
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_rampreset_add_sample(
     mut preset: *mut fluid_rampreset_t,
@@ -793,7 +686,6 @@ pub unsafe extern "C" fn fluid_rampreset_add_sample(
         }
         fluid_rampreset_add_zone(preset, zone);
     }
-
     let mut inst: *mut fluid_inst_t = fluid_preset_zone_get_inst((*preset).zone);
     let mut izone: *mut fluid_inst_zone_t =
         new_fluid_inst_zone(b"\x00" as *const u8 as *const libc::c_char as *mut libc::c_char);
@@ -860,7 +752,6 @@ pub unsafe extern "C" fn fluid_rampreset_izone_set_loop(
         );
         return FLUID_OK as libc::c_int;
     }
-
     if loopstart as libc::c_double > 32767.0f64 || (loopstart as libc::c_double) < -32767.0f64 {
         coarse = (loopstart as libc::c_double / 32768.0f64) as libc::c_short;
         fine = (loopstart as libc::c_double
@@ -892,7 +783,6 @@ pub unsafe extern "C" fn fluid_rampreset_izone_set_loop(
         GEN_STARTLOOPADDRCOARSEOFS as libc::c_int,
         coarse as libc::c_float,
     );
-
     if loopend as libc::c_double > 32767.0f64 || (loopend as libc::c_double) < -32767.0f64 {
         coarse = (loopend as libc::c_double / 32768.0f64) as libc::c_short;
         fine = (loopend as libc::c_double - coarse as libc::c_float as libc::c_double * 32768.0f64)
@@ -998,7 +888,6 @@ pub unsafe extern "C" fn fluid_rampreset_remove_izone(
     }
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_rampreset_remembervoice(
     mut preset: *mut fluid_rampreset_t,
@@ -1022,7 +911,6 @@ pub unsafe extern "C" fn fluid_rampreset_remembervoice(
     }
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_rampreset_updatevoices(
     mut preset: *mut fluid_rampreset_t,
@@ -1055,7 +943,6 @@ pub unsafe extern "C" fn fluid_rampreset_updatevoices(
         }
     }
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_rampreset_noteon(
     mut preset: *mut fluid_rampreset_t,
@@ -1211,7 +1098,6 @@ pub unsafe extern "C" fn fluid_rampreset_noteon(
     }
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_sample_set_name(
     mut sample: *mut fluid_sample_t,
@@ -1224,7 +1110,6 @@ pub unsafe extern "C" fn fluid_sample_set_name(
     );
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_sample_set_sound_data(
     mut sample: *mut fluid_sample_t,
@@ -1278,7 +1163,6 @@ pub unsafe extern "C" fn fluid_sample_set_sound_data(
     (*sample).valid = 1 as libc::c_int;
     return FLUID_OK as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_ramsample() -> *mut fluid_sample_t {
     let mut sample: *mut fluid_sample_t = 0 as *mut fluid_sample_t;
@@ -1295,7 +1179,6 @@ pub unsafe extern "C" fn new_fluid_ramsample() -> *mut fluid_sample_t {
     );
     return sample;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn delete_fluid_ramsample(mut sample: *mut fluid_sample_t) -> libc::c_int {
     if !(*sample).data.is_null() {

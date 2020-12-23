@@ -7,17 +7,14 @@
     unused_assignments,
     unused_mut
 )]
-
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct _fluid_list_t {
+pub struct fluid_list_t {
     pub data: *mut libc::c_void,
     pub next: *mut fluid_list_t,
 }
-pub type fluid_list_t = _fluid_list_t;
 pub type fluid_compare_func_t =
     Option<unsafe extern "C" fn(_: *mut libc::c_void, _: *mut libc::c_void) -> libc::c_int>;
-
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_list() -> *mut fluid_list_t {
     let mut list: *mut fluid_list_t = 0 as *mut fluid_list_t;
@@ -216,7 +213,6 @@ pub unsafe extern "C" fn fluid_list_size(mut list: *mut fluid_list_t) -> libc::c
     }
     return n;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_list_insert_at(
     mut list: *mut fluid_list_t,

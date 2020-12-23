@@ -8,7 +8,6 @@
     unused_mut
 )]
 #![feature(c_variadic, const_raw_ptr_to_usize_cast, const_transmute)]
-
 pub type fluid_log_level = libc::c_uint;
 pub const LAST_LOG_LEVEL: fluid_log_level = 5;
 pub const FLUID_DBG: fluid_log_level = 4;
@@ -21,9 +20,7 @@ pub type fluid_log_function_t =
 pub const FLUID_FAILED: C2RustUnnamed = -1;
 pub type C2RustUnnamed = libc::c_int;
 pub const FLUID_OK: C2RustUnnamed = 0;
-
 static mut fluid_errbuf: [libc::c_char; 512] = [0; 512];
-
 static mut fluid_log_function: [fluid_log_function_t; 5] = [None; 5];
 static mut fluid_log_user_data: [*mut libc::c_void; 5] =
     [0 as *const libc::c_void as *mut libc::c_void; 5];
@@ -34,7 +31,6 @@ static mut fluid_libname: *mut libc::c_char =
 pub unsafe extern "C" fn fluid_sys_config() {}
 #[no_mangle]
 pub static mut fluid_debug_flags: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_set_log_function(
     mut level: libc::c_int,
@@ -49,10 +45,8 @@ pub unsafe extern "C" fn fluid_set_log_function(
     }
     return old;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_log_config() {}
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_strtok(
     mut str: *mut *mut libc::c_char,
@@ -107,12 +101,10 @@ pub unsafe extern "C" fn fluid_strtok(
     *str = 0 as *mut libc::c_char;
     return token;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_error() -> *mut libc::c_char {
     return fluid_errbuf.as_mut_ptr();
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_is_midifile(mut filename: *mut libc::c_char) -> libc::c_int {
     let mut fp: *mut libc::FILE =
@@ -138,7 +130,6 @@ pub unsafe extern "C" fn fluid_is_midifile(mut filename: *mut libc::c_char) -> l
         4 as libc::size_t,
     ) == 0 as libc::c_int) as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_is_soundfont(mut filename: *mut libc::c_char) -> libc::c_int {
     let mut fp: *mut libc::FILE =
@@ -164,7 +155,6 @@ pub unsafe extern "C" fn fluid_is_soundfont(mut filename: *mut libc::c_char) -> 
         4 as libc::size_t,
     ) == 0 as libc::c_int) as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_default_log_function(
     mut level: libc::c_int,

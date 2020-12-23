@@ -7,29 +7,26 @@
     unused_assignments,
     unused_mut
 )]
-use crate::hash::_fluid_hashtable_t;
 use crate::hash::delete_fluid_hashtable;
 use crate::hash::fluid_hashtable_insert;
 use crate::hash::fluid_hashtable_lookup;
 use crate::hash::fluid_hashtable_replace;
+use crate::hash::fluid_hashtable_t;
 use crate::hash::new_fluid_hashtable;
-use crate::list::_fluid_list_t;
 use crate::list::delete_fluid_list;
 use crate::list::fluid_list_append;
 use crate::list::fluid_list_remove_link;
+use crate::list::fluid_list_t;
 use crate::synth::fluid_synth_settings;
 use crate::sys::fluid_strtok;
 use std::ffi::CStr;
-
-pub type fluid_settings_t = _fluid_hashtable_t;
-pub type fluid_list_t = _fluid_list_t;
+pub type fluid_settings_t = fluid_hashtable_t;
 pub type fluid_types_enum = libc::c_int;
 pub const FLUID_SET_TYPE: fluid_types_enum = 3;
 pub const FLUID_STR_TYPE: fluid_types_enum = 2;
 pub const FLUID_INT_TYPE: fluid_types_enum = 1;
 pub const FLUID_NUM_TYPE: fluid_types_enum = 0;
 pub const FLUID_NO_TYPE: fluid_types_enum = -1;
-pub type fluid_hashtable_t = _fluid_hashtable_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct fluid_str_setting_t {
@@ -233,7 +230,6 @@ unsafe extern "C" fn fluid_settings_hash_delete(
         _ => {}
     };
 }
-
 unsafe extern "C" fn fluid_settings_init(mut settings: *mut fluid_settings_t) {
     fluid_synth_settings(settings);
 }
@@ -278,7 +274,6 @@ unsafe extern "C" fn fluid_settings_tokenize(
     }
     return n;
 }
-
 unsafe extern "C" fn fluid_settings_get(
     mut settings: *mut fluid_settings_t,
     mut name: *mut *mut libc::c_char,
@@ -313,7 +308,6 @@ unsafe extern "C" fn fluid_settings_get(
     }
     return 1 as libc::c_int;
 }
-
 unsafe extern "C" fn fluid_settings_set(
     mut settings: *mut fluid_settings_t,
     mut name: *mut *mut libc::c_char,
@@ -358,7 +352,6 @@ unsafe extern "C" fn fluid_settings_set(
     fluid_hashtable_replace(table, *name.offset(num as isize), value, type_0);
     return 1 as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_settings_register_str(
     mut settings: *mut fluid_settings_t,
@@ -414,7 +407,6 @@ pub unsafe extern "C" fn fluid_settings_register_str(
         return 1 as libc::c_int;
     };
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_settings_register_num(
     mut settings: *mut fluid_settings_t,
@@ -467,7 +459,6 @@ pub unsafe extern "C" fn fluid_settings_register_num(
         return 0 as libc::c_int;
     };
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_settings_register_int(
     mut settings: *mut fluid_settings_t,
@@ -749,7 +740,6 @@ pub unsafe extern "C" fn fluid_settings_getstr_default(
         return 0 as *mut libc::c_char;
     };
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_settings_add_option(
     mut settings: *mut fluid_settings_t,
@@ -782,7 +772,6 @@ pub unsafe extern "C" fn fluid_settings_add_option(
         return 0 as libc::c_int;
     };
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_settings_remove_option(
     mut settings: *mut fluid_settings_t,
@@ -1047,7 +1036,6 @@ pub unsafe extern "C" fn fluid_settings_getint(
     }
     return 0 as libc::c_int;
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_settings_getint_range(
     mut settings: *mut fluid_settings_t,
@@ -1075,7 +1063,6 @@ pub unsafe extern "C" fn fluid_settings_getint_range(
         *max = (*setting).max
     };
 }
-
 #[no_mangle]
 pub unsafe extern "C" fn fluid_settings_getint_default(
     mut settings: *mut fluid_settings_t,
