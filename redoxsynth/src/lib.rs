@@ -26,7 +26,7 @@ mod list;
 mod modulator;
 mod ramsfont;
 mod reverb;
-mod fluid_settings;
+mod settings;
 mod fluid_sfont;
 mod fluid_synth;
 mod fluid_sys;
