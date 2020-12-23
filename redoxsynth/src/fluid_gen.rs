@@ -7,7 +7,7 @@
     unused_assignments,
     unused_mut
 )]
-use crate::fluid_chan::_fluid_channel_t;
+use crate::channel::_fluid_channel_t;
 use crate::fluid_sfont::_fluid_preset_t;
 use crate::fluid_sfont::_fluid_sfont_t;
 use crate::fluid_synth::_fluid_synth_t;

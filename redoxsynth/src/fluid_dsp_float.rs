@@ -8,7 +8,7 @@
     unused_mut
 )]
 
-use crate::fluid_chan::_fluid_channel_t;
+use crate::channel::_fluid_channel_t;
 use crate::fluid_gen::_fluid_gen_t;
 use crate::fluid_mod::_fluid_mod_t;
 use crate::fluid_sfont::_fluid_sample_t;

@@ -15,7 +15,7 @@ mod redoxsynth_macros {
     }
 }
 
-mod fluid_chan;
+mod channel;
 mod fluid_chorus;
 mod fluid_conv;
 mod fluid_defsfont;

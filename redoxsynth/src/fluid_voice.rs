@@ -7,9 +7,9 @@
     unused_assignments,
     unused_mut
 )]
-use crate::fluid_chan::_fluid_channel_t;
-use crate::fluid_chan::fluid_channel_get_interp_method;
-use crate::fluid_chan::fluid_channel_get_num;
+use crate::channel::_fluid_channel_t;
+use crate::channel::fluid_channel_get_interp_method;
+use crate::channel::fluid_channel_get_num;
 use crate::fluid_chorus::_fluid_chorus_t;
 use crate::fluid_conv::fluid_act2hz;
 use crate::fluid_conv::fluid_atten2amp;

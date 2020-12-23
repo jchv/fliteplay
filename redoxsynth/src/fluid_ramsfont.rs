@@ -8,7 +8,7 @@
     unused_mut
 )]
 
-use crate::fluid_chan::_fluid_channel_t;
+use crate::channel::_fluid_channel_t;
 use crate::fluid_chorus::_fluid_chorus_t;
 use crate::fluid_defsfont::_fluid_inst_t;
 use crate::fluid_defsfont::_fluid_inst_zone_t;
