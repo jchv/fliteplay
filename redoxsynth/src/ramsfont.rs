@@ -36,7 +36,7 @@ use crate::list::fluid_list_append;
 use crate::list::fluid_list_remove;
 use crate::modulator::_fluid_mod_t;
 use crate::modulator::fluid_mod_test_identity;
-use crate::fluid_rev::_fluid_revmodel_t;
+use crate::reverb::_fluid_revmodel_t;
 use crate::fluid_sfont::_fluid_preset_t;
 use crate::fluid_sfont::_fluid_sample_t;
 use crate::fluid_sfont::_fluid_sfont_t;

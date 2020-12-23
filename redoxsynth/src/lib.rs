@@ -25,7 +25,7 @@ mod hash;
 mod list;
 mod modulator;
 mod ramsfont;
-mod fluid_rev;
+mod reverb;
 mod fluid_settings;
 mod fluid_sfont;
 mod fluid_synth;

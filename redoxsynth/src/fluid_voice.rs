@@ -34,7 +34,7 @@ use crate::modulator::fluid_mod_clone;
 use crate::modulator::fluid_mod_get_dest;
 use crate::modulator::fluid_mod_get_value;
 use crate::modulator::fluid_mod_test_identity;
-use crate::fluid_rev::_fluid_revmodel_t;
+use crate::reverb::_fluid_revmodel_t;
 use crate::fluid_sfont::_fluid_preset_t;
 use crate::fluid_sfont::_fluid_sample_t;
 use crate::fluid_sfont::_fluid_sfont_t;

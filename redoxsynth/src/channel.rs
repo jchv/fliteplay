@@ -14,7 +14,7 @@ use crate::gen::fluid_gen_scale_nrpn;
 use crate::hash::_fluid_hashtable_t;
 use crate::list::_fluid_list_t;
 use crate::modulator::_fluid_mod_t;
-use crate::fluid_rev::_fluid_revmodel_t;
+use crate::reverb::_fluid_revmodel_t;
 use crate::fluid_settings::fluid_settings_str_equal;
 use crate::fluid_sfont::_fluid_preset_t;
 use crate::fluid_sfont::_fluid_sample_t;
