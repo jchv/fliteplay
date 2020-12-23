@@ -1,4 +1,3 @@
-#![allow(mutable_transmutes)]
 use crate::list::CompareFn;
 use crate::gen::fluid_gen_set_default_values;
 use crate::gen::fluid_gen_t;
@@ -1966,15 +1965,13 @@ pub unsafe extern "C" fn fluid_sample_import_sfont(
     return FLUID_OK as libc::c_int;
 }
 #[no_mangle]
-pub static mut idlist: [libc::c_char; 113] = unsafe {
-    *::std::mem::transmute::<&[u8; 113],
-                                 &mut [libc::c_char; 113]>(b"RIFFLISTsfbkINFOsdtapdtaifilisngINAMiromiverICRDIENGIPRDICOPICMTISFTsnamsmplphdrpbagpmodpgeninstibagimodigenshdr\x00")
-};
+pub static idlist: &[u8; 113] =
+    b"RIFFLISTsfbkINFOsdtapdtaifilisngINAMiromiverICRDIENGIPRDICOPICMTISFTsnamsmplphdrpbagpmodpgeninstibagimodigenshdr\x00";
 static mut SDTACHUNK_SIZE: libc::c_uint = 0;
 unsafe extern "C" fn chunkid(id: libc::c_uint) -> libc::c_int {
     let mut i: libc::c_uint;
-    let mut p: *mut libc::c_uint;
-    p = &mut idlist as *mut [libc::c_char; 113] as *mut libc::c_uint;
+    let mut p: *const libc::c_uint;
+    p = idlist as *const [u8; 113] as *const libc::c_uint;
     i = 0 as libc::c_int as libc::c_uint;
     while (i as libc::c_ulong)
         < (::std::mem::size_of::<[libc::c_char; 113]>() as libc::c_ulong)
@@ -2365,7 +2362,7 @@ unsafe extern "C" fn pdtahelper(
 ) -> libc::c_int {
     let id: libc::c_uint;
     let expstr: *mut libc::c_char;
-    expstr = &mut *idlist.as_mut_ptr().offset(
+    expstr = idlist.as_ptr().offset(
         expid
             .wrapping_sub(1 as libc::c_int as libc::c_uint)
             .wrapping_mul(4 as libc::c_int as libc::c_uint) as isize,
