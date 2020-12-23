@@ -7,16 +7,6 @@
     unused_assignments,
     unused_mut
 )]
-extern "C" {
-    #[no_mangle]
-    fn free(__ptr: *mut libc::c_void);
-    #[no_mangle]
-    fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
-    #[no_mangle]
-    fn strlen(_: *const libc::c_char) -> libc::c_ulong;
-    #[no_mangle]
-    fn strcpy(_: *mut libc::c_char, _: *const libc::c_char) -> *mut libc::c_char;
-}
 
 pub type fluid_log_level = libc::c_uint;
 
@@ -48,20 +38,16 @@ pub unsafe extern "C" fn new_fluid_tuning(
 ) -> *mut fluid_tuning_t {
     let mut tuning: *mut fluid_tuning_t = 0 as *mut fluid_tuning_t;
     let mut i: libc::c_int = 0;
-    tuning =
-        malloc(::std::mem::size_of::<fluid_tuning_t>() as libc::c_ulong) as *mut fluid_tuning_t;
+    tuning = libc::malloc(::std::mem::size_of::<fluid_tuning_t>() as libc::size_t)
+        as *mut fluid_tuning_t;
     if tuning.is_null() {
-        fluid_log!(
-            FLUID_PANIC as libc::c_int,
-            "Out of memory",
-        );
+        fluid_log!(FLUID_PANIC as libc::c_int, "Out of memory",);
         return 0 as *mut fluid_tuning_t;
     }
     (*tuning).name = 0 as *mut libc::c_char;
     if !name.is_null() {
-        (*tuning).name = strcpy(
-            malloc(strlen(name).wrapping_add(1 as libc::c_int as libc::c_ulong))
-                as *mut libc::c_char,
+        (*tuning).name = libc::strcpy(
+            libc::malloc(libc::strlen(name) + 1) as *mut libc::c_char,
             name,
         )
     }
@@ -81,27 +67,20 @@ pub unsafe extern "C" fn fluid_tuning_duplicate(
 ) -> *mut fluid_tuning_t {
     let mut new_tuning: *mut fluid_tuning_t = 0 as *mut fluid_tuning_t;
     let mut i: libc::c_int = 0;
-    new_tuning =
-        malloc(::std::mem::size_of::<fluid_tuning_t>() as libc::c_ulong) as *mut fluid_tuning_t;
+    new_tuning = libc::malloc(::std::mem::size_of::<fluid_tuning_t>() as libc::size_t)
+        as *mut fluid_tuning_t;
     if new_tuning.is_null() {
-        fluid_log!(
-            FLUID_PANIC as libc::c_int,
-            "Out of memory",
-        );
+        fluid_log!(FLUID_PANIC as libc::c_int, "Out of memory",);
         return 0 as *mut fluid_tuning_t;
     }
     if !(*tuning).name.is_null() {
-        (*new_tuning).name = strcpy(
-            malloc(strlen((*tuning).name).wrapping_add(1 as libc::c_int as libc::c_ulong))
-                as *mut libc::c_char,
+        (*new_tuning).name = libc::strcpy(
+            libc::malloc(libc::strlen((*tuning).name) + 1) as *mut libc::c_char,
             (*tuning).name,
         );
         if (*new_tuning).name.is_null() {
-            free(new_tuning as *mut libc::c_void);
-            fluid_log!(
-                FLUID_PANIC as libc::c_int,
-                "Out of memory",
-            );
+            libc::free(new_tuning as *mut libc::c_void);
+            fluid_log!(FLUID_PANIC as libc::c_int, "Out of memory",);
             return 0 as *mut fluid_tuning_t;
         }
     } else {
@@ -122,9 +101,9 @@ pub unsafe extern "C" fn delete_fluid_tuning(mut tuning: *mut fluid_tuning_t) {
         return;
     }
     if !(*tuning).name.is_null() {
-        free((*tuning).name as *mut libc::c_void);
+        libc::free((*tuning).name as *mut libc::c_void);
     }
-    free(tuning as *mut libc::c_void);
+    libc::free(tuning as *mut libc::c_void);
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_tuning_set_name(
@@ -132,13 +111,12 @@ pub unsafe extern "C" fn fluid_tuning_set_name(
     mut name: *const libc::c_char,
 ) {
     if !(*tuning).name.is_null() {
-        free((*tuning).name as *mut libc::c_void);
+        libc::free((*tuning).name as *mut libc::c_void);
         (*tuning).name = 0 as *mut libc::c_char
     }
     if !name.is_null() {
-        (*tuning).name = strcpy(
-            malloc(strlen(name).wrapping_add(1 as libc::c_int as libc::c_ulong))
-                as *mut libc::c_char,
+        (*tuning).name = libc::strcpy(
+            libc::malloc(libc::strlen(name) + 1) as *mut libc::c_char,
             name,
         )
     };

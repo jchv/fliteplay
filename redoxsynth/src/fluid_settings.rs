@@ -7,66 +7,22 @@
     unused_assignments,
     unused_mut
 )]
-use std::ffi::CStr;
 use crate::fluid_hash::_fluid_hashtable_t;
-extern "C" {
-    #[no_mangle]
-    fn strlen(_: *const libc::c_char) -> libc::c_ulong;
-    #[no_mangle]
-    fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
-    #[no_mangle]
-    fn strcpy(_: *mut libc::c_char, _: *const libc::c_char) -> *mut libc::c_char;
-    #[no_mangle]
-    fn free(__ptr: *mut libc::c_void);
-    #[no_mangle]
-    fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
-    #[no_mangle]
-    fn fluid_strtok(str: *mut *mut libc::c_char, delim: *mut libc::c_char) -> *mut libc::c_char;
-    #[no_mangle]
-    fn new_fluid_hashtable(delete: fluid_hash_delete_t) -> *mut fluid_hashtable_t;
-    #[no_mangle]
-    fn delete_fluid_hashtable(hash_table: *mut fluid_hashtable_t);
-    #[no_mangle]
-    fn fluid_hashtable_insert(
-        hash_table: *mut fluid_hashtable_t,
-        key: *mut libc::c_char,
-        value: *mut libc::c_void,
-        type_0: libc::c_int,
-    );
-    #[no_mangle]
-    fn fluid_hashtable_replace(
-        hash_table: *mut fluid_hashtable_t,
-        key: *mut libc::c_char,
-        value: *mut libc::c_void,
-        type_0: libc::c_int,
-    );
-    #[no_mangle]
-    fn fluid_hashtable_lookup(
-        hash_table: *mut fluid_hashtable_t,
-        key: *mut libc::c_char,
-        value: *mut *mut libc::c_void,
-        type_0: *mut libc::c_int,
-    ) -> libc::c_int;
-    #[no_mangle]
-    fn fluid_synth_settings(settings: *mut fluid_settings_t);
-    #[no_mangle]
-    fn delete_fluid_list(list: *mut fluid_list_t);
-    #[no_mangle]
-    fn fluid_list_append(list: *mut fluid_list_t, data: *mut libc::c_void) -> *mut fluid_list_t;
-    #[no_mangle]
-    fn fluid_list_remove_link(
-        list: *mut fluid_list_t,
-        llink: *mut fluid_list_t,
-    ) -> *mut fluid_list_t;
-}
+use crate::fluid_hash::delete_fluid_hashtable;
+use crate::fluid_hash::fluid_hashtable_insert;
+use crate::fluid_hash::fluid_hashtable_lookup;
+use crate::fluid_hash::fluid_hashtable_replace;
+use crate::fluid_hash::new_fluid_hashtable;
+use crate::fluid_list::_fluid_list_t;
+use crate::fluid_list::delete_fluid_list;
+use crate::fluid_list::fluid_list_append;
+use crate::fluid_list::fluid_list_remove_link;
+use crate::fluid_synth::fluid_synth_settings;
+use crate::fluid_sys::fluid_strtok;
+use std::ffi::CStr;
+
 pub type fluid_settings_t = _fluid_hashtable_t;
 pub type fluid_list_t = _fluid_list_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_list_t {
-    pub data: *mut libc::c_void,
-    pub next: *mut fluid_list_t,
-}
 pub type fluid_types_enum = libc::c_int;
 pub const FLUID_SET_TYPE: fluid_types_enum = 3;
 pub const FLUID_STR_TYPE: fluid_types_enum = 2;
@@ -144,21 +100,19 @@ unsafe extern "C" fn new_fluid_str_setting(
     mut data: *mut libc::c_void,
 ) -> *mut fluid_str_setting_t {
     let mut str: *mut fluid_str_setting_t = 0 as *mut fluid_str_setting_t;
-    str = malloc(::std::mem::size_of::<fluid_str_setting_t>() as libc::c_ulong)
+    str = libc::malloc(::std::mem::size_of::<fluid_str_setting_t>() as libc::size_t)
         as *mut fluid_str_setting_t;
     (*str).value = if !value.is_null() {
-        strcpy(
-            malloc(strlen(value).wrapping_add(1 as libc::c_int as libc::c_ulong))
-                as *mut libc::c_char,
+        libc::strcpy(
+            libc::malloc(libc::strlen(value) + 1) as *mut libc::c_char,
             value,
         )
     } else {
         0 as *mut libc::c_char
     };
     (*str).def = if !def.is_null() {
-        strcpy(
-            malloc(strlen(def).wrapping_add(1 as libc::c_int as libc::c_ulong))
-                as *mut libc::c_char,
+        libc::strcpy(
+            libc::malloc(libc::strlen(def) + 1) as *mut libc::c_char,
             def,
         )
     } else {
@@ -173,15 +127,15 @@ unsafe extern "C" fn new_fluid_str_setting(
 unsafe extern "C" fn delete_fluid_str_setting(mut str: *mut fluid_str_setting_t) {
     if !str.is_null() {
         if !(*str).value.is_null() {
-            free((*str).value as *mut libc::c_void);
+            libc::free((*str).value as *mut libc::c_void);
         }
         if !(*str).def.is_null() {
-            free((*str).def as *mut libc::c_void);
+            libc::free((*str).def as *mut libc::c_void);
         }
         if !(*str).options.is_null() {
             let mut list: *mut fluid_list_t = (*str).options;
             while !list.is_null() {
-                free((*list).data);
+                libc::free((*list).data);
                 list = if !list.is_null() {
                     (*list).next
                 } else {
@@ -190,7 +144,7 @@ unsafe extern "C" fn delete_fluid_str_setting(mut str: *mut fluid_str_setting_t)
             }
             delete_fluid_list((*str).options);
         }
-        free(str as *mut libc::c_void);
+        libc::free(str as *mut libc::c_void);
     };
 }
 unsafe extern "C" fn new_fluid_num_setting(
@@ -202,7 +156,7 @@ unsafe extern "C" fn new_fluid_num_setting(
     mut data: *mut libc::c_void,
 ) -> *mut fluid_num_setting_t {
     let mut setting: *mut fluid_num_setting_t = 0 as *mut fluid_num_setting_t;
-    setting = malloc(::std::mem::size_of::<fluid_num_setting_t>() as libc::c_ulong)
+    setting = libc::malloc(::std::mem::size_of::<fluid_num_setting_t>() as libc::size_t)
         as *mut fluid_num_setting_t;
     (*setting).value = def;
     (*setting).def = def;
@@ -215,7 +169,7 @@ unsafe extern "C" fn new_fluid_num_setting(
 }
 unsafe extern "C" fn delete_fluid_num_setting(mut setting: *mut fluid_num_setting_t) {
     if !setting.is_null() {
-        free(setting as *mut libc::c_void);
+        libc::free(setting as *mut libc::c_void);
     };
 }
 unsafe extern "C" fn new_fluid_int_setting(
@@ -227,7 +181,7 @@ unsafe extern "C" fn new_fluid_int_setting(
     mut data: *mut libc::c_void,
 ) -> *mut fluid_int_setting_t {
     let mut setting: *mut fluid_int_setting_t = 0 as *mut fluid_int_setting_t;
-    setting = malloc(::std::mem::size_of::<fluid_int_setting_t>() as libc::c_ulong)
+    setting = libc::malloc(::std::mem::size_of::<fluid_int_setting_t>() as libc::size_t)
         as *mut fluid_int_setting_t;
     (*setting).value = def;
     (*setting).def = def;
@@ -240,7 +194,7 @@ unsafe extern "C" fn new_fluid_int_setting(
 }
 unsafe extern "C" fn delete_fluid_int_setting(mut setting: *mut fluid_int_setting_t) {
     if !setting.is_null() {
-        free(setting as *mut libc::c_void);
+        libc::free(setting as *mut libc::c_void);
     };
 }
 #[no_mangle]
@@ -291,7 +245,7 @@ unsafe extern "C" fn fluid_settings_tokenize(
     let mut tokstr: *mut libc::c_char = 0 as *mut libc::c_char;
     let mut tok: *mut libc::c_char = 0 as *mut libc::c_char;
     let mut n: libc::c_int = 0 as libc::c_int;
-    if strlen(s) > 256 as libc::c_int as libc::c_ulong {
+    if libc::strlen(s) > 256 {
         fluid_log!(
             FLUID_ERR,
             "Setting variable name exceeded max length of {} chars",
@@ -299,7 +253,7 @@ unsafe extern "C" fn fluid_settings_tokenize(
         );
         return 0 as libc::c_int;
     }
-    strcpy(buf, s);
+    libc::strcpy(buf, s);
     tokstr = buf;
     loop {
         tok = fluid_strtok(
@@ -442,9 +396,8 @@ pub unsafe extern "C" fn fluid_settings_register_str(
         (*setting).update = fun;
         (*setting).data = data;
         (*setting).def = if !def.is_null() {
-            strcpy(
-                malloc(strlen(def).wrapping_add(1 as libc::c_int as libc::c_ulong))
-                    as *mut libc::c_char,
+            libc::strcpy(
+                libc::malloc(libc::strlen(def).wrapping_add(1)) as *mut libc::c_char,
                 def,
             )
         } else {
@@ -681,12 +634,11 @@ pub unsafe extern "C" fn fluid_settings_setstr(
         }
         setting = value as *mut fluid_str_setting_t;
         if !(*setting).value.is_null() {
-            free((*setting).value as *mut libc::c_void);
+            libc::free((*setting).value as *mut libc::c_void);
         }
         (*setting).value = if !str.is_null() {
-            strcpy(
-                malloc(strlen(str).wrapping_add(1 as libc::c_int as libc::c_ulong))
-                    as *mut libc::c_char,
+            libc::strcpy(
+                libc::malloc(libc::strlen(str).wrapping_add(1)) as *mut libc::c_char,
                 str,
             )
         } else {
@@ -767,7 +719,7 @@ pub unsafe extern "C" fn fluid_settings_str_equal(
         && type_0 == FLUID_STR_TYPE as libc::c_int
     {
         let mut setting: *mut fluid_str_setting_t = value as *mut fluid_str_setting_t;
-        return (strcmp((*setting).value, s) == 0 as libc::c_int) as libc::c_int;
+        return (libc::strcmp((*setting).value, s) == 0 as libc::c_int) as libc::c_int;
     }
     return 0 as libc::c_int;
 }
@@ -820,8 +772,8 @@ pub unsafe extern "C" fn fluid_settings_add_option(
         && type_0 == FLUID_STR_TYPE as libc::c_int
     {
         let mut setting: *mut fluid_str_setting_t = value as *mut fluid_str_setting_t;
-        let mut copy: *mut libc::c_char = strcpy(
-            malloc(strlen(s).wrapping_add(1 as libc::c_int as libc::c_ulong)) as *mut libc::c_char,
+        let mut copy: *mut libc::c_char = libc::strcpy(
+            libc::malloc(libc::strlen(s).wrapping_add(1)) as *mut libc::c_char,
             s,
         );
         (*setting).options = fluid_list_append((*setting).options, copy as *mut libc::c_void);
@@ -860,8 +812,8 @@ pub unsafe extern "C" fn fluid_settings_remove_option(
             } else {
                 0 as *mut libc::c_void
             } as *mut libc::c_char;
-            if strcmp(s, option) == 0 as libc::c_int {
-                free(option as *mut libc::c_void);
+            if libc::strcmp(s, option) == 0 as libc::c_int {
+                libc::free(option as *mut libc::c_void);
                 (*setting).options = fluid_list_remove_link((*setting).options, list);
                 return 1 as libc::c_int;
             }

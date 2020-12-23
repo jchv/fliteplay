@@ -7,155 +7,21 @@
     unused_assignments,
     unused_mut
 )]
+
 use crate::fluid_chan::_fluid_channel_t;
-extern "C" {
-    #[no_mangle]
-    fn cos(_: libc::c_double) -> libc::c_double;
-    #[no_mangle]
-    fn sin(_: libc::c_double) -> libc::c_double;
-    #[no_mangle]
-    fn fabs(_: libc::c_double) -> libc::c_double;
-}
+use crate::fluid_gen::_fluid_gen_t;
+use crate::fluid_mod::_fluid_mod_t;
+use crate::fluid_sfont::_fluid_sample_t;
+use crate::fluid_voice::_fluid_env_data_t;
+use crate::fluid_voice::_fluid_voice_t;
+
 pub type fluid_real_t = libc::c_float;
 pub type fluid_voice_t = _fluid_voice_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_voice_t {
-    pub id: libc::c_uint,
-    pub status: libc::c_uchar,
-    pub chan: libc::c_uchar,
-    pub key: libc::c_uchar,
-    pub vel: libc::c_uchar,
-    pub channel: *mut fluid_channel_t,
-    pub gen: [fluid_gen_t; 60],
-    pub mod_0: [fluid_mod_t; 64],
-    pub mod_count: libc::c_int,
-    pub has_looped: libc::c_int,
-    pub sample: *mut fluid_sample_t,
-    pub check_sample_sanity_flag: libc::c_int,
-    pub output_rate: fluid_real_t,
-    pub start_time: libc::c_uint,
-    pub ticks: libc::c_uint,
-    pub noteoff_ticks: libc::c_uint,
-    pub amp: fluid_real_t,
-    pub phase: fluid_phase_t,
-    pub phase_incr: fluid_real_t,
-    pub amp_incr: fluid_real_t,
-    pub dsp_buf: *mut fluid_real_t,
-    pub pitch: fluid_real_t,
-    pub attenuation: fluid_real_t,
-    pub min_attenuation_cB: fluid_real_t,
-    pub root_pitch: fluid_real_t,
-    pub start: libc::c_int,
-    pub end: libc::c_int,
-    pub loopstart: libc::c_int,
-    pub loopend: libc::c_int,
-    pub synth_gain: fluid_real_t,
-    pub volenv_data: [fluid_env_data_t; 7],
-    pub volenv_count: libc::c_uint,
-    pub volenv_section: libc::c_int,
-    pub volenv_val: fluid_real_t,
-    pub amplitude_that_reaches_noise_floor_nonloop: fluid_real_t,
-    pub amplitude_that_reaches_noise_floor_loop: fluid_real_t,
-    pub modenv_data: [fluid_env_data_t; 7],
-    pub modenv_count: libc::c_uint,
-    pub modenv_section: libc::c_int,
-    pub modenv_val: fluid_real_t,
-    pub modenv_to_fc: fluid_real_t,
-    pub modenv_to_pitch: fluid_real_t,
-    pub modlfo_val: fluid_real_t,
-    pub modlfo_delay: libc::c_uint,
-    pub modlfo_incr: fluid_real_t,
-    pub modlfo_to_fc: fluid_real_t,
-    pub modlfo_to_pitch: fluid_real_t,
-    pub modlfo_to_vol: fluid_real_t,
-    pub viblfo_val: fluid_real_t,
-    pub viblfo_delay: libc::c_uint,
-    pub viblfo_incr: fluid_real_t,
-    pub viblfo_to_pitch: fluid_real_t,
-    pub fres: fluid_real_t,
-    pub last_fres: fluid_real_t,
-    pub q_lin: fluid_real_t,
-    pub filter_gain: fluid_real_t,
-    pub hist1: fluid_real_t,
-    pub hist2: fluid_real_t,
-    pub filter_startup: libc::c_int,
-    pub b02: fluid_real_t,
-    pub b1: fluid_real_t,
-    pub a1: fluid_real_t,
-    pub a2: fluid_real_t,
-    pub b02_incr: fluid_real_t,
-    pub b1_incr: fluid_real_t,
-    pub a1_incr: fluid_real_t,
-    pub a2_incr: fluid_real_t,
-    pub filter_coeff_incr_count: libc::c_int,
-    pub pan: fluid_real_t,
-    pub amp_left: fluid_real_t,
-    pub amp_right: fluid_real_t,
-    pub reverb_send: fluid_real_t,
-    pub amp_reverb: fluid_real_t,
-    pub chorus_send: fluid_real_t,
-    pub amp_chorus: fluid_real_t,
-    pub interp_method: libc::c_int,
-    pub debug: libc::c_int,
-}
 pub type fluid_env_data_t = _fluid_env_data_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_env_data_t {
-    pub count: libc::c_uint,
-    pub coeff: fluid_real_t,
-    pub incr: fluid_real_t,
-    pub min: fluid_real_t,
-    pub max: fluid_real_t,
-}
-
 pub type fluid_phase_t = libc::c_ulonglong;
 pub type fluid_sample_t = _fluid_sample_t;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_sample_t {
-    pub name: [libc::c_char; 21],
-    pub start: libc::c_uint,
-    pub end: libc::c_uint,
-    pub loopstart: libc::c_uint,
-    pub loopend: libc::c_uint,
-    pub samplerate: libc::c_uint,
-    pub origpitch: libc::c_int,
-    pub pitchadj: libc::c_int,
-    pub sampletype: libc::c_int,
-    pub valid: libc::c_int,
-    pub data: *mut libc::c_short,
-    pub amplitude_that_reaches_noise_floor_is_valid: libc::c_int,
-    pub amplitude_that_reaches_noise_floor: libc::c_double,
-    pub refcount: libc::c_uint,
-    pub notify: Option<unsafe extern "C" fn(_: *mut fluid_sample_t, _: libc::c_int) -> libc::c_int>,
-    pub userdata: *mut libc::c_void,
-}
 pub type fluid_mod_t = _fluid_mod_t;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_mod_t {
-    pub dest: libc::c_uchar,
-    pub src1: libc::c_uchar,
-    pub flags1: libc::c_uchar,
-    pub src2: libc::c_uchar,
-    pub flags2: libc::c_uchar,
-    pub amount: libc::c_double,
-    pub next: *mut fluid_mod_t,
-}
-
 pub type fluid_gen_t = _fluid_gen_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_gen_t {
-    pub flags: libc::c_uchar,
-    pub val: libc::c_double,
-    pub mod_0: libc::c_double,
-    pub nrpn: libc::c_double,
-}
 pub type fluid_channel_t = _fluid_channel_t;
 pub type fluid_gen_type = libc::c_uint;
 pub const GEN_LAST: fluid_gen_type = 60;
@@ -269,14 +135,16 @@ pub unsafe extern "C" fn fluid_dsp_float_config() {
         while i2 < 256 as libc::c_int {
             i_shifted = i as libc::c_double - 7 as libc::c_int as libc::c_double / 2.0f64
                 + i2 as libc::c_double / 256 as libc::c_int as libc::c_double;
-            if fabs(i_shifted) > 0.000001f64 {
-                v = sin(i_shifted * 3.14159265358979323846f64) as fluid_real_t as libc::c_double
-                    / (3.14159265358979323846f64 * i_shifted);
+            if f64::abs(i_shifted) > 0.000001f64 {
+                v = f64::sin(i_shifted * std::f64::consts::PI) as fluid_real_t as libc::c_double
+                    / (std::f64::consts::PI * i_shifted);
 
                 v *= 0.5f64 as fluid_real_t as libc::c_double
                     * (1.0f64
-                        + cos(2.0f64 * 3.14159265358979323846f64 * i_shifted
-                            / 7 as libc::c_int as fluid_real_t as libc::c_double))
+                        + f64::cos(
+                            2.0f64 * std::f64::consts::PI * i_shifted
+                                / 7 as libc::c_int as fluid_real_t as libc::c_double,
+                        ))
             } else {
                 v = 1.0f64
             }

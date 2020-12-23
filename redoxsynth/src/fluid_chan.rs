@@ -7,255 +7,41 @@
     unused_assignments,
     unused_mut
 )]
-#![feature(extern_types)]
 
 use crate::fluid_chorus::_fluid_chorus_t;
+use crate::fluid_gen::_fluid_gen_t;
+use crate::fluid_gen::fluid_gen_scale_nrpn;
 use crate::fluid_hash::_fluid_hashtable_t;
+use crate::fluid_list::_fluid_list_t;
+use crate::fluid_mod::_fluid_mod_t;
 use crate::fluid_rev::_fluid_revmodel_t;
+use crate::fluid_settings::fluid_settings_str_equal;
+use crate::fluid_sfont::_fluid_preset_t;
+use crate::fluid_sfont::_fluid_sample_t;
+use crate::fluid_sfont::_fluid_sfont_t;
+use crate::fluid_synth::_fluid_synth_t;
+use crate::fluid_synth::fluid_synth_all_notes_off;
+use crate::fluid_synth::fluid_synth_all_sounds_off;
+use crate::fluid_synth::fluid_synth_damp_voices;
+use crate::fluid_synth::fluid_synth_find_preset;
+use crate::fluid_synth::fluid_synth_modulate_voices;
+use crate::fluid_synth::fluid_synth_modulate_voices_all;
+use crate::fluid_synth::fluid_synth_set_gen;
+use crate::fluid_tuning::_fluid_tuning_t;
+use crate::fluid_voice::_fluid_env_data_t;
+use crate::fluid_voice::_fluid_voice_t;
 
-extern "C" {
-    #[no_mangle]
-    fn free(__ptr: *mut libc::c_void);
-    #[no_mangle]
-    fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
-    #[no_mangle]
-    fn fluid_settings_str_equal(
-        settings: *mut fluid_settings_t,
-        name: *const libc::c_char,
-        value: *mut libc::c_char,
-    ) -> libc::c_int;
-    #[no_mangle]
-    fn fluid_synth_set_gen(
-        synth: *mut fluid_synth_t,
-        chan: libc::c_int,
-        param: libc::c_int,
-        value: libc::c_float,
-    ) -> libc::c_int;
-    #[no_mangle]
-    fn fluid_gen_scale_nrpn(gen: libc::c_int, nrpn: libc::c_int) -> fluid_real_t;
-    #[no_mangle]
-    fn fluid_synth_modulate_voices_all(synth: *mut fluid_synth_t, chan: libc::c_int)
-        -> libc::c_int;
-    #[no_mangle]
-    fn fluid_synth_all_sounds_off(synth: *mut fluid_synth_t, chan: libc::c_int) -> libc::c_int;
-    #[no_mangle]
-    fn fluid_synth_all_notes_off(synth: *mut fluid_synth_t, chan: libc::c_int) -> libc::c_int;
-    #[no_mangle]
-    fn fluid_synth_damp_voices(synth: *mut fluid_synth_t, chan: libc::c_int) -> libc::c_int;
-    #[no_mangle]
-    fn fluid_synth_modulate_voices(
-        synth: *mut fluid_synth_t,
-        chan: libc::c_int,
-        is_cc: libc::c_int,
-        ctrl: libc::c_int,
-    ) -> libc::c_int;
-    #[no_mangle]
-    fn fluid_synth_find_preset(
-        synth: *mut fluid_synth_t,
-        banknum: libc::c_uint,
-        prognum: libc::c_uint,
-    ) -> *mut fluid_preset_t;
-}
 pub type fluid_settings_t = _fluid_hashtable_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_synth_t {
-    pub settings: *mut fluid_settings_t,
-    pub polyphony: libc::c_int,
-    pub with_reverb: libc::c_char,
-    pub with_chorus: libc::c_char,
-    pub verbose: libc::c_char,
-    pub dump: libc::c_char,
-    pub sample_rate: libc::c_double,
-    pub midi_channels: libc::c_int,
-    pub audio_channels: libc::c_int,
-    pub audio_groups: libc::c_int,
-    pub effects_channels: libc::c_int,
-    pub state: libc::c_uint,
-    pub ticks: libc::c_uint,
-    pub loaders: *mut fluid_list_t,
-    pub sfont: *mut fluid_list_t,
-    pub sfont_id: libc::c_uint,
-    pub bank_offsets: *mut fluid_list_t,
-    pub gain: libc::c_double,
-    pub channel: *mut *mut fluid_channel_t,
-    pub num_channels: libc::c_int,
-    pub nvoice: libc::c_int,
-    pub voice: *mut *mut fluid_voice_t,
-    pub noteid: libc::c_uint,
-    pub storeid: libc::c_uint,
-    pub nbuf: libc::c_int,
-    pub left_buf: *mut *mut fluid_real_t,
-    pub right_buf: *mut *mut fluid_real_t,
-    pub fx_left_buf: *mut *mut fluid_real_t,
-    pub fx_right_buf: *mut *mut fluid_real_t,
-    pub reverb: *mut fluid_revmodel_t,
-    pub chorus: *mut fluid_chorus_t,
-    pub cur: libc::c_int,
-    pub dither_index: libc::c_int,
-    pub outbuf: [libc::c_char; 256],
-    pub tuning: *mut *mut *mut fluid_tuning_t,
-    pub cur_tuning: *mut fluid_tuning_t,
-    pub min_note_length_ticks: libc::c_uint,
-}
-
-
-
 pub type fluid_tuning_t = _fluid_tuning_t;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_tuning_t {
-    pub name: *mut libc::c_char,
-    pub bank: libc::c_int,
-    pub prog: libc::c_int,
-    pub pitch: [libc::c_double; 128],
-}
 pub type fluid_chorus_t = _fluid_chorus_t;
-
 pub type fluid_revmodel_t = _fluid_revmodel_t;
 pub type fluid_real_t = libc::c_float;
 pub type fluid_voice_t = _fluid_voice_t;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_voice_t {
-    pub id: libc::c_uint,
-    pub status: libc::c_uchar,
-    pub chan: libc::c_uchar,
-    pub key: libc::c_uchar,
-    pub vel: libc::c_uchar,
-    pub channel: *mut fluid_channel_t,
-    pub gen: [fluid_gen_t; 60],
-    pub mod_0: [fluid_mod_t; 64],
-    pub mod_count: libc::c_int,
-    pub has_looped: libc::c_int,
-    pub sample: *mut fluid_sample_t,
-    pub check_sample_sanity_flag: libc::c_int,
-    pub output_rate: fluid_real_t,
-    pub start_time: libc::c_uint,
-    pub ticks: libc::c_uint,
-    pub noteoff_ticks: libc::c_uint,
-    pub amp: fluid_real_t,
-    pub phase: fluid_phase_t,
-    pub phase_incr: fluid_real_t,
-    pub amp_incr: fluid_real_t,
-    pub dsp_buf: *mut fluid_real_t,
-    pub pitch: fluid_real_t,
-    pub attenuation: fluid_real_t,
-    pub min_attenuation_cB: fluid_real_t,
-    pub root_pitch: fluid_real_t,
-    pub start: libc::c_int,
-    pub end: libc::c_int,
-    pub loopstart: libc::c_int,
-    pub loopend: libc::c_int,
-    pub synth_gain: fluid_real_t,
-    pub volenv_data: [fluid_env_data_t; 7],
-    pub volenv_count: libc::c_uint,
-    pub volenv_section: libc::c_int,
-    pub volenv_val: fluid_real_t,
-    pub amplitude_that_reaches_noise_floor_nonloop: fluid_real_t,
-    pub amplitude_that_reaches_noise_floor_loop: fluid_real_t,
-    pub modenv_data: [fluid_env_data_t; 7],
-    pub modenv_count: libc::c_uint,
-    pub modenv_section: libc::c_int,
-    pub modenv_val: fluid_real_t,
-    pub modenv_to_fc: fluid_real_t,
-    pub modenv_to_pitch: fluid_real_t,
-    pub modlfo_val: fluid_real_t,
-    pub modlfo_delay: libc::c_uint,
-    pub modlfo_incr: fluid_real_t,
-    pub modlfo_to_fc: fluid_real_t,
-    pub modlfo_to_pitch: fluid_real_t,
-    pub modlfo_to_vol: fluid_real_t,
-    pub viblfo_val: fluid_real_t,
-    pub viblfo_delay: libc::c_uint,
-    pub viblfo_incr: fluid_real_t,
-    pub viblfo_to_pitch: fluid_real_t,
-    pub fres: fluid_real_t,
-    pub last_fres: fluid_real_t,
-    pub q_lin: fluid_real_t,
-    pub filter_gain: fluid_real_t,
-    pub hist1: fluid_real_t,
-    pub hist2: fluid_real_t,
-    pub filter_startup: libc::c_int,
-    pub b02: fluid_real_t,
-    pub b1: fluid_real_t,
-    pub a1: fluid_real_t,
-    pub a2: fluid_real_t,
-    pub b02_incr: fluid_real_t,
-    pub b1_incr: fluid_real_t,
-    pub a1_incr: fluid_real_t,
-    pub a2_incr: fluid_real_t,
-    pub filter_coeff_incr_count: libc::c_int,
-    pub pan: fluid_real_t,
-    pub amp_left: fluid_real_t,
-    pub amp_right: fluid_real_t,
-    pub reverb_send: fluid_real_t,
-    pub amp_reverb: fluid_real_t,
-    pub chorus_send: fluid_real_t,
-    pub amp_chorus: fluid_real_t,
-    pub interp_method: libc::c_int,
-    pub debug: libc::c_int,
-}
 pub type fluid_env_data_t = _fluid_env_data_t;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_env_data_t {
-    pub count: libc::c_uint,
-    pub coeff: fluid_real_t,
-    pub incr: fluid_real_t,
-    pub min: fluid_real_t,
-    pub max: fluid_real_t,
-}
-
 pub type fluid_phase_t = libc::c_ulonglong;
 pub type fluid_sample_t = _fluid_sample_t;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_sample_t {
-    pub name: [libc::c_char; 21],
-    pub start: libc::c_uint,
-    pub end: libc::c_uint,
-    pub loopstart: libc::c_uint,
-    pub loopend: libc::c_uint,
-    pub samplerate: libc::c_uint,
-    pub origpitch: libc::c_int,
-    pub pitchadj: libc::c_int,
-    pub sampletype: libc::c_int,
-    pub valid: libc::c_int,
-    pub data: *mut libc::c_short,
-    pub amplitude_that_reaches_noise_floor_is_valid: libc::c_int,
-    pub amplitude_that_reaches_noise_floor: libc::c_double,
-    pub refcount: libc::c_uint,
-    pub notify: Option<unsafe extern "C" fn(_: *mut fluid_sample_t, _: libc::c_int) -> libc::c_int>,
-    pub userdata: *mut libc::c_void,
-}
 pub type fluid_mod_t = _fluid_mod_t;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_mod_t {
-    pub dest: libc::c_uchar,
-    pub src1: libc::c_uchar,
-    pub flags1: libc::c_uchar,
-    pub src2: libc::c_uchar,
-    pub flags2: libc::c_uchar,
-    pub amount: libc::c_double,
-    pub next: *mut fluid_mod_t,
-}
-
 pub type fluid_gen_t = _fluid_gen_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_gen_t {
-    pub flags: libc::c_uchar,
-    pub val: libc::c_double,
-    pub mod_0: libc::c_double,
-    pub nrpn: libc::c_double,
-}
 pub type fluid_channel_t = _fluid_channel_t;
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -281,56 +67,8 @@ pub struct _fluid_channel_t {
 }
 pub type fluid_synth_t = _fluid_synth_t;
 pub type fluid_preset_t = _fluid_preset_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_preset_t {
-    pub data: *mut libc::c_void,
-    pub sfont: *mut fluid_sfont_t,
-    pub free: Option<unsafe extern "C" fn(_: *mut fluid_preset_t) -> libc::c_int>,
-    pub get_name: Option<unsafe extern "C" fn(_: *mut fluid_preset_t) -> *mut libc::c_char>,
-    pub get_banknum: Option<unsafe extern "C" fn(_: *mut fluid_preset_t) -> libc::c_int>,
-    pub get_num: Option<unsafe extern "C" fn(_: *mut fluid_preset_t) -> libc::c_int>,
-    pub noteon: Option<
-        unsafe extern "C" fn(
-            _: *mut fluid_preset_t,
-            _: *mut fluid_synth_t,
-            _: libc::c_int,
-            _: libc::c_int,
-            _: libc::c_int,
-        ) -> libc::c_int,
-    >,
-    pub notify: Option<
-        unsafe extern "C" fn(_: *mut fluid_preset_t, _: libc::c_int, _: libc::c_int) -> libc::c_int,
-    >,
-}
 pub type fluid_sfont_t = _fluid_sfont_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_sfont_t {
-    pub data: *mut libc::c_void,
-    pub id: libc::c_uint,
-    pub free: Option<unsafe extern "C" fn(_: *mut fluid_sfont_t) -> libc::c_int>,
-    pub get_name: Option<unsafe extern "C" fn(_: *mut fluid_sfont_t) -> *mut libc::c_char>,
-    pub get_preset: Option<
-        unsafe extern "C" fn(
-            _: *mut fluid_sfont_t,
-            _: libc::c_uint,
-            _: libc::c_uint,
-        ) -> *mut fluid_preset_t,
-    >,
-    pub iteration_start: Option<unsafe extern "C" fn(_: *mut fluid_sfont_t) -> ()>,
-    pub iteration_next:
-        Option<unsafe extern "C" fn(_: *mut fluid_sfont_t, _: *mut fluid_preset_t) -> libc::c_int>,
-}
-
 pub type fluid_list_t = _fluid_list_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_list_t {
-    pub data: *mut libc::c_void,
-    pub next: *mut fluid_list_t,
-}
-
 pub type fluid_interp = libc::c_uint;
 pub const FLUID_INTERP_HIGHEST: fluid_interp = 7;
 pub const FLUID_INTERP_7THORDER: fluid_interp = 7;
@@ -519,13 +257,10 @@ pub unsafe extern "C" fn new_fluid_channel(
     mut num: libc::c_int,
 ) -> *mut fluid_channel_t {
     let mut chan: *mut fluid_channel_t = 0 as *mut fluid_channel_t;
-    chan =
-        malloc(::std::mem::size_of::<fluid_channel_t>() as libc::c_ulong) as *mut fluid_channel_t;
+    chan = libc::malloc(::std::mem::size_of::<fluid_channel_t>() as libc::size_t)
+        as *mut fluid_channel_t;
     if chan.is_null() {
-        fluid_log!(
-            FLUID_ERR,
-            "Out of memory",
-        );
+        fluid_log!(FLUID_ERR, "Out of memory",);
         return 0 as *mut fluid_channel_t;
     }
     (*chan).synth = synth;
@@ -633,7 +368,7 @@ pub unsafe extern "C" fn delete_fluid_channel(mut chan: *mut fluid_channel_t) ->
                 .expect("non-null function pointer")((*chan).preset);
         }
     }
-    free(chan as *mut libc::c_void);
+    libc::free(chan as *mut libc::c_void);
     return FLUID_OK as libc::c_int;
 }
 

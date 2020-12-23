@@ -7,12 +7,7 @@
     unused_assignments,
     unused_mut
 )]
-extern "C" {
-    #[no_mangle]
-    fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
-    #[no_mangle]
-    fn free(__ptr: *mut libc::c_void);
-}
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct _fluid_list_t {
@@ -26,7 +21,7 @@ pub type fluid_compare_func_t =
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_list() -> *mut fluid_list_t {
     let mut list: *mut fluid_list_t = 0 as *mut fluid_list_t;
-    list = malloc(::std::mem::size_of::<fluid_list_t>() as libc::c_ulong) as *mut fluid_list_t;
+    list = libc::malloc(::std::mem::size_of::<fluid_list_t>() as libc::size_t) as *mut fluid_list_t;
     (*list).data = 0 as *mut libc::c_void;
     (*list).next = 0 as *mut fluid_list_t;
     return list;
@@ -36,14 +31,14 @@ pub unsafe extern "C" fn delete_fluid_list(mut list: *mut fluid_list_t) {
     let mut next: *mut fluid_list_t = 0 as *mut fluid_list_t;
     while !list.is_null() {
         next = (*list).next;
-        free(list as *mut libc::c_void);
+        libc::free(list as *mut libc::c_void);
         list = next
     }
 }
 #[no_mangle]
 pub unsafe extern "C" fn delete1_fluid_list(mut list: *mut fluid_list_t) {
     if !list.is_null() {
-        free(list as *mut libc::c_void);
+        libc::free(list as *mut libc::c_void);
     };
 }
 #[no_mangle]

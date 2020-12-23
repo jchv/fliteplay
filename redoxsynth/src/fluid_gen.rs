@@ -7,52 +7,14 @@
     unused_assignments,
     unused_mut
 )]
+use crate::fluid_chan::_fluid_channel_t;
+use crate::fluid_sfont::_fluid_preset_t;
+use crate::fluid_sfont::_fluid_sfont_t;
 use crate::fluid_synth::_fluid_synth_t;
+use crate::fluid_tuning::_fluid_tuning_t;
 pub type fluid_synth_t = _fluid_synth_t;
 pub type fluid_sfont_t = _fluid_sfont_t;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_sfont_t {
-    pub data: *mut libc::c_void,
-    pub id: libc::c_uint,
-    pub free: Option<unsafe extern "C" fn(_: *mut fluid_sfont_t) -> libc::c_int>,
-    pub get_name: Option<unsafe extern "C" fn(_: *mut fluid_sfont_t) -> *mut libc::c_char>,
-    pub get_preset: Option<
-        unsafe extern "C" fn(
-            _: *mut fluid_sfont_t,
-            _: libc::c_uint,
-            _: libc::c_uint,
-        ) -> *mut fluid_preset_t,
-    >,
-    pub iteration_start: Option<unsafe extern "C" fn(_: *mut fluid_sfont_t) -> ()>,
-    pub iteration_next:
-        Option<unsafe extern "C" fn(_: *mut fluid_sfont_t, _: *mut fluid_preset_t) -> libc::c_int>,
-}
 pub type fluid_preset_t = _fluid_preset_t;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_preset_t {
-    pub data: *mut libc::c_void,
-    pub sfont: *mut fluid_sfont_t,
-    pub free: Option<unsafe extern "C" fn(_: *mut fluid_preset_t) -> libc::c_int>,
-    pub get_name: Option<unsafe extern "C" fn(_: *mut fluid_preset_t) -> *mut libc::c_char>,
-    pub get_banknum: Option<unsafe extern "C" fn(_: *mut fluid_preset_t) -> libc::c_int>,
-    pub get_num: Option<unsafe extern "C" fn(_: *mut fluid_preset_t) -> libc::c_int>,
-    pub noteon: Option<
-        unsafe extern "C" fn(
-            _: *mut fluid_preset_t,
-            _: *mut fluid_synth_t,
-            _: libc::c_int,
-            _: libc::c_int,
-            _: libc::c_int,
-        ) -> libc::c_int,
-    >,
-    pub notify: Option<
-        unsafe extern "C" fn(_: *mut fluid_preset_t, _: libc::c_int, _: libc::c_int) -> libc::c_int,
-    >,
-}
 pub type fluid_gen_type = libc::c_uint;
 pub const GEN_LAST: fluid_gen_type = 60;
 pub const GEN_PITCH: fluid_gen_type = 59;
@@ -144,37 +106,7 @@ pub type fluid_real_t = libc::c_float;
 pub type C2RustUnnamed = libc::c_int;
 pub const FLUID_FAILED: C2RustUnnamed = -1;
 
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_channel_t {
-    pub channum: libc::c_int,
-    pub sfontnum: libc::c_uint,
-    pub banknum: libc::c_uint,
-    pub prognum: libc::c_uint,
-    pub preset: *mut fluid_preset_t,
-    pub synth: *mut fluid_synth_t,
-    pub key_pressure: [libc::c_char; 128],
-    pub channel_pressure: libc::c_short,
-    pub pitch_bend: libc::c_short,
-    pub pitch_wheel_sensitivity: libc::c_short,
-    pub cc: [libc::c_short; 128],
-    pub bank_msb: libc::c_uchar,
-    pub interp_method: libc::c_int,
-    pub tuning: *mut fluid_tuning_t,
-    pub nrpn_select: libc::c_short,
-    pub nrpn_active: libc::c_short,
-    pub gen: [fluid_real_t; 60],
-    pub gen_abs: [libc::c_char; 60],
-}
 pub type fluid_tuning_t = _fluid_tuning_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_tuning_t {
-    pub name: *mut libc::c_char,
-    pub bank: libc::c_int,
-    pub prog: libc::c_int,
-    pub pitch: [libc::c_double; 128],
-}
 pub type fluid_channel_t = _fluid_channel_t;
 
 #[no_mangle]

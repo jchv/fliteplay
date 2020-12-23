@@ -7,20 +7,6 @@
     unused_assignments,
     unused_mut
 )]
-extern "C" {
-    #[no_mangle]
-    fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
-    #[no_mangle]
-    fn free(__ptr: *mut libc::c_void);
-    #[no_mangle]
-    fn cos(_: libc::c_double) -> libc::c_double;
-    #[no_mangle]
-    fn sin(_: libc::c_double) -> libc::c_double;
-    #[no_mangle]
-    fn fabs(_: libc::c_double) -> libc::c_double;
-    #[no_mangle]
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
-}
 
 pub type fluid_chorus_mod = libc::c_uint;
 pub const FLUID_CHORUS_MOD_TRIANGLE: fluid_chorus_mod = 1;
@@ -71,19 +57,16 @@ pub unsafe extern "C" fn new_fluid_chorus(mut sample_rate: fluid_real_t) -> *mut
     let mut i: libc::c_int = 0;
     let mut ii: libc::c_int = 0;
     let mut chorus: *mut fluid_chorus_t = 0 as *mut fluid_chorus_t;
-    chorus =
-        malloc(::std::mem::size_of::<fluid_chorus_t>() as libc::c_ulong) as *mut fluid_chorus_t;
+    chorus = libc::malloc(::std::mem::size_of::<fluid_chorus_t>() as libc::size_t)
+        as *mut fluid_chorus_t;
     if chorus.is_null() {
-        fluid_log!(
-            FLUID_PANIC as libc::c_int,
-            "chorus: Out of memory",
-        );
+        fluid_log!(FLUID_PANIC as libc::c_int, "chorus: Out of memory",);
         return 0 as *mut fluid_chorus_t;
     }
-    memset(
+    libc::memset(
         chorus as *mut libc::c_void,
         0 as libc::c_int,
-        ::std::mem::size_of::<fluid_chorus_t>() as libc::c_ulong,
+        ::std::mem::size_of::<fluid_chorus_t>() as libc::size_t,
     );
     (*chorus).sample_rate = sample_rate;
     i = 0 as libc::c_int;
@@ -94,45 +77,39 @@ pub unsafe extern "C" fn new_fluid_chorus(mut sample_rate: fluid_real_t) -> *mut
                 - 5 as libc::c_int as libc::c_double / 2.0f64
                 + ii as libc::c_double
                     / ((1 as libc::c_int) << 8 as libc::c_int - 1 as libc::c_int) as libc::c_double;
-            if fabs(i_shifted) < 0.000001f64 {
+            if f64::abs(i_shifted) < 0.000001f64 {
                 (*chorus).sinc_table[i as usize][ii as usize] = 1.0f64 as fluid_real_t
             } else {
                 (*chorus).sinc_table[i as usize][ii as usize] =
-                    (sin(i_shifted * 3.14159265358979323846f64) as fluid_real_t as libc::c_double
-                        / (3.14159265358979323846f64 * i_shifted))
-                        as fluid_real_t;
+                    (f64::sin(i_shifted * std::f64::consts::PI) as fluid_real_t as libc::c_double
+                        / (std::f64::consts::PI * i_shifted)) as fluid_real_t;
                 (*chorus).sinc_table[i as usize][ii as usize] =
                     ((*chorus).sinc_table[i as usize][ii as usize] as libc::c_double
                         * (0.5f64 as fluid_real_t as libc::c_double
                             * (1.0f64
-                                + cos(2.0f64 * 3.14159265358979323846f64 * i_shifted
-                                    / 5 as libc::c_int as fluid_real_t as libc::c_double))))
-                        as fluid_real_t
+                                + f64::cos(
+                                    2.0f64 * std::f64::consts::PI * i_shifted
+                                        / 5 as libc::c_int as fluid_real_t as libc::c_double,
+                                )))) as fluid_real_t
             }
             ii += 1
         }
         i += 1
     }
 
-    (*chorus).lookup_tab = malloc(
-        (((*chorus).sample_rate as libc::c_double / 0.29f64) as libc::c_int as libc::c_ulong)
-            .wrapping_mul(::std::mem::size_of::<libc::c_int>() as libc::c_ulong),
+    (*chorus).lookup_tab = libc::malloc(
+        (((*chorus).sample_rate as libc::c_double / 0.29f64) as libc::c_int as libc::size_t)
+            .wrapping_mul(::std::mem::size_of::<libc::c_int>() as libc::size_t),
     ) as *mut libc::c_int;
     if (*chorus).lookup_tab.is_null() {
-        fluid_log!(
-            FLUID_PANIC as libc::c_int,
-            "chorus: Out of memory",
-        );
+        fluid_log!(FLUID_PANIC as libc::c_int, "chorus: Out of memory",);
     } else {
-        (*chorus).chorusbuf = malloc(
-            (((1 as libc::c_int) << 12 as libc::c_int - 1 as libc::c_int) as libc::c_ulong)
-                .wrapping_mul(::std::mem::size_of::<fluid_real_t>() as libc::c_ulong),
+        (*chorus).chorusbuf = libc::malloc(
+            (((1 as libc::c_int) << 12 as libc::c_int - 1 as libc::c_int) as libc::size_t)
+                .wrapping_mul(::std::mem::size_of::<fluid_real_t>() as libc::size_t),
         ) as *mut fluid_real_t;
         if (*chorus).chorusbuf.is_null() {
-            fluid_log!(
-                FLUID_PANIC as libc::c_int,
-                "chorus: Out of memory",
-            );
+            fluid_log!(FLUID_PANIC as libc::c_int, "chorus: Out of memory",);
         } else if !(fluid_chorus_init(chorus) != FLUID_OK as libc::c_int) {
             return chorus;
         }
@@ -227,12 +204,12 @@ pub unsafe extern "C" fn delete_fluid_chorus(mut chorus: *mut fluid_chorus_t) {
         return;
     }
     if !(*chorus).chorusbuf.is_null() {
-        free((*chorus).chorusbuf as *mut libc::c_void);
+        libc::free((*chorus).chorusbuf as *mut libc::c_void);
     }
     if !(*chorus).lookup_tab.is_null() {
-        free((*chorus).lookup_tab as *mut libc::c_void);
+        libc::free((*chorus).lookup_tab as *mut libc::c_void);
     }
-    free(chorus as *mut libc::c_void);
+    libc::free(chorus as *mut libc::c_void);
 }
 
 #[no_mangle]
@@ -457,7 +434,7 @@ pub unsafe extern "C" fn fluid_chorus_sine(
     let mut val: libc::c_double = 0.;
     i = 0 as libc::c_int;
     while i < len {
-        val = sin(i as libc::c_double / len as libc::c_double * 2.0f64 * 3.14159265358979323846f64);
+        val = f64::sin(i as libc::c_double / len as libc::c_double * 2.0f64 * std::f64::consts::PI);
         *buf.offset(i as isize) = ((1.0f64 + val) * depth as libc::c_double / 2.0f64
             * ((1 as libc::c_int) << 8 as libc::c_int - 1 as libc::c_int) as libc::c_double)
             as libc::c_int;

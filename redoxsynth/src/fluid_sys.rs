@@ -31,8 +31,7 @@ static mut fluid_log_initialized: libc::c_int = 0 as libc::c_int;
 static mut fluid_libname: *mut libc::c_char =
     b"fluidsynth\x00" as *const u8 as *const libc::c_char as *mut libc::c_char;
 #[no_mangle]
-pub unsafe extern "C" fn fluid_sys_config() {
-}
+pub unsafe extern "C" fn fluid_sys_config() {}
 #[no_mangle]
 pub static mut fluid_debug_flags: libc::c_uint = 0 as libc::c_int as libc::c_uint;
 
@@ -52,8 +51,7 @@ pub unsafe extern "C" fn fluid_set_log_function(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn fluid_log_config() {
-}
+pub unsafe extern "C" fn fluid_log_config() {}
 
 #[no_mangle]
 pub unsafe extern "C" fn fluid_strtok(
@@ -65,10 +63,7 @@ pub unsafe extern "C" fn fluid_strtok(
     let mut token: *mut libc::c_char = 0 as *mut libc::c_char;
     let mut c: libc::c_char = 0;
     if str.is_null() || delim.is_null() || *delim == 0 {
-        fluid_log!(
-            FLUID_ERR,
-            "Null pointer",
-        );
+        fluid_log!(FLUID_ERR, "Null pointer",);
         return 0 as *mut libc::c_char;
     }
     s = *str;
@@ -120,7 +115,8 @@ pub unsafe extern "C" fn fluid_error() -> *mut libc::c_char {
 
 #[no_mangle]
 pub unsafe extern "C" fn fluid_is_midifile(mut filename: *mut libc::c_char) -> libc::c_int {
-    let mut fp: *mut libc::FILE = libc::fopen(filename, b"rb\x00" as *const u8 as *const libc::c_char);
+    let mut fp: *mut libc::FILE =
+        libc::fopen(filename, b"rb\x00" as *const u8 as *const libc::c_char);
     let mut id: [libc::c_char; 4] = [0; 4];
     if fp.is_null() {
         return 0 as libc::c_int;
@@ -145,7 +141,8 @@ pub unsafe extern "C" fn fluid_is_midifile(mut filename: *mut libc::c_char) -> l
 
 #[no_mangle]
 pub unsafe extern "C" fn fluid_is_soundfont(mut filename: *mut libc::c_char) -> libc::c_int {
-    let mut fp: *mut libc::FILE = libc::fopen(filename, b"rb\x00" as *const u8 as *const libc::c_char);
+    let mut fp: *mut libc::FILE =
+        libc::fopen(filename, b"rb\x00" as *const u8 as *const libc::c_char);
     let mut id: [libc::c_char; 4] = [0; 4];
     if fp.is_null() {
         return 0 as libc::c_int;
@@ -169,9 +166,9 @@ pub unsafe extern "C" fn fluid_is_soundfont(mut filename: *mut libc::c_char) -> 
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn fluid_default_log_function(mut level: libc::c_int,
-                                                    mut message:
-                                                        *mut libc::c_char,
-                                                    mut data:
-                                                        *mut libc::c_void) {
-                                                        }
+pub unsafe extern "C" fn fluid_default_log_function(
+    mut level: libc::c_int,
+    mut message: *mut libc::c_char,
+    mut data: *mut libc::c_void,
+) {
+}

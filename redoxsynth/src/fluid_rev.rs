@@ -7,12 +7,6 @@
     unused_assignments,
     unused_mut
 )]
-extern "C" {
-    #[no_mangle]
-    fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
-    #[no_mangle]
-    fn free(__ptr: *mut libc::c_void);
-}
 
 pub type fluid_real_t = libc::c_float;
 #[derive(Copy, Clone)]
@@ -153,8 +147,8 @@ pub unsafe extern "C" fn fluid_comb_getfeedback(mut comb: *mut fluid_comb) -> fl
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_revmodel() -> *mut fluid_revmodel_t {
     let mut rev: *mut fluid_revmodel_t = 0 as *mut fluid_revmodel_t;
-    rev =
-        malloc(::std::mem::size_of::<fluid_revmodel_t>() as libc::c_ulong) as *mut fluid_revmodel_t;
+    rev = libc::malloc(::std::mem::size_of::<fluid_revmodel_t>() as libc::size_t)
+        as *mut fluid_revmodel_t;
     if rev.is_null() {
         return 0 as *mut fluid_revmodel_t;
     }
@@ -371,7 +365,7 @@ pub unsafe extern "C" fn new_fluid_revmodel() -> *mut fluid_revmodel_t {
 }
 #[no_mangle]
 pub unsafe extern "C" fn delete_fluid_revmodel(mut rev: *mut fluid_revmodel_t) {
-    free(rev as *mut libc::c_void);
+    libc::free(rev as *mut libc::c_void);
 }
 #[no_mangle]
 pub unsafe extern "C" fn fluid_revmodel_init(mut rev: *mut fluid_revmodel_t) {

@@ -7,333 +7,70 @@
     unused_assignments,
     unused_mut
 )]
-#![feature(extern_types)]
 
-use crate::fluid_chorus::_fluid_chorus_t;
-use crate::fluid_hash::_fluid_hashtable_t;
-use crate::fluid_tuning::_fluid_tuning_t;
-use crate::fluid_rev::_fluid_revmodel_t;
 use crate::fluid_chan::_fluid_channel_t;
+use crate::fluid_chorus::_fluid_chorus_t;
+use crate::fluid_defsfont::_fluid_inst_t;
+use crate::fluid_defsfont::_fluid_inst_zone_t;
+use crate::fluid_defsfont::_fluid_preset_zone_t;
+use crate::fluid_defsfont::delete_fluid_inst_zone;
+use crate::fluid_defsfont::delete_fluid_preset_zone;
+use crate::fluid_defsfont::fluid_inst_add_zone;
+use crate::fluid_defsfont::fluid_inst_get_global_zone;
+use crate::fluid_defsfont::fluid_inst_get_zone;
+use crate::fluid_defsfont::fluid_inst_zone_get_sample;
+use crate::fluid_defsfont::fluid_inst_zone_inside_range;
+use crate::fluid_defsfont::fluid_inst_zone_next;
+use crate::fluid_defsfont::fluid_preset_zone_get_inst;
+use crate::fluid_defsfont::fluid_preset_zone_inside_range;
+use crate::fluid_defsfont::fluid_preset_zone_next;
+use crate::fluid_defsfont::fluid_sample_in_rom;
+use crate::fluid_defsfont::new_fluid_inst;
+use crate::fluid_defsfont::new_fluid_inst_zone;
+use crate::fluid_defsfont::new_fluid_preset_zone;
+use crate::fluid_gen::_fluid_gen_t;
+use crate::fluid_hash::_fluid_hashtable_t;
+use crate::fluid_list::_fluid_list_t;
+use crate::fluid_list::delete_fluid_list;
+use crate::fluid_list::fluid_list_append;
+use crate::fluid_list::fluid_list_remove;
+use crate::fluid_mod::_fluid_mod_t;
+use crate::fluid_mod::fluid_mod_test_identity;
+use crate::fluid_rev::_fluid_revmodel_t;
+use crate::fluid_sfont::_fluid_preset_t;
+use crate::fluid_sfont::_fluid_sample_t;
+use crate::fluid_sfont::_fluid_sfont_t;
+use crate::fluid_synth::_fluid_synth_t;
+use crate::fluid_synth::fluid_synth_alloc_voice;
+use crate::fluid_synth::fluid_synth_start_voice;
+use crate::fluid_tuning::_fluid_tuning_t;
+use crate::fluid_voice::_fluid_env_data_t;
+use crate::fluid_voice::_fluid_voice_t;
+use crate::fluid_voice::fluid_voice_add_mod;
+use crate::fluid_voice::fluid_voice_gen_incr;
+use crate::fluid_voice::fluid_voice_gen_set;
+use crate::fluid_voice::fluid_voice_get_id;
+use crate::fluid_voice::fluid_voice_is_playing;
+use crate::fluid_voice::fluid_voice_off;
+use crate::fluid_voice::fluid_voice_update_param;
 
-extern "C" {
-    #[no_mangle]
-    fn fluid_synth_alloc_voice(
-        synth: *mut fluid_synth_t,
-        sample: *mut fluid_sample_t,
-        channum: libc::c_int,
-        key: libc::c_int,
-        vel: libc::c_int,
-    ) -> *mut fluid_voice_t;
-    #[no_mangle]
-    fn fluid_synth_start_voice(synth: *mut fluid_synth_t, voice: *mut fluid_voice_t);
-    #[no_mangle]
-    fn fluid_voice_add_mod(voice: *mut fluid_voice_t, mod_0: *mut fluid_mod_t, mode: libc::c_int);
-    #[no_mangle]
-    fn fluid_mod_test_identity(mod1: *mut fluid_mod_t, mod2: *mut fluid_mod_t) -> libc::c_int;
-    #[no_mangle]
-    fn fluid_voice_gen_incr(voice: *mut fluid_voice_t, gen: libc::c_int, val: libc::c_float);
-    #[no_mangle]
-    fn fluid_voice_gen_set(voice: *mut fluid_voice_t, gen: libc::c_int, val: libc::c_float);
-    #[no_mangle]
-    fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
-    #[no_mangle]
-    fn free(__ptr: *mut libc::c_void);
-    #[no_mangle]
-    fn fluid_list_append(list: *mut fluid_list_t, data: *mut libc::c_void) -> *mut fluid_list_t;
-    #[no_mangle]
-    fn fluid_voice_get_id(voice: *mut fluid_voice_t) -> libc::c_uint;
-    #[no_mangle]
-    fn delete_fluid_list(list: *mut fluid_list_t);
-    #[no_mangle]
-    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
-    #[no_mangle]
-    fn fluid_list_remove(list: *mut fluid_list_t, data: *mut libc::c_void) -> *mut fluid_list_t;
-    #[no_mangle]
-    fn fluid_voice_is_playing(voice: *mut fluid_voice_t) -> libc::c_int;
-    #[no_mangle]
-    fn fluid_voice_update_param(voice: *mut fluid_voice_t, gen: libc::c_int);
-    #[no_mangle]
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
-    #[no_mangle]
-    fn fluid_preset_zone_inside_range(
-        zone: *mut fluid_preset_zone_t,
-        key: libc::c_int,
-        vel: libc::c_int,
-    ) -> libc::c_int;
-    #[no_mangle]
-    fn fluid_preset_zone_next(preset: *mut fluid_preset_zone_t) -> *mut fluid_preset_zone_t;
-    #[no_mangle]
-    fn new_fluid_preset_zone(name: *mut libc::c_char) -> *mut fluid_preset_zone_t;
-    #[no_mangle]
-    fn delete_fluid_preset_zone(zone: *mut fluid_preset_zone_t) -> libc::c_int;
-    #[no_mangle]
-    fn fluid_preset_zone_get_inst(zone: *mut fluid_preset_zone_t) -> *mut fluid_inst_t;
-    #[no_mangle]
-    fn new_fluid_inst() -> *mut fluid_inst_t;
-    #[no_mangle]
-    fn fluid_inst_add_zone(inst: *mut fluid_inst_t, zone: *mut fluid_inst_zone_t) -> libc::c_int;
-    #[no_mangle]
-    fn fluid_inst_get_zone(inst: *mut fluid_inst_t) -> *mut fluid_inst_zone_t;
-    #[no_mangle]
-    fn fluid_inst_get_global_zone(inst: *mut fluid_inst_t) -> *mut fluid_inst_zone_t;
-    #[no_mangle]
-    fn new_fluid_inst_zone(name: *mut libc::c_char) -> *mut fluid_inst_zone_t;
-    #[no_mangle]
-    fn delete_fluid_inst_zone(zone: *mut fluid_inst_zone_t) -> libc::c_int;
-    #[no_mangle]
-    fn fluid_inst_zone_next(zone: *mut fluid_inst_zone_t) -> *mut fluid_inst_zone_t;
-    #[no_mangle]
-    fn fluid_inst_zone_inside_range(
-        zone: *mut fluid_inst_zone_t,
-        key: libc::c_int,
-        vel: libc::c_int,
-    ) -> libc::c_int;
-    #[no_mangle]
-    fn fluid_inst_zone_get_sample(zone: *mut fluid_inst_zone_t) -> *mut fluid_sample_t;
-    #[no_mangle]
-    fn fluid_sample_in_rom(sample: *mut fluid_sample_t) -> libc::c_int;
-    #[no_mangle]
-    fn fluid_voice_off(voice: *mut fluid_voice_t) -> libc::c_int;
-}
 pub type fluid_settings_t = _fluid_hashtable_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_synth_t {
-    pub settings: *mut fluid_settings_t,
-    pub polyphony: libc::c_int,
-    pub with_reverb: libc::c_char,
-    pub with_chorus: libc::c_char,
-    pub verbose: libc::c_char,
-    pub dump: libc::c_char,
-    pub sample_rate: libc::c_double,
-    pub midi_channels: libc::c_int,
-    pub audio_channels: libc::c_int,
-    pub audio_groups: libc::c_int,
-    pub effects_channels: libc::c_int,
-    pub state: libc::c_uint,
-    pub ticks: libc::c_uint,
-    pub loaders: *mut fluid_list_t,
-    pub sfont: *mut fluid_list_t,
-    pub sfont_id: libc::c_uint,
-    pub bank_offsets: *mut fluid_list_t,
-    pub gain: libc::c_double,
-    pub channel: *mut *mut fluid_channel_t,
-    pub num_channels: libc::c_int,
-    pub nvoice: libc::c_int,
-    pub voice: *mut *mut fluid_voice_t,
-    pub noteid: libc::c_uint,
-    pub storeid: libc::c_uint,
-    pub nbuf: libc::c_int,
-    pub left_buf: *mut *mut fluid_real_t,
-    pub right_buf: *mut *mut fluid_real_t,
-    pub fx_left_buf: *mut *mut fluid_real_t,
-    pub fx_right_buf: *mut *mut fluid_real_t,
-    pub reverb: *mut fluid_revmodel_t,
-    pub chorus: *mut fluid_chorus_t,
-    pub cur: libc::c_int,
-    pub dither_index: libc::c_int,
-    pub outbuf: [libc::c_char; 256],
-    pub tuning: *mut *mut *mut fluid_tuning_t,
-    pub cur_tuning: *mut fluid_tuning_t,
-    pub min_note_length_ticks: libc::c_uint,
-}
 pub type fluid_tuning_t = _fluid_tuning_t;
 pub type fluid_chorus_t = _fluid_chorus_t;
 
 pub type fluid_revmodel_t = _fluid_revmodel_t;
 pub type fluid_real_t = libc::c_float;
 pub type fluid_voice_t = _fluid_voice_t;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_voice_t {
-    pub id: libc::c_uint,
-    pub status: libc::c_uchar,
-    pub chan: libc::c_uchar,
-    pub key: libc::c_uchar,
-    pub vel: libc::c_uchar,
-    pub channel: *mut fluid_channel_t,
-    pub gen: [fluid_gen_t; 60],
-    pub mod_0: [fluid_mod_t; 64],
-    pub mod_count: libc::c_int,
-    pub has_looped: libc::c_int,
-    pub sample: *mut fluid_sample_t,
-    pub check_sample_sanity_flag: libc::c_int,
-    pub output_rate: fluid_real_t,
-    pub start_time: libc::c_uint,
-    pub ticks: libc::c_uint,
-    pub noteoff_ticks: libc::c_uint,
-    pub amp: fluid_real_t,
-    pub phase: fluid_phase_t,
-    pub phase_incr: fluid_real_t,
-    pub amp_incr: fluid_real_t,
-    pub dsp_buf: *mut fluid_real_t,
-    pub pitch: fluid_real_t,
-    pub attenuation: fluid_real_t,
-    pub min_attenuation_cB: fluid_real_t,
-    pub root_pitch: fluid_real_t,
-    pub start: libc::c_int,
-    pub end: libc::c_int,
-    pub loopstart: libc::c_int,
-    pub loopend: libc::c_int,
-    pub synth_gain: fluid_real_t,
-    pub volenv_data: [fluid_env_data_t; 7],
-    pub volenv_count: libc::c_uint,
-    pub volenv_section: libc::c_int,
-    pub volenv_val: fluid_real_t,
-    pub amplitude_that_reaches_noise_floor_nonloop: fluid_real_t,
-    pub amplitude_that_reaches_noise_floor_loop: fluid_real_t,
-    pub modenv_data: [fluid_env_data_t; 7],
-    pub modenv_count: libc::c_uint,
-    pub modenv_section: libc::c_int,
-    pub modenv_val: fluid_real_t,
-    pub modenv_to_fc: fluid_real_t,
-    pub modenv_to_pitch: fluid_real_t,
-    pub modlfo_val: fluid_real_t,
-    pub modlfo_delay: libc::c_uint,
-    pub modlfo_incr: fluid_real_t,
-    pub modlfo_to_fc: fluid_real_t,
-    pub modlfo_to_pitch: fluid_real_t,
-    pub modlfo_to_vol: fluid_real_t,
-    pub viblfo_val: fluid_real_t,
-    pub viblfo_delay: libc::c_uint,
-    pub viblfo_incr: fluid_real_t,
-    pub viblfo_to_pitch: fluid_real_t,
-    pub fres: fluid_real_t,
-    pub last_fres: fluid_real_t,
-    pub q_lin: fluid_real_t,
-    pub filter_gain: fluid_real_t,
-    pub hist1: fluid_real_t,
-    pub hist2: fluid_real_t,
-    pub filter_startup: libc::c_int,
-    pub b02: fluid_real_t,
-    pub b1: fluid_real_t,
-    pub a1: fluid_real_t,
-    pub a2: fluid_real_t,
-    pub b02_incr: fluid_real_t,
-    pub b1_incr: fluid_real_t,
-    pub a1_incr: fluid_real_t,
-    pub a2_incr: fluid_real_t,
-    pub filter_coeff_incr_count: libc::c_int,
-    pub pan: fluid_real_t,
-    pub amp_left: fluid_real_t,
-    pub amp_right: fluid_real_t,
-    pub reverb_send: fluid_real_t,
-    pub amp_reverb: fluid_real_t,
-    pub chorus_send: fluid_real_t,
-    pub amp_chorus: fluid_real_t,
-    pub interp_method: libc::c_int,
-    pub debug: libc::c_int,
-}
 pub type fluid_env_data_t = _fluid_env_data_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_env_data_t {
-    pub count: libc::c_uint,
-    pub coeff: fluid_real_t,
-    pub incr: fluid_real_t,
-    pub min: fluid_real_t,
-    pub max: fluid_real_t,
-}
-
 pub type fluid_phase_t = libc::c_ulonglong;
 pub type fluid_sample_t = _fluid_sample_t;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_sample_t {
-    pub name: [libc::c_char; 21],
-    pub start: libc::c_uint,
-    pub end: libc::c_uint,
-    pub loopstart: libc::c_uint,
-    pub loopend: libc::c_uint,
-    pub samplerate: libc::c_uint,
-    pub origpitch: libc::c_int,
-    pub pitchadj: libc::c_int,
-    pub sampletype: libc::c_int,
-    pub valid: libc::c_int,
-    pub data: *mut libc::c_short,
-    pub amplitude_that_reaches_noise_floor_is_valid: libc::c_int,
-    pub amplitude_that_reaches_noise_floor: libc::c_double,
-    pub refcount: libc::c_uint,
-    pub notify: Option<unsafe extern "C" fn(_: *mut fluid_sample_t, _: libc::c_int) -> libc::c_int>,
-    pub userdata: *mut libc::c_void,
-}
 pub type fluid_mod_t = _fluid_mod_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_mod_t {
-    pub dest: libc::c_uchar,
-    pub src1: libc::c_uchar,
-    pub flags1: libc::c_uchar,
-    pub src2: libc::c_uchar,
-    pub flags2: libc::c_uchar,
-    pub amount: libc::c_double,
-    pub next: *mut fluid_mod_t,
-}
 pub type fluid_gen_t = _fluid_gen_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_gen_t {
-    pub flags: libc::c_uchar,
-    pub val: libc::c_double,
-    pub mod_0: libc::c_double,
-    pub nrpn: libc::c_double,
-}
 pub type fluid_channel_t = _fluid_channel_t;
 pub type fluid_list_t = _fluid_list_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_list_t {
-    pub data: *mut libc::c_void,
-    pub next: *mut fluid_list_t,
-}
 pub type fluid_synth_t = _fluid_synth_t;
 pub type fluid_sfont_t = _fluid_sfont_t;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_sfont_t {
-    pub data: *mut libc::c_void,
-    pub id: libc::c_uint,
-    pub free: Option<unsafe extern "C" fn(_: *mut fluid_sfont_t) -> libc::c_int>,
-    pub get_name: Option<unsafe extern "C" fn(_: *mut fluid_sfont_t) -> *mut libc::c_char>,
-    pub get_preset: Option<
-        unsafe extern "C" fn(
-            _: *mut fluid_sfont_t,
-            _: libc::c_uint,
-            _: libc::c_uint,
-        ) -> *mut fluid_preset_t,
-    >,
-    pub iteration_start: Option<unsafe extern "C" fn(_: *mut fluid_sfont_t) -> ()>,
-    pub iteration_next:
-        Option<unsafe extern "C" fn(_: *mut fluid_sfont_t, _: *mut fluid_preset_t) -> libc::c_int>,
-}
-
 pub type fluid_preset_t = _fluid_preset_t;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_preset_t {
-    pub data: *mut libc::c_void,
-    pub sfont: *mut fluid_sfont_t,
-    pub free: Option<unsafe extern "C" fn(_: *mut fluid_preset_t) -> libc::c_int>,
-    pub get_name: Option<unsafe extern "C" fn(_: *mut fluid_preset_t) -> *mut libc::c_char>,
-    pub get_banknum: Option<unsafe extern "C" fn(_: *mut fluid_preset_t) -> libc::c_int>,
-    pub get_num: Option<unsafe extern "C" fn(_: *mut fluid_preset_t) -> libc::c_int>,
-    pub noteon: Option<
-        unsafe extern "C" fn(
-            _: *mut fluid_preset_t,
-            _: *mut fluid_synth_t,
-            _: libc::c_int,
-            _: libc::c_int,
-            _: libc::c_int,
-        ) -> libc::c_int,
-    >,
-    pub notify: Option<
-        unsafe extern "C" fn(_: *mut fluid_preset_t, _: libc::c_int, _: libc::c_int) -> libc::c_int,
-    >,
-}
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -359,42 +96,8 @@ pub struct _fluid_rampreset_t {
     pub presetvoices: *mut fluid_list_t,
 }
 pub type fluid_preset_zone_t = _fluid_preset_zone_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_preset_zone_t {
-    pub next: *mut fluid_preset_zone_t,
-    pub name: *mut libc::c_char,
-    pub inst: *mut fluid_inst_t,
-    pub keylo: libc::c_int,
-    pub keyhi: libc::c_int,
-    pub vello: libc::c_int,
-    pub velhi: libc::c_int,
-    pub gen: [fluid_gen_t; 60],
-    pub mod_0: *mut fluid_mod_t,
-}
 pub type fluid_inst_t = _fluid_inst_t;
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_inst_t {
-    pub name: [libc::c_char; 21],
-    pub global_zone: *mut fluid_inst_zone_t,
-    pub zone: *mut fluid_inst_zone_t,
-}
 pub type fluid_inst_zone_t = _fluid_inst_zone_t;
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-pub struct _fluid_inst_zone_t {
-    pub next: *mut fluid_inst_zone_t,
-    pub name: *mut libc::c_char,
-    pub sample: *mut fluid_sample_t,
-    pub keylo: libc::c_int,
-    pub keyhi: libc::c_int,
-    pub vello: libc::c_int,
-    pub velhi: libc::c_int,
-    pub gen: [fluid_gen_t; 60],
-    pub mod_0: *mut fluid_mod_t,
-}
 pub type fluid_ramsfont_t = _fluid_ramsfont_t;
 pub const FLUID_OK: C2RustUnnamed = 0;
 pub const FLUID_VOICE_ADD: fluid_voice_add_mod = 1;
@@ -547,7 +250,6 @@ pub const GEN_MODLFOTOPITCH: fluid_gen_type = 5;
 pub type fluid_gen_flags = libc::c_uint;
 
 pub const GEN_ABS_NRPN: fluid_gen_flags = 2;
-pub type fluid_voice_add_mod = libc::c_uint;
 pub const FLUID_VOICE_DEFAULT: fluid_voice_add_mod = 2;
 pub type C2RustUnnamed = libc::c_int;
 pub type fluid_loop = libc::c_uint;
@@ -562,12 +264,10 @@ pub unsafe extern "C" fn fluid_ramsfont_create_sfont() -> *mut fluid_sfont_t {
     if ramsfont.is_null() {
         return 0 as *mut fluid_sfont_t;
     }
-    sfont = malloc(::std::mem::size_of::<fluid_sfont_t>() as libc::c_ulong) as *mut fluid_sfont_t;
+    sfont =
+        libc::malloc(::std::mem::size_of::<fluid_sfont_t>() as libc::size_t) as *mut fluid_sfont_t;
     if sfont.is_null() {
-        fluid_log!(
-            FLUID_ERR,
-            "Out of memory",
-        );
+        fluid_log!(FLUID_ERR, "Out of memory",);
         return 0 as *mut fluid_sfont_t;
     }
     (*sfont).data = ramsfont as *mut libc::c_void;
@@ -601,7 +301,7 @@ pub unsafe extern "C" fn fluid_ramsfont_sfont_delete(mut sfont: *mut fluid_sfont
     if delete_fluid_ramsfont((*sfont).data as *mut fluid_ramsfont_t) != 0 as libc::c_int {
         return -(1 as libc::c_int);
     }
-    free(sfont as *mut libc::c_void);
+    libc::free(sfont as *mut libc::c_void);
     return 0 as libc::c_int;
 }
 #[no_mangle]
@@ -622,13 +322,10 @@ pub unsafe extern "C" fn fluid_ramsfont_sfont_get_preset(
     if rampreset.is_null() {
         return 0 as *mut fluid_preset_t;
     }
-    preset =
-        malloc(::std::mem::size_of::<fluid_preset_t>() as libc::c_ulong) as *mut fluid_preset_t;
+    preset = libc::malloc(::std::mem::size_of::<fluid_preset_t>() as libc::size_t)
+        as *mut fluid_preset_t;
     if preset.is_null() {
-        fluid_log!(
-            FLUID_ERR,
-            "Out of memory",
-        );
+        fluid_log!(FLUID_ERR, "Out of memory",);
         return 0 as *mut fluid_preset_t;
     }
     (*preset).sfont = sfont;
@@ -704,7 +401,7 @@ pub unsafe extern "C" fn fluid_ramsfont_sfont_iteration_next(
 pub unsafe extern "C" fn fluid_rampreset_preset_delete(
     mut preset: *mut fluid_preset_t,
 ) -> libc::c_int {
-    free(preset as *mut libc::c_void);
+    libc::free(preset as *mut libc::c_void);
     return 0 as libc::c_int;
 }
 #[no_mangle]
@@ -745,13 +442,10 @@ pub unsafe extern "C" fn fluid_rampreset_preset_noteon(
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_ramsfont() -> *mut fluid_ramsfont_t {
     let mut sfont: *mut fluid_ramsfont_t = 0 as *mut fluid_ramsfont_t;
-    sfont =
-        malloc(::std::mem::size_of::<fluid_ramsfont_t>() as libc::c_ulong) as *mut fluid_ramsfont_t;
+    sfont = libc::malloc(::std::mem::size_of::<fluid_ramsfont_t>() as libc::size_t)
+        as *mut fluid_ramsfont_t;
     if sfont.is_null() {
-        fluid_log!(
-            FLUID_ERR,
-            "Out of memory",
-        );
+        fluid_log!(FLUID_ERR, "Out of memory",);
         return 0 as *mut fluid_ramsfont_t;
     }
     (*sfont).name[0 as libc::c_int as usize] = 0 as libc::c_int as libc::c_char;
@@ -803,7 +497,7 @@ pub unsafe extern "C" fn delete_fluid_ramsfont(mut sfont: *mut fluid_ramsfont_t)
         delete_fluid_rampreset(preset);
         preset = (*sfont).preset
     }
-    free(sfont as *mut libc::c_void);
+    libc::free(sfont as *mut libc::c_void);
     return FLUID_OK as libc::c_int;
 }
 
@@ -819,10 +513,10 @@ pub unsafe extern "C" fn fluid_ramsfont_set_name(
     mut sfont: *mut fluid_ramsfont_t,
     mut name: *mut libc::c_char,
 ) -> libc::c_int {
-    memcpy(
+    libc::memcpy(
         (*sfont).name.as_mut_ptr() as *mut libc::c_void,
         name as *const libc::c_void,
-        20 as libc::c_int as libc::c_ulong,
+        20 as libc::c_int as libc::size_t,
     );
     return FLUID_OK as libc::c_int;
 }
@@ -986,13 +680,10 @@ pub unsafe extern "C" fn new_fluid_rampreset(
     mut sfont: *mut fluid_ramsfont_t,
 ) -> *mut fluid_rampreset_t {
     let mut preset: *mut fluid_rampreset_t =
-        malloc(::std::mem::size_of::<fluid_rampreset_t>() as libc::c_ulong)
+        libc::malloc(::std::mem::size_of::<fluid_rampreset_t>() as libc::size_t)
             as *mut fluid_rampreset_t;
     if preset.is_null() {
-        fluid_log!(
-            FLUID_ERR,
-            "Out of memory",
-        );
+        fluid_log!(FLUID_ERR, "Out of memory",);
         return 0 as *mut fluid_rampreset_t;
     }
     (*preset).next = 0 as *mut fluid_rampreset_t;
@@ -1030,14 +721,14 @@ pub unsafe extern "C" fn delete_fluid_rampreset(mut preset: *mut fluid_rampreset
         let mut next: *mut fluid_list_t = 0 as *mut fluid_list_t;
         while !tmp.is_null() {
             data = (*tmp).data as *mut fluid_rampreset_voice_t;
-            free(data as *mut libc::c_void);
+            libc::free(data as *mut libc::c_void);
             next = (*tmp).next;
-            free(tmp as *mut libc::c_void);
+            libc::free(tmp as *mut libc::c_void);
             tmp = next
         }
     }
     (*preset).presetvoices = 0 as *mut fluid_list_t;
-    free(preset as *mut libc::c_void);
+    libc::free(preset as *mut libc::c_void);
     return err;
 }
 #[no_mangle]
@@ -1116,10 +807,10 @@ pub unsafe extern "C" fn fluid_rampreset_add_sample(
     (*izone).sample = sample;
     (*izone).keylo = lokey;
     (*izone).keyhi = hikey;
-    memcpy(
+    libc::memcpy(
         (*preset).name.as_mut_ptr() as *mut libc::c_void,
         (*sample).name.as_mut_ptr() as *const libc::c_void,
-        20 as libc::c_int as libc::c_ulong,
+        20 as libc::c_int as libc::size_t,
     );
     return FLUID_OK as libc::c_int;
 }
@@ -1314,13 +1005,10 @@ pub unsafe extern "C" fn fluid_rampreset_remembervoice(
     mut voice: *mut fluid_voice_t,
 ) -> libc::c_int {
     let mut presetvoice: *mut fluid_rampreset_voice_t =
-        malloc(::std::mem::size_of::<fluid_rampreset_voice_t>() as libc::c_ulong)
+        libc::malloc(::std::mem::size_of::<fluid_rampreset_voice_t>() as libc::size_t)
             as *mut fluid_rampreset_voice_t;
     if presetvoice.is_null() {
-        fluid_log!(
-            FLUID_ERR,
-            "Out of memory",
-        );
+        fluid_log!(FLUID_ERR, "Out of memory",);
         return FLUID_FAILED as libc::c_int;
     }
     (*presetvoice).voice = voice;
@@ -1328,11 +1016,8 @@ pub unsafe extern "C" fn fluid_rampreset_remembervoice(
     (*preset).presetvoices =
         fluid_list_append((*preset).presetvoices, presetvoice as *mut libc::c_void);
     if (*preset).presetvoices.is_null() {
-        free(presetvoice as *mut libc::c_void);
-        fluid_log!(
-            FLUID_ERR,
-            "Out of memory",
-        );
+        libc::free(presetvoice as *mut libc::c_void);
+        fluid_log!(FLUID_ERR, "Out of memory",);
         return FLUID_FAILED as libc::c_int;
     }
     return FLUID_OK as libc::c_int;
@@ -1353,9 +1038,9 @@ pub unsafe extern "C" fn fluid_rampreset_updatevoices(
         let mut voice: *mut fluid_voice_t = (*presetvoice).voice;
         if fluid_voice_is_playing(voice) == 0 || fluid_voice_get_id(voice) != (*presetvoice).voiceID
         {
-            free(presetvoice as *mut libc::c_void);
+            libc::free(presetvoice as *mut libc::c_void);
             next = (*tmp).next;
-            free(tmp as *mut libc::c_void);
+            libc::free(tmp as *mut libc::c_void);
             if !prev.is_null() {
                 (*prev).next = next
             } else {
@@ -1532,10 +1217,10 @@ pub unsafe extern "C" fn fluid_sample_set_name(
     mut sample: *mut fluid_sample_t,
     mut name: *mut libc::c_char,
 ) -> libc::c_int {
-    memcpy(
+    libc::memcpy(
         (*sample).name.as_mut_ptr() as *mut libc::c_void,
         name as *const libc::c_void,
-        20 as libc::c_int as libc::c_ulong,
+        20 as libc::c_int as libc::size_t,
     );
     return FLUID_OK as libc::c_int;
 }
@@ -1550,40 +1235,32 @@ pub unsafe extern "C" fn fluid_sample_set_sound_data(
 ) -> libc::c_int {
     let mut storedNbFrames: libc::c_uint = 0;
     if !(*sample).data.is_null() {
-        free((*sample).data as *mut libc::c_void);
+        libc::free((*sample).data as *mut libc::c_void);
     }
     if copy_data != 0 {
         storedNbFrames = nbframes;
         if storedNbFrames < 48 as libc::c_int as libc::c_uint {
             storedNbFrames = 48 as libc::c_int as libc::c_uint
         }
-        (*sample).data = malloc(
+        (*sample).data = libc::malloc(
             storedNbFrames
                 .wrapping_mul(2 as libc::c_int as libc::c_uint)
                 .wrapping_add((4 as libc::c_int * 8 as libc::c_int) as libc::c_uint)
-                as libc::c_ulong,
+                as libc::size_t,
         ) as *mut libc::c_short;
         if (*sample).data.is_null() {
-            fluid_log!(
-                FLUID_ERR,
-                "Out of memory",
-            );
+            fluid_log!(FLUID_ERR, "Out of memory",);
             return FLUID_FAILED as libc::c_int;
         }
-        memset(
+        libc::memset(
             (*sample).data as *mut libc::c_void,
             0 as libc::c_int,
-            storedNbFrames
-                .wrapping_mul(2 as libc::c_int as libc::c_uint)
-                .wrapping_add((4 as libc::c_int * 8 as libc::c_int) as libc::c_uint)
-                as libc::c_ulong,
+            storedNbFrames.wrapping_mul(2).wrapping_add(4 * 8) as libc::size_t,
         );
-        memcpy(
-            ((*sample).data as *mut libc::c_char)
-                .offset((2 as libc::c_int * 8 as libc::c_int) as isize)
-                as *mut libc::c_void,
+        libc::memcpy(
+            ((*sample).data as *mut libc::c_char).offset((2 * 8) as isize) as *mut libc::c_void,
             data as *const libc::c_void,
-            nbframes.wrapping_mul(2 as libc::c_int as libc::c_uint) as libc::c_ulong,
+            nbframes.wrapping_mul(2 as libc::c_int as libc::c_uint) as libc::size_t,
         );
         (*sample).start = 8 as libc::c_int as libc::c_uint;
         (*sample).end = (8 as libc::c_int as libc::c_uint).wrapping_add(storedNbFrames)
@@ -1605,19 +1282,16 @@ pub unsafe extern "C" fn fluid_sample_set_sound_data(
 #[no_mangle]
 pub unsafe extern "C" fn new_fluid_ramsample() -> *mut fluid_sample_t {
     let mut sample: *mut fluid_sample_t = 0 as *mut fluid_sample_t;
-    sample =
-        malloc(::std::mem::size_of::<fluid_sample_t>() as libc::c_ulong) as *mut fluid_sample_t;
+    sample = libc::malloc(::std::mem::size_of::<fluid_sample_t>() as libc::size_t)
+        as *mut fluid_sample_t;
     if sample.is_null() {
-        fluid_log!(
-            FLUID_ERR,
-            "Out of memory",
-        );
+        fluid_log!(FLUID_ERR, "Out of memory",);
         return 0 as *mut fluid_sample_t;
     }
-    memset(
+    libc::memset(
         sample as *mut libc::c_void,
         0 as libc::c_int,
-        ::std::mem::size_of::<fluid_sample_t>() as libc::c_ulong,
+        ::std::mem::size_of::<fluid_sample_t>() as libc::size_t,
     );
     return sample;
 }
@@ -1625,9 +1299,9 @@ pub unsafe extern "C" fn new_fluid_ramsample() -> *mut fluid_sample_t {
 #[no_mangle]
 pub unsafe extern "C" fn delete_fluid_ramsample(mut sample: *mut fluid_sample_t) -> libc::c_int {
     if !(*sample).data.is_null() {
-        free((*sample).data as *mut libc::c_void);
+        libc::free((*sample).data as *mut libc::c_void);
     }
     (*sample).data = 0 as *mut libc::c_short;
-    free(sample as *mut libc::c_void);
+    libc::free(sample as *mut libc::c_void);
     return FLUID_OK as libc::c_int;
 }
