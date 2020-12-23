@@ -9,8 +9,8 @@
 )]
 #![feature(const_raw_ptr_to_usize_cast, const_transmute, label_break_value)]
 
-use crate::fluid_gen::_fluid_gen_t;
-use crate::fluid_gen::fluid_gen_set_default_values;
+use crate::gen::_fluid_gen_t;
+use crate::gen::fluid_gen_set_default_values;
 use crate::fluid_list::_fluid_list_t;
 use crate::fluid_list::delete1_fluid_list;
 use crate::fluid_list::delete_fluid_list;

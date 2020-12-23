@@ -20,7 +20,7 @@ mod chorus;
 mod conv;
 mod defsfont;
 mod dsp_float;
-mod fluid_gen;
+mod gen;
 mod fluid_hash;
 mod fluid_list;
 mod fluid_mod;

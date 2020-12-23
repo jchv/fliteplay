@@ -28,7 +28,7 @@ use crate::defsfont::fluid_sample_in_rom;
 use crate::defsfont::new_fluid_inst;
 use crate::defsfont::new_fluid_inst_zone;
 use crate::defsfont::new_fluid_preset_zone;
-use crate::fluid_gen::_fluid_gen_t;
+use crate::gen::_fluid_gen_t;
 use crate::fluid_hash::_fluid_hashtable_t;
 use crate::fluid_list::_fluid_list_t;
 use crate::fluid_list::delete_fluid_list;

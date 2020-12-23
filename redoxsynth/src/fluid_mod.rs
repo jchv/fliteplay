@@ -11,7 +11,7 @@ use crate::channel::_fluid_channel_t;
 use crate::channel::fluid_channel_get_cc;
 use crate::conv::fluid_concave;
 use crate::conv::fluid_convex;
-use crate::fluid_gen::_fluid_gen_t;
+use crate::gen::_fluid_gen_t;
 use crate::fluid_sfont::_fluid_preset_t;
 use crate::fluid_sfont::_fluid_sample_t;
 use crate::fluid_sfont::_fluid_sfont_t;
