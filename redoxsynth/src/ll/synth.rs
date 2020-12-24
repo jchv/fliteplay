@@ -49,18 +49,6 @@ use super::modulator::fluid_mod_set_dest;
 use super::modulator::fluid_mod_set_source1;
 use super::modulator::fluid_mod_set_source2;
 use super::modulator::Mod;
-use super::reverb::fluid_revmodel_getdamp;
-use super::reverb::fluid_revmodel_getlevel;
-use super::reverb::fluid_revmodel_getroomsize;
-use super::reverb::fluid_revmodel_getwidth;
-use super::reverb::fluid_revmodel_processmix;
-use super::reverb::fluid_revmodel_processreplace;
-use super::reverb::fluid_revmodel_reset;
-use super::reverb::fluid_revmodel_setdamp;
-use super::reverb::fluid_revmodel_setlevel;
-use super::reverb::fluid_revmodel_setroomsize;
-use super::reverb::fluid_revmodel_setwidth;
-use super::reverb::new_fluid_revmodel;
 use super::reverb::ReverbModel;
 use super::settings::fluid_settings_getint;
 use super::settings::fluid_settings_getnum;
@@ -968,7 +956,7 @@ pub unsafe fn new_fluid_synth(settings: *mut Settings) -> *mut Synth {
                                                 _ => {
                                                     (*synth).cur = 64 as i32;
                                                     (*synth).dither_index = 0 as i32;
-                                                    (*synth).reverb = new_fluid_revmodel();
+                                                    (*synth).reverb = ReverbModel::new();
                                                     fluid_synth_set_reverb(
                                                         synth,
                                                         0.2f32 as f64,
@@ -1423,7 +1411,7 @@ pub unsafe fn fluid_synth_system_reset(synth: *mut Synth) -> i32 {
         i += 1
     }
     fluid_chorus_reset((*synth).chorus.as_mut().unwrap());
-    fluid_revmodel_reset(&mut (*synth).reverb);
+    (*synth).reverb.reset();
     return FLUID_OK as i32;
 }
 
@@ -1910,10 +1898,10 @@ pub unsafe fn fluid_synth_set_reverb(
     width: f64,
     level: f64,
 ) {
-    fluid_revmodel_setroomsize(&mut (*synth).reverb, roomsize as f32);
-    fluid_revmodel_setdamp(&mut (*synth).reverb, damping as f32);
-    fluid_revmodel_setwidth(&mut (*synth).reverb, width as f32);
-    fluid_revmodel_setlevel(&mut (*synth).reverb, level as f32);
+    (*synth).reverb.set_room_size(roomsize as f32);
+    (*synth).reverb.set_damp(damping as f32);
+    (*synth).reverb.set_width(width as f32);
+    (*synth).reverb.set_level(level as f32);
 }
 
 pub unsafe fn fluid_synth_set_chorus(
@@ -2138,8 +2126,7 @@ pub unsafe fn fluid_synth_one_block(
     }
     if do_not_mix_fx_to_out != 0 {
         if !reverb_buf.is_null() {
-            fluid_revmodel_processreplace(
-                &mut (*synth).reverb,
+            (*synth).reverb.process_replace(
                 reverb_buf,
                 *(*synth).fx_left_buf.offset(0 as i32 as isize),
                 *(*synth).fx_right_buf.offset(0 as i32 as isize),
@@ -2155,8 +2142,7 @@ pub unsafe fn fluid_synth_one_block(
         }
     } else {
         if !reverb_buf.is_null() {
-            fluid_revmodel_processmix(
-                &mut (*synth).reverb,
+            (*synth).reverb.process_mix(
                 reverb_buf,
                 *(*synth).left_buf.offset(0 as i32 as isize),
                 *(*synth).right_buf.offset(0 as i32 as isize),
@@ -2173,7 +2159,7 @@ pub unsafe fn fluid_synth_one_block(
     }
     (*synth).ticks = (*synth)
         .ticks
-        .wrapping_add(64 as i32 as u32);
+        .wrapping_add(64);
     return 0 as i32;
 }
 
@@ -2629,19 +2615,19 @@ pub unsafe fn fluid_synth_get_chorus_type(synth: *mut Synth) -> i32 {
 }
 
 pub unsafe fn fluid_synth_get_reverb_roomsize(synth: *mut Synth) -> f64 {
-    return fluid_revmodel_getroomsize(&mut (*synth).reverb) as f64;
+    return (*synth).reverb.get_room_size() as f64;
 }
 
 pub unsafe fn fluid_synth_get_reverb_damp(synth: *mut Synth) -> f64 {
-    return fluid_revmodel_getdamp(&(*synth).reverb) as f64;
+    return (*synth).reverb.get_damp() as f64;
 }
 
 pub unsafe fn fluid_synth_get_reverb_level(synth: *mut Synth) -> f64 {
-    return fluid_revmodel_getlevel(&(*synth).reverb) as f64;
+    return (*synth).reverb.get_level() as f64;
 }
 
 pub unsafe fn fluid_synth_get_reverb_width(synth: *mut Synth) -> f64 {
-    return fluid_revmodel_getwidth(&(*synth).reverb) as f64;
+    return (*synth).reverb.get_width() as f64;
 }
 
 pub unsafe fn fluid_synth_release_voice_on_same_note(
