@@ -1,3 +1,5 @@
+#![feature(min_const_generics)]
+
 pub(crate) mod ll;
 mod font;
 mod loader;

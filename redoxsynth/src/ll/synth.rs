@@ -49,7 +49,6 @@ use super::modulator::fluid_mod_set_dest;
 use super::modulator::fluid_mod_set_source1;
 use super::modulator::fluid_mod_set_source2;
 use super::modulator::Mod;
-use super::reverb::delete_fluid_revmodel;
 use super::reverb::fluid_revmodel_getdamp;
 use super::reverb::fluid_revmodel_getlevel;
 use super::reverb::fluid_revmodel_getroomsize;
@@ -136,7 +135,7 @@ pub struct Synth {
     pub right_buf: *mut *mut f32,
     pub fx_left_buf: *mut *mut f32,
     pub fx_right_buf: *mut *mut f32,
-    pub reverb: *mut ReverbModel,
+    pub reverb: ReverbModel,
     pub chorus: *mut Chorus,
     pub cur: i32,
     pub dither_index: i32,
@@ -970,41 +969,37 @@ pub unsafe fn new_fluid_synth(settings: *mut Settings) -> *mut Synth {
                                                     (*synth).cur = 64 as i32;
                                                     (*synth).dither_index = 0 as i32;
                                                     (*synth).reverb = new_fluid_revmodel();
-                                                    if (*synth).reverb.is_null() {
+                                                    fluid_synth_set_reverb(
+                                                        synth,
+                                                        0.2f32 as f64,
+                                                        0.0f32 as f64,
+                                                        0.5f32 as f64,
+                                                        0.9f32 as f64,
+                                                    );
+                                                    (*synth).chorus = new_fluid_chorus(
+                                                        (*synth).sample_rate as f32,
+                                                    );
+                                                    if (*synth).chorus.is_null() {
                                                         fluid_log!(FLUID_ERR, "Out of memory",);
                                                     } else {
-                                                        fluid_synth_set_reverb(
-                                                            synth,
-                                                            0.2f32 as f64,
-                                                            0.0f32 as f64,
-                                                            0.5f32 as f64,
-                                                            0.9f32 as f64,
-                                                        );
-                                                        (*synth).chorus = new_fluid_chorus(
-                                                            (*synth).sample_rate as f32,
-                                                        );
-                                                        if (*synth).chorus.is_null() {
-                                                            fluid_log!(FLUID_ERR, "Out of memory",);
-                                                        } else {
-                                                            if fluid_settings_str_equal(
-                                                                settings,
-                                                                b"synth.drums-channel.active\x00"
-                                                                    as *const u8
-                                                                    as *const libc::c_char,
-                                                                b"yes\x00" as *const u8
-                                                                    as *const libc::c_char
-                                                                    as *mut libc::c_char,
-                                                            ) != 0
-                                                            {
-                                                                fluid_synth_bank_select(
-                                                                    synth,
-                                                                    9 as i32,
-                                                                    128 as i32
-                                                                        as u32,
-                                                                );
-                                                            }
-                                                            return synth;
+                                                        if fluid_settings_str_equal(
+                                                            settings,
+                                                            b"synth.drums-channel.active\x00"
+                                                                as *const u8
+                                                                as *const libc::c_char,
+                                                            b"yes\x00" as *const u8
+                                                                as *const libc::c_char
+                                                                as *mut libc::c_char,
+                                                        ) != 0
+                                                        {
+                                                            fluid_synth_bank_select(
+                                                                synth,
+                                                                9 as i32,
+                                                                128 as i32
+                                                                    as u32,
+                                                            );
                                                         }
+                                                        return synth;
                                                     }
                                                 }
                                             }
@@ -1183,9 +1178,6 @@ pub unsafe fn delete_fluid_synth(mut synth: *mut Synth) -> i32 {
             i += 1
         }
         libc::free((*synth).fx_right_buf as *mut libc::c_void);
-    }
-    if !(*synth).reverb.is_null() {
-        delete_fluid_revmodel((*synth).reverb);
     }
     if !(*synth).chorus.is_null() {
         delete_fluid_chorus((*synth).chorus.as_mut().unwrap());
@@ -1431,7 +1423,7 @@ pub unsafe fn fluid_synth_system_reset(synth: *mut Synth) -> i32 {
         i += 1
     }
     fluid_chorus_reset((*synth).chorus.as_mut().unwrap());
-    fluid_revmodel_reset((*synth).reverb);
+    fluid_revmodel_reset(&mut (*synth).reverb);
     return FLUID_OK as i32;
 }
 
@@ -1918,10 +1910,10 @@ pub unsafe fn fluid_synth_set_reverb(
     width: f64,
     level: f64,
 ) {
-    fluid_revmodel_setroomsize((*synth).reverb, roomsize as f32);
-    fluid_revmodel_setdamp((*synth).reverb, damping as f32);
-    fluid_revmodel_setwidth((*synth).reverb, width as f32);
-    fluid_revmodel_setlevel((*synth).reverb, level as f32);
+    fluid_revmodel_setroomsize(&mut (*synth).reverb, roomsize as f32);
+    fluid_revmodel_setdamp(&mut (*synth).reverb, damping as f32);
+    fluid_revmodel_setwidth(&mut (*synth).reverb, width as f32);
+    fluid_revmodel_setlevel(&mut (*synth).reverb, level as f32);
 }
 
 pub unsafe fn fluid_synth_set_chorus(
@@ -2147,7 +2139,7 @@ pub unsafe fn fluid_synth_one_block(
     if do_not_mix_fx_to_out != 0 {
         if !reverb_buf.is_null() {
             fluid_revmodel_processreplace(
-                (*synth).reverb,
+                &mut (*synth).reverb,
                 reverb_buf,
                 *(*synth).fx_left_buf.offset(0 as i32 as isize),
                 *(*synth).fx_right_buf.offset(0 as i32 as isize),
@@ -2164,7 +2156,7 @@ pub unsafe fn fluid_synth_one_block(
     } else {
         if !reverb_buf.is_null() {
             fluid_revmodel_processmix(
-                (*synth).reverb,
+                &mut (*synth).reverb,
                 reverb_buf,
                 *(*synth).left_buf.offset(0 as i32 as isize),
                 *(*synth).right_buf.offset(0 as i32 as isize),
@@ -2637,19 +2629,19 @@ pub unsafe fn fluid_synth_get_chorus_type(synth: *mut Synth) -> i32 {
 }
 
 pub unsafe fn fluid_synth_get_reverb_roomsize(synth: *mut Synth) -> f64 {
-    return fluid_revmodel_getroomsize((*synth).reverb) as f64;
+    return fluid_revmodel_getroomsize(&mut (*synth).reverb) as f64;
 }
 
 pub unsafe fn fluid_synth_get_reverb_damp(synth: *mut Synth) -> f64 {
-    return fluid_revmodel_getdamp((*synth).reverb) as f64;
+    return fluid_revmodel_getdamp(&(*synth).reverb) as f64;
 }
 
 pub unsafe fn fluid_synth_get_reverb_level(synth: *mut Synth) -> f64 {
-    return fluid_revmodel_getlevel((*synth).reverb) as f64;
+    return fluid_revmodel_getlevel(&(*synth).reverb) as f64;
 }
 
 pub unsafe fn fluid_synth_get_reverb_width(synth: *mut Synth) -> f64 {
-    return fluid_revmodel_getwidth((*synth).reverb) as f64;
+    return fluid_revmodel_getwidth(&(*synth).reverb) as f64;
 }
 
 pub unsafe fn fluid_synth_release_voice_on_same_note(
