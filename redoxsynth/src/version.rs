@@ -1,8 +1,5 @@
 use crate::ll;
-use std::{
-    fmt::{Display, Formatter, Result as FmtResult},
-    mem::MaybeUninit,
-};
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 /**
 The library version info
@@ -34,18 +31,16 @@ impl Version {
     }
 
     pub fn get() -> Version {
-        let mut major = MaybeUninit::uninit();
-        let mut minor = MaybeUninit::uninit();
-        let mut micro = MaybeUninit::uninit();
+        let mut major = 0;
+        let mut minor = 0;
+        let mut micro = 0;
 
-        unsafe {
-            ll::synth::fluid_version(major.as_mut_ptr(), minor.as_mut_ptr(), micro.as_mut_ptr());
-        }
+        ll::synth::fluid_version(&mut major, &mut minor, &mut micro);
 
         Version::new(
-            unsafe { major.assume_init() as _ },
-            unsafe { minor.assume_init() as _ },
-            unsafe { micro.assume_init() as _ },
+            major as _,
+            minor as _,
+            micro as _,
         )
     }
 }

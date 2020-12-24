@@ -3,7 +3,7 @@ use std::{
     ffi::CStr,
     io::SeekFrom,
     mem::{transmute, MaybeUninit},
-    os::raw::{c_char, c_int, c_long, c_void},
+    os::raw::{c_char, c_int, c_void},
     path::Path,
     ptr::null_mut,
     slice::from_raw_parts_mut,
@@ -108,13 +108,13 @@ fn wrap_fileapi<F: FileApi>(fapi_rs: F) -> *mut ll::sfont::FileApi {
     Box::into_raw(Box::new(unsafe { fapi_c.assume_init() }))
 }
 
-extern "C" fn free_wrapper<F: FileApi>(fapi_c: *mut ll::sfont::FileApi) -> c_int {
+fn free_wrapper<F: FileApi>(fapi_c: *mut ll::sfont::FileApi) -> c_int {
     let fapi = unsafe { Box::from_raw(fapi_c) };
     let _fapi_rs = unsafe { Box::from_raw(fapi.data as *mut F) };
     ll::OK
 }
 
-extern "C" fn open_wrapper<F: FileApi>(
+fn open_wrapper<F: FileApi>(
     fapi_c: *mut ll::sfont::FileApi,
     filename: *const c_char,
 ) -> *mut c_void {
@@ -136,7 +136,7 @@ extern "C" fn open_wrapper<F: FileApi>(
     }
 }
 
-extern "C" fn read_wrapper<F: FileApi>(
+fn read_wrapper<F: FileApi>(
     buf: *mut c_void,
     count: c_int,
     handle: *mut c_void,
@@ -152,11 +152,11 @@ extern "C" fn read_wrapper<F: FileApi>(
     }
 }
 
-extern "C" fn seek_wrapper<F: FileApi>(
+fn seek_wrapper<F: FileApi>(
     handle: *mut c_void,
-    offset: c_long,
-    origin: c_int,
-) -> c_int {
+    offset: isize,
+    origin: i32,
+) -> i32 {
     let handle = unsafe { &mut *(handle as *mut F::File) };
 
     use self::SeekFrom::*;
@@ -175,7 +175,7 @@ extern "C" fn seek_wrapper<F: FileApi>(
     }
 }
 
-extern "C" fn tell_wrapper<F: FileApi>(handle: *mut c_void) -> c_long {
+fn tell_wrapper<F: FileApi>(handle: *mut c_void) -> isize {
     let handle = unsafe { &mut *(handle as *mut F::File) };
 
     if let Some(pos) = F::tell(handle) {
@@ -185,7 +185,7 @@ extern "C" fn tell_wrapper<F: FileApi>(handle: *mut c_void) -> c_long {
     }
 }
 
-extern "C" fn close_wrapper<F: FileApi>(handle: *mut c_void) -> c_int {
+fn close_wrapper<F: FileApi>(handle: *mut c_void) -> c_int {
     let _handle = unsafe { Box::from_raw(handle as *mut F::File) };
 
     ll::OK

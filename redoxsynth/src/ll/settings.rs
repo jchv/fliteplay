@@ -1,18 +1,16 @@
-use crate::ll::hash::delete_fluid_hashtable;
-use crate::ll::hash::fluid_hashtable_insert;
-use crate::ll::hash::fluid_hashtable_lookup;
-use crate::ll::hash::fluid_hashtable_replace;
-use crate::ll::hash::HashTable;
-use crate::ll::hash::new_fluid_hashtable;
-use crate::ll::list::delete_fluid_list;
-use crate::ll::list::fluid_list_append;
-use crate::ll::list::fluid_list_remove_link;
-use crate::ll::list::List;
-use crate::ll::synth::fluid_synth_settings;
-use crate::ll::sys::fluid_strtok;
+use super::hash::delete_fluid_hashtable;
+use super::hash::fluid_hashtable_insert;
+use super::hash::fluid_hashtable_lookup;
+use super::hash::fluid_hashtable_replace;
+use super::hash::new_fluid_hashtable;
+use super::hash::HashTable;
+use super::list::delete_fluid_list;
+use super::list::List;
+use super::synth::fluid_synth_settings;
+use super::sys::fluid_strtok;
 use std::ffi::CStr;
 pub type Settings = HashTable;
-pub type SettingsType = libc::c_int;
+pub type SettingsType = i32;
 pub const FLUID_SET_TYPE: SettingsType = 3;
 pub const FLUID_STR_TYPE: SettingsType = 2;
 pub const FLUID_INT_TYPE: SettingsType = 1;
@@ -23,36 +21,27 @@ pub const FLUID_NO_TYPE: SettingsType = -1;
 pub struct StrSetting {
     pub value: *mut libc::c_char,
     pub def: *mut libc::c_char,
-    pub hints: libc::c_int,
+    pub hints: i32,
     pub options: *mut List,
     pub update: StrUpdateFn,
     pub data: *mut libc::c_void,
 }
 pub type StrUpdateFn = Option<
-    unsafe extern "C" fn(
-        _: *mut libc::c_void,
-        _: *const libc::c_char,
-        _: *mut libc::c_char,
-    ) -> libc::c_int,
+    unsafe fn(_: *mut libc::c_void, _: *const libc::c_char, _: *mut libc::c_char) -> i32,
 >;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct IntSetting {
-    pub value: libc::c_int,
-    pub def: libc::c_int,
-    pub min: libc::c_int,
-    pub max: libc::c_int,
-    pub hints: libc::c_int,
+    pub value: i32,
+    pub def: i32,
+    pub min: i32,
+    pub max: i32,
+    pub hints: i32,
     pub update: IntUpdateFn,
     pub data: *mut libc::c_void,
 }
-pub type IntUpdateFn = Option<
-    unsafe extern "C" fn(
-        _: *mut libc::c_void,
-        _: *const libc::c_char,
-        _: libc::c_int,
-    ) -> libc::c_int,
->;
+pub type IntUpdateFn =
+    Option<unsafe fn(_: *mut libc::c_void, _: *const libc::c_char, _: i32) -> i32>;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct NumSetting {
@@ -60,27 +49,21 @@ pub struct NumSetting {
     pub def: f64,
     pub min: f64,
     pub max: f64,
-    pub hints: libc::c_int,
+    pub hints: i32,
     pub update: NumUpdateFn,
     pub data: *mut libc::c_void,
 }
-pub type NumUpdateFn = Option<
-    unsafe extern "C" fn(
-        _: *mut libc::c_void,
-        _: *const libc::c_char,
-        _: f64,
-    ) -> libc::c_int,
->;
-unsafe extern "C" fn new_fluid_str_setting(
+pub type NumUpdateFn =
+    Option<unsafe fn(_: *mut libc::c_void, _: *const libc::c_char, _: f64) -> i32>;
+unsafe fn new_fluid_str_setting(
     value: *const libc::c_char,
     def: *mut libc::c_char,
-    hints: libc::c_int,
+    hints: i32,
     fun: StrUpdateFn,
     data: *mut libc::c_void,
 ) -> *mut StrSetting {
     let mut str;
-    str = libc::malloc(::std::mem::size_of::<StrSetting>() as libc::size_t)
-        as *mut StrSetting;
+    str = libc::malloc(::std::mem::size_of::<StrSetting>() as libc::size_t) as *mut StrSetting;
     (*str).value = if !value.is_null() {
         libc::strcpy(
             libc::malloc(libc::strlen(value) + 1) as *mut libc::c_char,
@@ -103,7 +86,7 @@ unsafe extern "C" fn new_fluid_str_setting(
     (*str).data = data;
     return str;
 }
-unsafe extern "C" fn delete_fluid_str_setting(str: *mut StrSetting) {
+unsafe fn delete_fluid_str_setting(str: *mut StrSetting) {
     if !str.is_null() {
         if !(*str).value.is_null() {
             libc::free((*str).value as *mut libc::c_void);
@@ -126,17 +109,16 @@ unsafe extern "C" fn delete_fluid_str_setting(str: *mut StrSetting) {
         libc::free(str as *mut libc::c_void);
     };
 }
-unsafe extern "C" fn new_fluid_num_setting(
+unsafe fn new_fluid_num_setting(
     min: f64,
     max: f64,
     def: f64,
-    hints: libc::c_int,
+    hints: i32,
     fun: NumUpdateFn,
     data: *mut libc::c_void,
 ) -> *mut NumSetting {
     let mut setting;
-    setting = libc::malloc(::std::mem::size_of::<NumSetting>() as libc::size_t)
-        as *mut NumSetting;
+    setting = libc::malloc(::std::mem::size_of::<NumSetting>() as libc::size_t) as *mut NumSetting;
     (*setting).value = def;
     (*setting).def = def;
     (*setting).min = min;
@@ -146,22 +128,21 @@ unsafe extern "C" fn new_fluid_num_setting(
     (*setting).data = data;
     return setting;
 }
-unsafe extern "C" fn delete_fluid_num_setting(setting: *mut NumSetting) {
+unsafe fn delete_fluid_num_setting(setting: *mut NumSetting) {
     if !setting.is_null() {
         libc::free(setting as *mut libc::c_void);
     };
 }
-unsafe extern "C" fn new_fluid_int_setting(
-    min: libc::c_int,
-    max: libc::c_int,
-    def: libc::c_int,
-    hints: libc::c_int,
+unsafe fn new_fluid_int_setting(
+    min: i32,
+    max: i32,
+    def: i32,
+    hints: i32,
     fun: IntUpdateFn,
     data: *mut libc::c_void,
 ) -> *mut IntSetting {
     let mut setting;
-    setting = libc::malloc(::std::mem::size_of::<IntSetting>() as libc::size_t)
-        as *mut IntSetting;
+    setting = libc::malloc(::std::mem::size_of::<IntSetting>() as libc::size_t) as *mut IntSetting;
     (*setting).value = def;
     (*setting).def = def;
     (*setting).min = min;
@@ -171,16 +152,15 @@ unsafe extern "C" fn new_fluid_int_setting(
     (*setting).data = data;
     return setting;
 }
-unsafe extern "C" fn delete_fluid_int_setting(setting: *mut IntSetting) {
+unsafe fn delete_fluid_int_setting(setting: *mut IntSetting) {
     if !setting.is_null() {
         libc::free(setting as *mut libc::c_void);
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn new_fluid_settings() -> *mut Settings {
+
+pub unsafe fn new_fluid_settings() -> *mut Settings {
     let settings: *mut Settings = new_fluid_hashtable(Some(
-        fluid_settings_hash_delete
-            as unsafe extern "C" fn(_: *mut libc::c_void, _: libc::c_int) -> (),
+        fluid_settings_hash_delete as unsafe fn(_: *mut libc::c_void, _: i32) -> (),
     ));
     if settings.is_null() {
         return 0 as *mut Settings;
@@ -188,14 +168,11 @@ pub unsafe extern "C" fn new_fluid_settings() -> *mut Settings {
     fluid_settings_init(settings);
     return settings;
 }
-#[no_mangle]
-pub unsafe extern "C" fn delete_fluid_settings(settings: *mut Settings) {
+
+pub unsafe fn delete_fluid_settings(settings: *mut Settings) {
     delete_fluid_hashtable(settings);
 }
-unsafe extern "C" fn fluid_settings_hash_delete(
-    value: *mut libc::c_void,
-    type_0: libc::c_int,
-) {
+unsafe fn fluid_settings_hash_delete(value: *mut libc::c_void, type_0: i32) {
     match type_0 {
         0 => {
             delete_fluid_num_setting(value as *mut NumSetting);
@@ -212,24 +189,24 @@ unsafe extern "C" fn fluid_settings_hash_delete(
         _ => {}
     };
 }
-unsafe extern "C" fn fluid_settings_init(settings: *mut Settings) {
+unsafe fn fluid_settings_init(settings: *mut Settings) {
     fluid_synth_settings(settings);
 }
-unsafe extern "C" fn fluid_settings_tokenize(
+unsafe fn fluid_settings_tokenize(
     s: *const libc::c_char,
     buf: *mut libc::c_char,
     ptr: *mut *mut libc::c_char,
-) -> libc::c_int {
+) -> i32 {
     let mut tokstr;
     let mut tok;
-    let mut n: libc::c_int = 0 as libc::c_int;
+    let mut n: i32 = 0 as i32;
     if libc::strlen(s) > 256 {
         fluid_log!(
             FLUID_ERR,
             "Setting variable name exceeded max length of {} chars",
             256
         );
-        return 0 as libc::c_int;
+        return 0 as i32;
     }
     libc::strcpy(buf, s);
     tokstr = buf;
@@ -241,13 +218,13 @@ unsafe extern "C" fn fluid_settings_tokenize(
         if tok.is_null() {
             break;
         }
-        if n > 8 as libc::c_int {
+        if n > 8 as i32 {
             fluid_log!(
                 FLUID_ERR,
                 "Setting variable name exceeded max token count of {}",
                 8
             );
-            return 0 as libc::c_int;
+            return 0 as i32;
         }
         let fresh0 = n;
         n = n + 1;
@@ -256,26 +233,26 @@ unsafe extern "C" fn fluid_settings_tokenize(
     }
     return n;
 }
-unsafe extern "C" fn fluid_settings_get(
+unsafe fn fluid_settings_get(
     settings: *mut Settings,
     name: *mut *mut libc::c_char,
-    len: libc::c_int,
+    len: i32,
     value: *mut *mut libc::c_void,
-    type_0: *mut libc::c_int,
-) -> libc::c_int {
+    type_0: *mut i32,
+) -> i32 {
     let mut table: *mut HashTable = settings;
-    let mut t: libc::c_int = 0;
+    let mut t: i32 = 0;
     let mut v: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut n;
-    n = 0 as libc::c_int;
+    n = 0 as i32;
     while n < len {
         if table.is_null() {
-            return 0 as libc::c_int;
+            return 0 as i32;
         }
         if fluid_hashtable_lookup(table, *name.offset(n as isize), &mut v, &mut t) == 0 {
-            return 0 as libc::c_int;
+            return 0 as i32;
         }
-        table = if t == FLUID_SET_TYPE as libc::c_int {
+        table = if t == FLUID_SET_TYPE as i32 {
             v as *mut HashTable
         } else {
             0 as *mut HashTable
@@ -288,24 +265,24 @@ unsafe extern "C" fn fluid_settings_get(
     if !type_0.is_null() {
         *type_0 = t
     }
-    return 1 as libc::c_int;
+    return 1 as i32;
 }
-unsafe extern "C" fn fluid_settings_set(
+unsafe fn fluid_settings_set(
     settings: *mut Settings,
     name: *mut *mut libc::c_char,
-    len: libc::c_int,
+    len: i32,
     value: *mut libc::c_void,
-    type_0: libc::c_int,
-) -> libc::c_int {
+    type_0: i32,
+) -> i32 {
     let mut table: *mut HashTable = settings;
-    let mut t: libc::c_int = 0;
+    let mut t: i32 = 0;
     let mut v: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut n;
-    let num: libc::c_int = len - 1 as libc::c_int;
-    n = 0 as libc::c_int;
+    let num: i32 = len - 1 as i32;
+    n = 0 as i32;
     while n < num {
         if fluid_hashtable_lookup(table, *name.offset(n as isize), &mut v, &mut t) != 0 {
-            if t == FLUID_SET_TYPE as libc::c_int {
+            if t == FLUID_SET_TYPE as i32 {
                 table = v as *mut HashTable
             } else {
                 fluid_log!(
@@ -313,37 +290,36 @@ unsafe extern "C" fn fluid_settings_set(
                     "\'{}\' is not a node",
                     CStr::from_ptr(*name.offset(n as isize)).to_str().unwrap()
                 );
-                return 0 as libc::c_int;
+                return 0 as i32;
             }
         } else {
             let tmp;
             tmp = new_fluid_hashtable(Some(
-                fluid_settings_hash_delete
-                    as unsafe extern "C" fn(_: *mut libc::c_void, _: libc::c_int) -> (),
+                fluid_settings_hash_delete as unsafe fn(_: *mut libc::c_void, _: i32) -> (),
             ));
             fluid_hashtable_insert(
                 table,
                 *name.offset(n as isize),
                 tmp as *mut libc::c_void,
-                FLUID_SET_TYPE as libc::c_int,
+                FLUID_SET_TYPE as i32,
             );
             table = tmp
         }
         n += 1
     }
     fluid_hashtable_replace(table, *name.offset(num as isize), value, type_0);
-    return 1 as libc::c_int;
+    return 1 as i32;
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_register_str(
+
+pub unsafe fn fluid_settings_register_str(
     settings: *mut Settings,
     name: *const libc::c_char,
     def: *mut libc::c_char,
-    hints: libc::c_int,
+    hints: i32,
     fun: StrUpdateFn,
     data: *mut libc::c_void,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
+) -> i32 {
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
@@ -364,9 +340,9 @@ pub unsafe extern "C" fn fluid_settings_register_str(
             tokens.as_mut_ptr(),
             ntokens,
             setting as *mut libc::c_void,
-            FLUID_STR_TYPE as libc::c_int,
+            FLUID_STR_TYPE as i32,
         );
-    } else if type_0 == FLUID_STR_TYPE as libc::c_int {
+    } else if type_0 == FLUID_STR_TYPE as i32 {
         setting = value as *mut StrSetting;
         (*setting).update = fun;
         (*setting).data = data;
@@ -379,28 +355,28 @@ pub unsafe extern "C" fn fluid_settings_register_str(
             0 as *mut libc::c_char
         };
         (*setting).hints = hints;
-        return 1 as libc::c_int;
+        return 1 as i32;
     } else {
         fluid_log!(
             FLUID_WARN,
             "Type mismatch on setting \'{}\'",
             CStr::from_ptr(name).to_str().unwrap()
         );
-        return 1 as libc::c_int;
+        return 1 as i32;
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_register_num(
+
+pub unsafe fn fluid_settings_register_num(
     settings: *mut Settings,
     name: *const libc::c_char,
     def: f64,
     min: f64,
     max: f64,
-    hints: libc::c_int,
+    hints: i32,
     fun: NumUpdateFn,
     data: *mut libc::c_void,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
+) -> i32 {
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
@@ -421,9 +397,9 @@ pub unsafe extern "C" fn fluid_settings_register_num(
             tokens.as_mut_ptr(),
             ntokens,
             setting as *mut libc::c_void,
-            FLUID_NUM_TYPE as libc::c_int,
+            FLUID_NUM_TYPE as i32,
         );
-    } else if type_0 == FLUID_NUM_TYPE as libc::c_int {
+    } else if type_0 == FLUID_NUM_TYPE as i32 {
         let mut setting_0: *mut NumSetting = value as *mut NumSetting;
         (*setting_0).update = fun;
         (*setting_0).data = data;
@@ -431,28 +407,28 @@ pub unsafe extern "C" fn fluid_settings_register_num(
         (*setting_0).max = max;
         (*setting_0).def = def;
         (*setting_0).hints = hints;
-        return 1 as libc::c_int;
+        return 1 as i32;
     } else {
         fluid_log!(
             FLUID_WARN,
             "Type mismatch on setting \'{}\'",
             CStr::from_ptr(name).to_str().unwrap()
         );
-        return 0 as libc::c_int;
+        return 0 as i32;
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_register_int(
+
+pub unsafe fn fluid_settings_register_int(
     settings: *mut Settings,
     name: *const libc::c_char,
-    def: libc::c_int,
-    min: libc::c_int,
-    max: libc::c_int,
-    hints: libc::c_int,
+    def: i32,
+    min: i32,
+    max: i32,
+    hints: i32,
     fun: IntUpdateFn,
     data: *mut libc::c_void,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
+) -> i32 {
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
@@ -473,9 +449,9 @@ pub unsafe extern "C" fn fluid_settings_register_int(
             tokens.as_mut_ptr(),
             ntokens,
             setting as *mut libc::c_void,
-            FLUID_INT_TYPE as libc::c_int,
+            FLUID_INT_TYPE as i32,
         );
-    } else if type_0 == FLUID_INT_TYPE as libc::c_int {
+    } else if type_0 == FLUID_INT_TYPE as i32 {
         let mut setting_0: *mut IntSetting = value as *mut IntSetting;
         (*setting_0).update = fun;
         (*setting_0).data = data;
@@ -483,22 +459,22 @@ pub unsafe extern "C" fn fluid_settings_register_int(
         (*setting_0).max = max;
         (*setting_0).def = def;
         (*setting_0).hints = hints;
-        return 1 as libc::c_int;
+        return 1 as i32;
     } else {
         fluid_log!(
             FLUID_WARN,
             "Type mismatch on setting \'{}\'",
             CStr::from_ptr(name).to_str().unwrap()
         );
-        return 0 as libc::c_int;
+        return 0 as i32;
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_get_type(
+
+pub unsafe fn fluid_settings_get_type(
     settings: *mut Settings,
     name: *const libc::c_char,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
+) -> i32 {
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
@@ -514,15 +490,15 @@ pub unsafe extern "C" fn fluid_settings_get_type(
     {
         type_0
     } else {
-        FLUID_NO_TYPE as libc::c_int
+        FLUID_NO_TYPE as i32
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_get_hints(
+
+pub unsafe fn fluid_settings_get_hints(
     settings: *mut Settings,
     name: *const libc::c_char,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
+) -> i32 {
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
@@ -536,25 +512,25 @@ pub unsafe extern "C" fn fluid_settings_get_hints(
         &mut type_0,
     ) != 0
     {
-        if type_0 == FLUID_NUM_TYPE as libc::c_int {
+        if type_0 == FLUID_NUM_TYPE as i32 {
             let setting: *mut NumSetting = value as *mut NumSetting;
             return (*setting).hints;
-        } else if type_0 == FLUID_STR_TYPE as libc::c_int {
+        } else if type_0 == FLUID_STR_TYPE as i32 {
             let setting_0: *mut StrSetting = value as *mut StrSetting;
             return (*setting_0).hints;
         } else {
-            return 0 as libc::c_int;
+            return 0 as i32;
         }
     } else {
-        return 0 as libc::c_int;
+        return 0 as i32;
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_is_realtime(
+
+pub unsafe fn fluid_settings_is_realtime(
     settings: *mut Settings,
     name: *const libc::c_char,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
+) -> i32 {
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
@@ -568,29 +544,29 @@ pub unsafe extern "C" fn fluid_settings_is_realtime(
         &mut type_0,
     ) != 0
     {
-        if type_0 == FLUID_NUM_TYPE as libc::c_int {
+        if type_0 == FLUID_NUM_TYPE as i32 {
             let setting: *mut NumSetting = value as *mut NumSetting;
-            return (*setting).update.is_some() as libc::c_int;
-        } else if type_0 == FLUID_STR_TYPE as libc::c_int {
+            return (*setting).update.is_some() as i32;
+        } else if type_0 == FLUID_STR_TYPE as i32 {
             let setting_0: *mut StrSetting = value as *mut StrSetting;
-            return (*setting_0).update.is_some() as libc::c_int;
+            return (*setting_0).update.is_some() as i32;
         } else {
-            return 0 as libc::c_int;
+            return 0 as i32;
         }
     } else {
-        return 0 as libc::c_int;
+        return 0 as i32;
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_setstr(
+
+pub unsafe fn fluid_settings_setstr(
     settings: *mut Settings,
     name: *const libc::c_char,
     str: *const libc::c_char,
-) -> libc::c_int {
+) -> i32 {
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
     let ntokens;
-    let mut type_0: libc::c_int = 0;
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut setting;
     ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
@@ -602,8 +578,8 @@ pub unsafe extern "C" fn fluid_settings_setstr(
         &mut type_0,
     ) != 0
     {
-        if type_0 != FLUID_STR_TYPE as libc::c_int {
-            return 0 as libc::c_int;
+        if type_0 != FLUID_STR_TYPE as i32 {
+            return 0 as i32;
         }
         setting = value as *mut StrSetting;
         if !(*setting).value.is_null() {
@@ -623,13 +599,13 @@ pub unsafe extern "C" fn fluid_settings_setstr(
                 (*setting).data, name, (*setting).value
             );
         }
-        return 1 as libc::c_int;
+        return 1 as i32;
     } else {
         let setting_0;
         setting_0 = new_fluid_str_setting(
             str,
             0 as *mut libc::c_char,
-            0 as libc::c_int,
+            0 as i32,
             None,
             0 as *mut libc::c_void,
         );
@@ -638,17 +614,17 @@ pub unsafe extern "C" fn fluid_settings_setstr(
             tokens.as_mut_ptr(),
             ntokens,
             setting_0 as *mut libc::c_void,
-            FLUID_STR_TYPE as libc::c_int,
+            FLUID_STR_TYPE as i32,
         );
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_getstr(
+
+pub unsafe fn fluid_settings_getstr(
     settings: *mut Settings,
     name: *const libc::c_char,
     str: *mut *mut libc::c_char,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
+) -> i32 {
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
@@ -661,22 +637,22 @@ pub unsafe extern "C" fn fluid_settings_getstr(
         &mut value,
         &mut type_0,
     ) != 0
-        && type_0 == FLUID_STR_TYPE as libc::c_int
+        && type_0 == FLUID_STR_TYPE as i32
     {
         let setting: *mut StrSetting = value as *mut StrSetting;
         *str = (*setting).value;
-        return 1 as libc::c_int;
+        return 1 as i32;
     }
     *str = 0 as *mut libc::c_char;
-    return 0 as libc::c_int;
+    return 0 as i32;
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_str_equal(
+
+pub unsafe fn fluid_settings_str_equal(
     settings: *mut Settings,
     name: *const libc::c_char,
     s: *mut libc::c_char,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
+) -> i32 {
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
@@ -689,19 +665,19 @@ pub unsafe extern "C" fn fluid_settings_str_equal(
         &mut value,
         &mut type_0,
     ) != 0
-        && type_0 == FLUID_STR_TYPE as libc::c_int
+        && type_0 == FLUID_STR_TYPE as i32
     {
         let setting: *mut StrSetting = value as *mut StrSetting;
-        return (libc::strcmp((*setting).value, s) == 0 as libc::c_int) as libc::c_int;
+        return (libc::strcmp((*setting).value, s) == 0 as i32) as i32;
     }
-    return 0 as libc::c_int;
+    return 0 as i32;
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_getstr_default(
+
+pub unsafe fn fluid_settings_getstr_default(
     settings: *mut Settings,
     name: *const libc::c_char,
 ) -> *mut libc::c_char {
-    let mut type_0: libc::c_int = 0;
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
@@ -714,7 +690,7 @@ pub unsafe extern "C" fn fluid_settings_getstr_default(
         &mut value,
         &mut type_0,
     ) != 0
-        && type_0 == FLUID_STR_TYPE as libc::c_int
+        && type_0 == FLUID_STR_TYPE as i32
     {
         let setting: *mut StrSetting = value as *mut StrSetting;
         return (*setting).def;
@@ -722,90 +698,13 @@ pub unsafe extern "C" fn fluid_settings_getstr_default(
         return 0 as *mut libc::c_char;
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_add_option(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-    s: *mut libc::c_char,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-        && type_0 == FLUID_STR_TYPE as libc::c_int
-    {
-        let mut setting: *mut StrSetting = value as *mut StrSetting;
-        let copy: *mut libc::c_char = libc::strcpy(
-            libc::malloc(libc::strlen(s).wrapping_add(1)) as *mut libc::c_char,
-            s,
-        );
-        (*setting).options = fluid_list_append((*setting).options, copy as *mut libc::c_void);
-        return 1 as libc::c_int;
-    } else {
-        return 0 as libc::c_int;
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_remove_option(
-    settings: *mut Settings,
-    name: *const libc::c_char,
-    s: *mut libc::c_char,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
-    let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    if fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-        &mut value,
-        &mut type_0,
-    ) != 0
-        && type_0 == FLUID_STR_TYPE as libc::c_int
-    {
-        let mut setting: *mut StrSetting = value as *mut StrSetting;
-        let mut list: *mut List = (*setting).options;
-        while !list.is_null() {
-            let option: *mut libc::c_char = if !list.is_null() {
-                (*list).data
-            } else {
-                0 as *mut libc::c_void
-            } as *mut libc::c_char;
-            if libc::strcmp(s, option) == 0 as libc::c_int {
-                libc::free(option as *mut libc::c_void);
-                (*setting).options = fluid_list_remove_link((*setting).options, list);
-                return 1 as libc::c_int;
-            }
-            list = if !list.is_null() {
-                (*list).next
-            } else {
-                0 as *mut List
-            }
-        }
-        return 0 as libc::c_int;
-    } else {
-        return 0 as libc::c_int;
-    };
-}
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_setnum(
+
+pub unsafe fn fluid_settings_setnum(
     settings: *mut Settings,
     name: *const libc::c_char,
     mut val: f64,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
+) -> i32 {
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut setting;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
@@ -820,8 +719,8 @@ pub unsafe extern "C" fn fluid_settings_setnum(
         &mut type_0,
     ) != 0
     {
-        if type_0 != FLUID_NUM_TYPE as libc::c_int {
-            return 0 as libc::c_int;
+        if type_0 != FLUID_NUM_TYPE as i32 {
+            return 0 as i32;
         }
         setting = value as *mut NumSetting;
         if val < (*setting).min {
@@ -834,14 +733,14 @@ pub unsafe extern "C" fn fluid_settings_setnum(
             Some((*setting).update.expect("non-null function pointer"))
                 .expect("non-null function pointer")((*setting).data, name, val);
         }
-        return 1 as libc::c_int;
+        return 1 as i32;
     } else {
         let mut setting_0;
         setting_0 = new_fluid_num_setting(
             -1e10f64,
             1e10f64,
             0.0f32 as f64,
-            0 as libc::c_int,
+            0 as i32,
             None,
             0 as *mut libc::c_void,
         );
@@ -851,17 +750,17 @@ pub unsafe extern "C" fn fluid_settings_setnum(
             tokens.as_mut_ptr(),
             ntokens,
             setting_0 as *mut libc::c_void,
-            FLUID_NUM_TYPE as libc::c_int,
+            FLUID_NUM_TYPE as i32,
         );
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_getnum(
+
+pub unsafe fn fluid_settings_getnum(
     settings: *mut Settings,
     name: *const libc::c_char,
     val: *mut f64,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
+) -> i32 {
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
@@ -874,22 +773,22 @@ pub unsafe extern "C" fn fluid_settings_getnum(
         &mut value,
         &mut type_0,
     ) != 0
-        && type_0 == FLUID_NUM_TYPE as libc::c_int
+        && type_0 == FLUID_NUM_TYPE as i32
     {
         let setting: *mut NumSetting = value as *mut NumSetting;
         *val = (*setting).value;
-        return 1 as libc::c_int;
+        return 1 as i32;
     }
-    return 0 as libc::c_int;
+    return 0 as i32;
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_getnum_range(
+
+pub unsafe fn fluid_settings_getnum_range(
     settings: *mut Settings,
     name: *const libc::c_char,
     min: *mut f64,
     max: *mut f64,
 ) {
-    let mut type_0: libc::c_int = 0;
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
@@ -902,19 +801,19 @@ pub unsafe extern "C" fn fluid_settings_getnum_range(
         &mut value,
         &mut type_0,
     ) != 0
-        && type_0 == FLUID_NUM_TYPE as libc::c_int
+        && type_0 == FLUID_NUM_TYPE as i32
     {
         let setting: *mut NumSetting = value as *mut NumSetting;
         *min = (*setting).min;
         *max = (*setting).max
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_getnum_default(
+
+pub unsafe fn fluid_settings_getnum_default(
     settings: *mut Settings,
     name: *const libc::c_char,
 ) -> f64 {
-    let mut type_0: libc::c_int = 0;
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
@@ -927,7 +826,7 @@ pub unsafe extern "C" fn fluid_settings_getnum_default(
         &mut value,
         &mut type_0,
     ) != 0
-        && type_0 == FLUID_NUM_TYPE as libc::c_int
+        && type_0 == FLUID_NUM_TYPE as i32
     {
         let setting: *mut NumSetting = value as *mut NumSetting;
         return (*setting).def;
@@ -935,13 +834,13 @@ pub unsafe extern "C" fn fluid_settings_getnum_default(
         return 0.0f32 as f64;
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_setint(
+
+pub unsafe fn fluid_settings_setint(
     settings: *mut Settings,
     name: *const libc::c_char,
-    mut val: libc::c_int,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
+    mut val: i32,
+) -> i32 {
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut setting;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
@@ -956,8 +855,8 @@ pub unsafe extern "C" fn fluid_settings_setint(
         &mut type_0,
     ) != 0
     {
-        if type_0 != FLUID_INT_TYPE as libc::c_int {
-            return 0 as libc::c_int;
+        if type_0 != FLUID_INT_TYPE as i32 {
+            return 0 as i32;
         }
         setting = value as *mut IntSetting;
         if val < (*setting).min {
@@ -970,14 +869,14 @@ pub unsafe extern "C" fn fluid_settings_setint(
             Some((*setting).update.expect("non-null function pointer"))
                 .expect("non-null function pointer")((*setting).data, name, val);
         }
-        return 1 as libc::c_int;
+        return 1 as i32;
     } else {
         let mut setting_0;
         setting_0 = new_fluid_int_setting(
-            -(2147483647 as libc::c_int) - 1 as libc::c_int,
-            2147483647 as libc::c_int,
-            0 as libc::c_int,
-            0 as libc::c_int,
+            -(2147483647 as i32) - 1 as i32,
+            2147483647 as i32,
+            0 as i32,
+            0 as i32,
             None,
             0 as *mut libc::c_void,
         );
@@ -987,17 +886,17 @@ pub unsafe extern "C" fn fluid_settings_setint(
             tokens.as_mut_ptr(),
             ntokens,
             setting_0 as *mut libc::c_void,
-            FLUID_INT_TYPE as libc::c_int,
+            FLUID_INT_TYPE as i32,
         );
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_getint(
+
+pub unsafe fn fluid_settings_getint(
     settings: *mut Settings,
     name: *const libc::c_char,
-    val: *mut libc::c_int,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
+    val: *mut i32,
+) -> i32 {
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
@@ -1010,22 +909,22 @@ pub unsafe extern "C" fn fluid_settings_getint(
         &mut value,
         &mut type_0,
     ) != 0
-        && type_0 == FLUID_INT_TYPE as libc::c_int
+        && type_0 == FLUID_INT_TYPE as i32
     {
         let setting: *mut IntSetting = value as *mut IntSetting;
         *val = (*setting).value;
-        return 1 as libc::c_int;
+        return 1 as i32;
     }
-    return 0 as libc::c_int;
+    return 0 as i32;
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_getint_range(
+
+pub unsafe fn fluid_settings_getint_range(
     settings: *mut Settings,
     name: *const libc::c_char,
-    min: *mut libc::c_int,
-    max: *mut libc::c_int,
+    min: *mut i32,
+    max: *mut i32,
 ) {
-    let mut type_0: libc::c_int = 0;
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
@@ -1038,19 +937,19 @@ pub unsafe extern "C" fn fluid_settings_getint_range(
         &mut value,
         &mut type_0,
     ) != 0
-        && type_0 == FLUID_INT_TYPE as libc::c_int
+        && type_0 == FLUID_INT_TYPE as i32
     {
         let setting: *mut IntSetting = value as *mut IntSetting;
         *min = (*setting).min;
         *max = (*setting).max
     };
 }
-#[no_mangle]
-pub unsafe extern "C" fn fluid_settings_getint_default(
+
+pub unsafe fn fluid_settings_getint_default(
     settings: *mut Settings,
     name: *const libc::c_char,
-) -> libc::c_int {
-    let mut type_0: libc::c_int = 0;
+) -> i32 {
+    let mut type_0: i32 = 0;
     let mut value: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
     let mut buf: [libc::c_char; 257] = [0; 257];
@@ -1063,11 +962,11 @@ pub unsafe extern "C" fn fluid_settings_getint_default(
         &mut value,
         &mut type_0,
     ) != 0
-        && type_0 == FLUID_INT_TYPE as libc::c_int
+        && type_0 == FLUID_INT_TYPE as i32
     {
         let setting: *mut IntSetting = value as *mut IntSetting;
         return (*setting).def;
     } else {
-        return 0.0f32 as libc::c_int;
+        return 0.0f32 as i32;
     };
 }

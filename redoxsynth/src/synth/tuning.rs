@@ -239,14 +239,14 @@ impl Synth {
 The iterator over tunings
  */
 pub struct TuningIter<'a> {
-    handle: *mut ll::synth::fluid_synth_t,
+    handle: *mut ll::synth::Synth,
     phantom: PhantomData<&'a ()>,
     init: bool,
     next: bool,
 }
 
 impl<'a> TuningIter<'a> {
-    fn from_ptr(handle: *mut ll::synth::fluid_synth_t) -> Self {
+    fn from_ptr(handle: *mut ll::synth::Synth) -> Self {
         Self {
             handle,
             phantom: PhantomData,

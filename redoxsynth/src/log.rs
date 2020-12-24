@@ -303,7 +303,7 @@ mod log {
     }
 }
 
-extern "C" fn handler<T>(level: raw::c_int, message: *mut raw::c_char, data: *mut raw::c_void)
+fn handler<T>(level: raw::c_int, message: *mut raw::c_char, data: *mut raw::c_void)
 where
     T: Logger,
 {

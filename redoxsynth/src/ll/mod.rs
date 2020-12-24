@@ -33,8 +33,8 @@ pub const CHORUS_DEFAULT_LEVEL: f64 = 2.0;
 pub const CHORUS_DEFAULT_SPEED: f64 = 0.3;
 pub const CHORUS_DEFAULT_DEPTH: f64 = 8.0;
 
-pub const OK: libc::c_int = 0;
-pub const FAILED: libc::c_int = -1;
+pub const OK: i32 = 0;
+pub const FAILED: i32 = -1;
 
 pub(crate) mod channel;
 pub(crate) mod chorus;

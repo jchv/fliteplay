@@ -150,13 +150,13 @@ mod test {
 The iterator over loaded SoundFonts.
  */
 pub struct FontIter<'a> {
-    handle: *mut ll::synth::fluid_synth_t,
+    handle: *mut ll::synth::Synth,
     phantom: PhantomData<&'a ()>,
     font_no: u32,
 }
 
 impl<'a> FontIter<'a> {
-    fn from_ptr(handle: *mut ll::synth::fluid_synth_t) -> Self {
+    fn from_ptr(handle: *mut ll::synth::Synth) -> Self {
         Self {
             handle,
             phantom: PhantomData,

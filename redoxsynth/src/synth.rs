@@ -32,7 +32,7 @@ The API for sending MIDI events is probably what you expect:
 `Synth::noteon()`, `Synth::noteoff()`, ...
  */
 pub struct Synth {
-    handle: *mut ll::synth::fluid_synth_t,
+    handle: *mut ll::synth::Synth,
 }
 
 unsafe impl Send for Synth {}

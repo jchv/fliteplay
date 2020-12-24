@@ -100,7 +100,7 @@ impl Synth {
     Query the current chorus speed (Hz)
      */
     pub fn get_chorus_speed(&self) -> f64 {
-        unsafe { ll::synth::fluid_synth_get_chorus_speed_Hz(self.handle) as _ }
+        unsafe { ll::synth::fluid_synth_get_chorus_speed_hz(self.handle) as _ }
     }
 
     /**
