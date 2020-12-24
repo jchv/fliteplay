@@ -11,7 +11,6 @@ use super::synth::fluid_synth_set_gen;
 use super::synth::Synth;
 use super::tuning::Tuning;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct Channel {
     pub channum: i32,
     pub sfontnum: u32,

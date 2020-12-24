@@ -16,7 +16,7 @@ use super::dsp_float::fluid_dsp_float_interpolate_7th_order;
 use super::dsp_float::fluid_dsp_float_interpolate_linear;
 use super::dsp_float::fluid_dsp_float_interpolate_none;
 use super::gen::fluid_gen_init;
-use super::gen::fluid_gen_t;
+use super::gen::Gen;
 use super::modulator::fluid_mod_clone;
 use super::modulator::fluid_mod_get_dest;
 use super::modulator::fluid_mod_get_value;
@@ -25,7 +25,6 @@ use super::modulator::fluid_mod_test_identity;
 use super::sfont::Sample;
 use super::tuning::Tuning;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct Voice {
     pub id: u32,
     pub status: libc::c_uchar,
@@ -33,7 +32,7 @@ pub struct Voice {
     pub key: libc::c_uchar,
     pub vel: libc::c_uchar,
     pub channel: *mut Channel,
-    pub gen: [fluid_gen_t; 60],
+    pub gen: [Gen; 60],
     pub mod_0: [Mod; 64],
     pub mod_count: i32,
     pub has_looped: i32,
@@ -57,13 +56,13 @@ pub struct Voice {
     pub loopstart: i32,
     pub loopend: i32,
     pub synth_gain: f32,
-    pub volenv_data: [fluid_env_data_t; 7],
+    pub volenv_data: [EnvData; 7],
     pub volenv_count: u32,
     pub volenv_section: i32,
     pub volenv_val: f32,
     pub amplitude_that_reaches_noise_floor_nonloop: f32,
     pub amplitude_that_reaches_noise_floor_loop: f32,
-    pub modenv_data: [fluid_env_data_t; 7],
+    pub modenv_data: [EnvData; 7],
     pub modenv_count: u32,
     pub modenv_section: i32,
     pub modenv_val: f32,
@@ -106,8 +105,7 @@ pub struct Voice {
     pub debug: i32,
 }
 #[derive(Copy, Clone)]
-#[repr(C)]
-pub struct fluid_env_data_t {
+pub struct EnvData {
     pub count: u32,
     pub coeff: f32,
     pub incr: f32,
@@ -351,7 +349,7 @@ pub unsafe fn fluid_voice_write(
     env_data = &mut *(*voice)
         .volenv_data
         .as_mut_ptr()
-        .offset((*voice).volenv_section as isize) as *mut fluid_env_data_t;
+        .offset((*voice).volenv_section as isize) as *mut EnvData;
     while (*voice).volenv_count >= (*env_data).count {
         // If we're switching envelope stages from decay to sustain, force the value to be the end value of the previous stage
         if !env_data.is_null() && (*voice).volenv_section == FLUID_VOICE_ENVDECAY as i32 {
@@ -361,7 +359,7 @@ pub unsafe fn fluid_voice_write(
         env_data = &mut *(*voice)
             .volenv_data
             .as_mut_ptr()
-            .offset((*voice).volenv_section as isize) as *mut fluid_env_data_t;
+            .offset((*voice).volenv_section as isize) as *mut EnvData;
         (*voice).volenv_count = 0 as i32 as u32
     }
     x = (*env_data).coeff * (*voice).volenv_val + (*env_data).incr;
@@ -383,13 +381,13 @@ pub unsafe fn fluid_voice_write(
     env_data = &mut *(*voice)
         .modenv_data
         .as_mut_ptr()
-        .offset((*voice).modenv_section as isize) as *mut fluid_env_data_t;
+        .offset((*voice).modenv_section as isize) as *mut EnvData;
     while (*voice).modenv_count >= (*env_data).count {
         (*voice).modenv_section += 1;
         env_data = &mut *(*voice)
             .modenv_data
             .as_mut_ptr()
-            .offset((*voice).modenv_section as isize) as *mut fluid_env_data_t;
+            .offset((*voice).modenv_section as isize) as *mut EnvData;
         (*voice).modenv_count = 0 as i32 as u32
     }
     x = (*env_data).coeff * (*voice).modenv_val + (*env_data).incr;
@@ -709,8 +707,8 @@ pub unsafe fn fluid_voice_calculate_runtime_synthesis_parameters(
             &mut *(*voice).mod_0.as_mut_ptr().offset(i as isize) as *mut Mod;
         let modval: f32 = fluid_mod_get_value(mod_0.as_mut().unwrap(), (*voice).channel.as_mut().unwrap(), voice.as_mut().unwrap());
         let dest_gen_index: i32 = (*mod_0).dest as i32;
-        let mut dest_gen: *mut fluid_gen_t =
-            &mut *(*voice).gen.as_mut_ptr().offset(dest_gen_index as isize) as *mut fluid_gen_t;
+        let mut dest_gen: *mut Gen =
+            &mut *(*voice).gen.as_mut_ptr().offset(dest_gen_index as isize) as *mut Gen;
         (*dest_gen).mod_0 += modval as f64;
         i += 1
     }

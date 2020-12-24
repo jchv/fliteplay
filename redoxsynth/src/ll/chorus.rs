@@ -3,7 +3,6 @@ pub const CHORUS_MOD_TRIANGLE: ChorusMod = 1;
 pub const CHORUS_MOD_SINE: ChorusMod = 0;
 pub const FLUID_OK: i32 = 0;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct Chorus {
     pub type_0: i32,
     pub new_type: i32,

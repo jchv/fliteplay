@@ -62,8 +62,7 @@ pub const GEN_STARTLOOPADDROFS: GenType = 2;
 pub const GEN_ENDADDROFS: GenType = 1;
 pub const GEN_STARTADDROFS: GenType = 0;
 #[derive(Copy, Clone)]
-#[repr(C)]
-pub struct fluid_gen_t {
+pub struct Gen {
     pub flags: libc::c_uchar,
     pub val: f64,
     pub mod_0: f64,
@@ -74,7 +73,6 @@ pub const GEN_ABS_NRPN: GenFlags = 2;
 pub const GEN_UNUSED: GenFlags = 0;
 pub const FLUID_OK: C2RustUnnamed = 0;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct GenInfo {
     pub num: libc::c_char,
     pub init: libc::c_char,
@@ -568,7 +566,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
     },
 ];
 
-pub unsafe fn fluid_gen_set_default_values(gen: *mut fluid_gen_t) -> i32 {
+pub unsafe fn fluid_gen_set_default_values(gen: *mut Gen) -> i32 {
     let mut i: i32;
     i = 0 as i32;
     while i < GEN_LAST as i32 {
@@ -581,7 +579,7 @@ pub unsafe fn fluid_gen_set_default_values(gen: *mut fluid_gen_t) -> i32 {
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_gen_init(gen: *mut fluid_gen_t, channel: *mut Channel) -> i32 {
+pub unsafe fn fluid_gen_init(gen: *mut Gen, channel: *mut Channel) -> i32 {
     let mut i: i32;
     fluid_gen_set_default_values(gen);
     i = 0 as i32;

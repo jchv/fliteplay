@@ -92,7 +92,6 @@ use std::ffi::CStr;
 
 pub type Settings = HashTable;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct Synth {
     pub settings: *mut Settings,
     pub polyphony: i32,
@@ -134,7 +133,6 @@ pub struct Synth {
 }
 pub const FLUID_OK: C2RustUnnamed = 0;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct BankOffset {
     pub sfont_id: i32,
     pub offset: i32,
@@ -181,7 +179,6 @@ pub type ModSrc = u32;
 pub type GenType = u32;
 pub type C2RustUnnamed = i32;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct ReverbModelPreset {
     pub name: *mut libc::c_char,
     pub roomsize: f32,

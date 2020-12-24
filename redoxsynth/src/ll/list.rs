@@ -1,5 +1,4 @@
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct List {
     pub data: *mut libc::c_void,
     pub next: *mut List,

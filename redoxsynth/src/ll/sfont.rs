@@ -1,6 +1,5 @@
 use super::synth::Synth;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct SoundfontLoader {
     pub data: *mut libc::c_void,
     pub free: Option<unsafe fn(_: *mut SoundfontLoader) -> i32>,
@@ -8,7 +7,6 @@ pub struct SoundfontLoader {
     pub fileapi: *mut FileApi,
 }
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct FileApi {
     pub data: *mut libc::c_void,
     pub free: Option<unsafe fn(_: *mut FileApi) -> i32>,
@@ -22,7 +20,6 @@ pub struct FileApi {
     pub ftell: Option<unsafe fn(_: *mut libc::c_void) -> isize>,
 }
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct Preset {
     pub data: *mut libc::c_void,
     pub sfont: *mut SoundFont,
@@ -42,7 +39,6 @@ pub struct Preset {
     pub notify: Option<unsafe fn(_: *mut Preset, _: i32, _: i32) -> i32>,
 }
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct SoundFont {
     pub data: *mut libc::c_void,
     pub id: u32,
@@ -54,7 +50,6 @@ pub struct SoundFont {
     pub iteration_next: Option<unsafe fn(_: *mut SoundFont, _: *mut Preset) -> i32>,
 }
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct Sample {
     pub name: [libc::c_char; 21],
     pub start: u32,

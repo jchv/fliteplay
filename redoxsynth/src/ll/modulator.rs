@@ -4,7 +4,6 @@ use super::conv::fluid_concave;
 use super::conv::fluid_convex;
 use super::voice::Voice;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct Mod {
     pub dest: libc::c_uchar,
     pub src1: libc::c_uchar,

@@ -1,5 +1,5 @@
 use super::gen::fluid_gen_set_default_values;
-use super::gen::fluid_gen_t;
+use super::gen::Gen;
 use super::list::delete1_fluid_list;
 use super::list::delete_fluid_list;
 use super::list::fluid_list_append;
@@ -64,7 +64,7 @@ pub struct PresetZone {
     pub keyhi: i32,
     pub vello: i32,
     pub velhi: i32,
-    pub gen: [fluid_gen_t; 60],
+    pub gen: [Gen; 60],
     pub mod_0: *mut Mod,
 }
 #[derive(Copy, Clone)]
@@ -84,7 +84,7 @@ pub struct InstrumentZone {
     pub keyhi: i32,
     pub vello: i32,
     pub velhi: i32,
-    pub gen: [fluid_gen_t; 60],
+    pub gen: [Gen; 60],
     pub mod_0: *mut Mod,
 }
 #[derive(Copy, Clone)]

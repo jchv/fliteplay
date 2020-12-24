@@ -1,5 +1,4 @@
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct HashTable {
     pub size: u32,
     pub nnodes: u32,
@@ -8,7 +7,6 @@ pub struct HashTable {
 }
 pub type DeleteFn = Option<unsafe fn(_: *mut libc::c_void, _: i32) -> ()>;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct HashNode {
     pub key: *mut libc::c_char,
     pub value: *mut libc::c_void,

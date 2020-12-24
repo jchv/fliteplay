@@ -1,5 +1,4 @@
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct Tuning {
     pub name: *mut libc::c_char,
     pub bank: i32,

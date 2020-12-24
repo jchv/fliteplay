@@ -17,7 +17,6 @@ pub const FLUID_INT_TYPE: SettingsType = 1;
 pub const FLUID_NUM_TYPE: SettingsType = 0;
 pub const FLUID_NO_TYPE: SettingsType = -1;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct StrSetting {
     pub value: *mut libc::c_char,
     pub def: *mut libc::c_char,
@@ -30,7 +29,6 @@ pub type StrUpdateFn = Option<
     unsafe fn(_: *mut libc::c_void, _: *const libc::c_char, _: *mut libc::c_char) -> i32,
 >;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct IntSetting {
     pub value: i32,
     pub def: i32,
@@ -43,7 +41,6 @@ pub struct IntSetting {
 pub type IntUpdateFn =
     Option<unsafe fn(_: *mut libc::c_void, _: *const libc::c_char, _: i32) -> i32>;
 #[derive(Copy, Clone)]
-#[repr(C)]
 pub struct NumSetting {
     pub value: f64,
     pub def: f64,
