@@ -79,9 +79,9 @@ pub struct GenInfo {
     pub num: libc::c_char,
     pub init: libc::c_char,
     pub nrpn_scale: libc::c_char,
-    pub min: libc::c_float,
-    pub max: libc::c_float,
-    pub def: libc::c_float,
+    pub min: f32,
+    pub max: f32,
+    pub def: f32,
 }
 pub type C2RustUnnamed = i32;
 
@@ -596,13 +596,13 @@ pub unsafe fn fluid_gen_init(gen: *mut fluid_gen_t, channel: *mut Channel) -> i3
 }
 
 pub unsafe fn fluid_gen_scale_nrpn(gen: i32, data: i32) -> f32 {
-    let mut value: f32 = data as libc::c_float - 8192.0f32;
-    value = if value < -(8192 as i32) as libc::c_float {
-        -(8192 as i32) as libc::c_float
-    } else if value > 8192 as i32 as libc::c_float {
-        8192 as i32 as libc::c_float
+    let mut value: f32 = data as f32 - 8192.0f32;
+    value = if value < -(8192 as i32) as f32 {
+        -(8192 as i32) as f32
+    } else if value > 8192 as i32 as f32 {
+        8192 as i32 as f32
     } else {
         value
     };
-    return value * GEN_INFO[gen as usize].nrpn_scale as libc::c_float;
+    return value * GEN_INFO[gen as usize].nrpn_scale as f32;
 }

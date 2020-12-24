@@ -1,4 +1,4 @@
-use super::voice::fluid_voice_t;
+use super::voice::Voice;
 pub type Phase = u64;
 pub type GenType = u32;
 pub const GEN_SAMPLEMODE: GenType = 54;
@@ -37,7 +37,7 @@ pub unsafe fn fluid_dsp_float_config() {
             if f64::abs(i_shifted) > 0.000001f64 {
                 v = f64::sin(i_shifted * std::f64::consts::PI) as f32 as f64
                     / (std::f64::consts::PI * i_shifted);
-                v *= 0.5f64 as f32 as f64
+                v *= 0.5f64
                     * (1.0f64
                         + f64::cos(
                             2.0f64 * std::f64::consts::PI * i_shifted
@@ -54,7 +54,7 @@ pub unsafe fn fluid_dsp_float_config() {
     }
 }
 
-pub unsafe fn fluid_dsp_float_interpolate_none(mut voice: *mut fluid_voice_t) -> i32 {
+pub unsafe fn fluid_dsp_float_interpolate_none(mut voice: *mut Voice) -> i32 {
     let mut dsp_phase: Phase = (*voice).phase;
     let dsp_phase_incr: Phase;
     let dsp_data: *mut i16 = (*(*voice).sample).data;
@@ -84,7 +84,7 @@ pub unsafe fn fluid_dsp_float_interpolate_none(mut voice: *mut fluid_voice_t) ->
             >> 32 as i32) as u32;
         while dsp_i < 64 as i32 as u32 && dsp_phase_index <= end_index {
             *dsp_buf.offset(dsp_i as isize) = dsp_amp
-                * *dsp_data.offset(dsp_phase_index as isize) as i32 as libc::c_float;
+                * *dsp_data.offset(dsp_phase_index as isize) as i32 as f32;
             dsp_phase =
                 (dsp_phase as u64).wrapping_add(dsp_phase_incr) as Phase as Phase;
             dsp_phase_index = (dsp_phase
@@ -111,7 +111,7 @@ pub unsafe fn fluid_dsp_float_interpolate_none(mut voice: *mut fluid_voice_t) ->
     return dsp_i as i32;
 }
 
-pub unsafe fn fluid_dsp_float_interpolate_linear(mut voice: *mut fluid_voice_t) -> i32 {
+pub unsafe fn fluid_dsp_float_interpolate_linear(mut voice: *mut Voice) -> i32 {
     let mut dsp_phase: Phase = (*voice).phase;
     let dsp_phase_incr: Phase;
     let dsp_data: *mut i16 = (*(*voice).sample).data;
@@ -154,11 +154,11 @@ pub unsafe fn fluid_dsp_float_interpolate_linear(mut voice: *mut fluid_voice_t) 
                 .as_mut_ptr();
             *dsp_buf.offset(dsp_i as isize) = dsp_amp
                 * (*coeffs.offset(0 as i32 as isize)
-                    * *dsp_data.offset(dsp_phase_index as isize) as i32 as libc::c_float
+                    * *dsp_data.offset(dsp_phase_index as isize) as i32 as f32
                     + *coeffs.offset(1 as i32 as isize)
                         * *dsp_data.offset(
                             dsp_phase_index.wrapping_add(1 as i32 as u32) as isize,
-                        ) as i32 as libc::c_float);
+                        ) as i32 as f32);
             dsp_phase =
                 (dsp_phase as u64).wrapping_add(dsp_phase_incr) as Phase as Phase;
             dsp_phase_index = (dsp_phase >> 32 as i32) as u32;
@@ -178,9 +178,9 @@ pub unsafe fn fluid_dsp_float_interpolate_linear(mut voice: *mut fluid_voice_t) 
                 .as_mut_ptr();
             *dsp_buf.offset(dsp_i as isize) = dsp_amp
                 * (*coeffs.offset(0 as i32 as isize)
-                    * *dsp_data.offset(dsp_phase_index as isize) as i32 as libc::c_float
+                    * *dsp_data.offset(dsp_phase_index as isize) as i32 as f32
                     + *coeffs.offset(1 as i32 as isize)
-                        * point as i32 as libc::c_float);
+                        * point as i32 as f32);
             dsp_phase =
                 (dsp_phase as u64).wrapping_add(dsp_phase_incr) as Phase as Phase;
             dsp_phase_index = (dsp_phase >> 32 as i32) as u32;
@@ -206,7 +206,7 @@ pub unsafe fn fluid_dsp_float_interpolate_linear(mut voice: *mut fluid_voice_t) 
     return dsp_i as i32;
 }
 
-pub unsafe fn fluid_dsp_float_interpolate_4th_order(mut voice: *mut fluid_voice_t) -> i32 {
+pub unsafe fn fluid_dsp_float_interpolate_4th_order(mut voice: *mut Voice) -> i32 {
     let mut dsp_phase: Phase = (*voice).phase;
     let dsp_phase_incr: Phase;
     let dsp_data: *mut i16 = (*(*voice).sample).data;
@@ -260,18 +260,18 @@ pub unsafe fn fluid_dsp_float_interpolate_4th_order(mut voice: *mut fluid_voice_
                 .as_mut_ptr();
             *dsp_buf.offset(dsp_i as isize) = dsp_amp
                 * (*coeffs.offset(0 as i32 as isize)
-                    * start_point as i32 as libc::c_float
+                    * start_point as i32 as f32
                     + *coeffs.offset(1 as i32 as isize)
                         * *dsp_data.offset(dsp_phase_index as isize) as i32
-                            as libc::c_float
+                            as f32
                     + *coeffs.offset(2 as i32 as isize)
                         * *dsp_data.offset(
                             dsp_phase_index.wrapping_add(1 as i32 as u32) as isize,
-                        ) as i32 as libc::c_float
+                        ) as i32 as f32
                     + *coeffs.offset(3 as i32 as isize)
                         * *dsp_data.offset(
                             dsp_phase_index.wrapping_add(2 as i32 as u32) as isize,
-                        ) as i32 as libc::c_float);
+                        ) as i32 as f32);
             dsp_phase =
                 (dsp_phase as u64).wrapping_add(dsp_phase_incr) as Phase as Phase;
             dsp_phase_index = (dsp_phase >> 32 as i32) as u32;
@@ -288,18 +288,18 @@ pub unsafe fn fluid_dsp_float_interpolate_4th_order(mut voice: *mut fluid_voice_
                 * (*coeffs.offset(0 as i32 as isize)
                     * *dsp_data.offset(
                         dsp_phase_index.wrapping_sub(1 as i32 as u32) as isize,
-                    ) as i32 as libc::c_float
+                    ) as i32 as f32
                     + *coeffs.offset(1 as i32 as isize)
                         * *dsp_data.offset(dsp_phase_index as isize) as i32
-                            as libc::c_float
+                            as f32
                     + *coeffs.offset(2 as i32 as isize)
                         * *dsp_data.offset(
                             dsp_phase_index.wrapping_add(1 as i32 as u32) as isize,
-                        ) as i32 as libc::c_float
+                        ) as i32 as f32
                     + *coeffs.offset(3 as i32 as isize)
                         * *dsp_data.offset(
                             dsp_phase_index.wrapping_add(2 as i32 as u32) as isize,
-                        ) as i32 as libc::c_float);
+                        ) as i32 as f32);
             dsp_phase =
                 (dsp_phase as u64).wrapping_add(dsp_phase_incr) as Phase as Phase;
             dsp_phase_index = (dsp_phase >> 32 as i32) as u32;
@@ -320,16 +320,16 @@ pub unsafe fn fluid_dsp_float_interpolate_4th_order(mut voice: *mut fluid_voice_
                 * (*coeffs.offset(0 as i32 as isize)
                     * *dsp_data.offset(
                         dsp_phase_index.wrapping_sub(1 as i32 as u32) as isize,
-                    ) as i32 as libc::c_float
+                    ) as i32 as f32
                     + *coeffs.offset(1 as i32 as isize)
                         * *dsp_data.offset(dsp_phase_index as isize) as i32
-                            as libc::c_float
+                            as f32
                     + *coeffs.offset(2 as i32 as isize)
                         * *dsp_data.offset(
                             dsp_phase_index.wrapping_add(1 as i32 as u32) as isize,
-                        ) as i32 as libc::c_float
+                        ) as i32 as f32
                     + *coeffs.offset(3 as i32 as isize)
-                        * end_point1 as i32 as libc::c_float);
+                        * end_point1 as i32 as f32);
             dsp_phase =
                 (dsp_phase as u64).wrapping_add(dsp_phase_incr) as Phase as Phase;
             dsp_phase_index = (dsp_phase >> 32 as i32) as u32;
@@ -347,14 +347,14 @@ pub unsafe fn fluid_dsp_float_interpolate_4th_order(mut voice: *mut fluid_voice_
                 * (*coeffs.offset(0 as i32 as isize)
                     * *dsp_data.offset(
                         dsp_phase_index.wrapping_sub(1 as i32 as u32) as isize,
-                    ) as i32 as libc::c_float
+                    ) as i32 as f32
                     + *coeffs.offset(1 as i32 as isize)
                         * *dsp_data.offset(dsp_phase_index as isize) as i32
-                            as libc::c_float
+                            as f32
                     + *coeffs.offset(2 as i32 as isize)
-                        * end_point1 as i32 as libc::c_float
+                        * end_point1 as i32 as f32
                     + *coeffs.offset(3 as i32 as isize)
-                        * end_point2 as i32 as libc::c_float);
+                        * end_point2 as i32 as f32);
             dsp_phase =
                 (dsp_phase as u64).wrapping_add(dsp_phase_incr) as Phase as Phase;
             dsp_phase_index = (dsp_phase >> 32 as i32) as u32;
@@ -384,7 +384,7 @@ pub unsafe fn fluid_dsp_float_interpolate_4th_order(mut voice: *mut fluid_voice_
     return dsp_i as i32;
 }
 
-pub unsafe fn fluid_dsp_float_interpolate_7th_order(mut voice: *mut fluid_voice_t) -> i32 {
+pub unsafe fn fluid_dsp_float_interpolate_7th_order(mut voice: *mut Voice) -> i32 {
     let mut dsp_phase: Phase = (*voice).phase;
     let dsp_phase_incr: Phase;
     let dsp_data: *mut i16 = (*(*voice).sample).data;

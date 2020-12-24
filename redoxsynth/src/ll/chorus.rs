@@ -47,14 +47,14 @@ pub fn new_fluid_chorus(sample_rate: f32) -> *mut Chorus {
                 let i_shifted: f64 = i as f64 - 5 as i32 as f64 / 2.0f64
                     + ii as f64 / ((1 as i32) << 8 as i32 - 1 as i32) as f64;
                 if f64::abs(i_shifted) < 0.000001f64 {
-                    (*chorus).sinc_table[i as usize][ii as usize] = 1.0f64 as f32
+                    (*chorus).sinc_table[i as usize][ii as usize] = 1.0f32
                 } else {
                     (*chorus).sinc_table[i as usize][ii as usize] =
                         (f64::sin(i_shifted * std::f64::consts::PI) as f32 as f64
                             / (std::f64::consts::PI * i_shifted)) as f32;
                     (*chorus).sinc_table[i as usize][ii as usize] =
                         ((*chorus).sinc_table[i as usize][ii as usize] as f64
-                            * (0.5f64 as f32 as f64
+                            * (0.5f64
                                 * (1.0f64
                                     + f64::cos(
                                         2.0f64 * std::f64::consts::PI * i_shifted
@@ -91,7 +91,7 @@ pub fn fluid_chorus_init(chorus: &mut Chorus) -> i32 {
     let mut i: i32 = 0;
     unsafe {
         while i < (1 as i32) << 12 as i32 - 1 as i32 {
-            *chorus.chorusbuf.offset(i as isize) = 0.0f64 as f32;
+            *chorus.chorusbuf.offset(i as isize) = 0.0f32;
             i += 1
         }
     }
@@ -176,8 +176,8 @@ pub fn fluid_chorus_update(chorus: &mut Chorus) -> i32 {
             "chorus: speed is too low (min {})! Setting value to min.",
             0.29f64
         );
-        chorus.new_speed_hz = 0.29f64 as f32
-    } else if chorus.new_speed_hz > 5 as i32 as libc::c_float {
+        chorus.new_speed_hz = 0.29f32
+    } else if chorus.new_speed_hz > 5 as i32 as f32 {
         fluid_log!(
             FLUID_WARN,
             "chorus: speed must be below {} Hz! Setting value to max.",
@@ -190,20 +190,20 @@ pub fn fluid_chorus_update(chorus: &mut Chorus) -> i32 {
             FLUID_WARN,
             "chorus: depth must be positive! Setting value to 0.",
         );
-        chorus.new_depth_ms = 0.0f64 as f32
+        chorus.new_depth_ms = 0.0f32
     }
     if (chorus.new_level as f64) < 0.0f64 {
         fluid_log!(
             FLUID_WARN,
             "chorus: level must be positive! Setting value to 0.",
         );
-        chorus.new_level = 0.0f64 as f32
-    } else if chorus.new_level > 10 as i32 as libc::c_float {
+        chorus.new_level = 0.0f32
+    } else if chorus.new_level > 10 as i32 as f32 {
         fluid_log!(
             FLUID_WARN,
             "chorus: level must be < 10. A reasonable level is << 1! Setting it to 0.1.",
         );
-        chorus.new_level = 0.1f64 as f32
+        chorus.new_level = 0.1f32
     }
     chorus.modulation_period_samples =
         (chorus.sample_rate / chorus.new_speed_hz) as isize;

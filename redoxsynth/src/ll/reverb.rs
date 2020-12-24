@@ -73,7 +73,7 @@ pub unsafe fn fluid_allpass_init(allpass: *mut AllPass) {
     let buf: *mut f32 = (*allpass).buffer;
     i = 0 as i32;
     while i < len {
-        *buf.offset(i as isize) = 1e-8f64 as f32;
+        *buf.offset(i as isize) = 1e-8f32;
         i += 1
     }
 }
@@ -95,14 +95,14 @@ pub unsafe fn fluid_comb_init(comb: *mut Comb) {
     let len: i32 = (*comb).bufsize;
     i = 0 as i32;
     while i < len {
-        *buf.offset(i as isize) = 1e-8f64 as f32;
+        *buf.offset(i as isize) = 1e-8f32;
         i += 1
     }
 }
 
 pub unsafe fn fluid_comb_setdamp(mut comb: *mut Comb, val: f32) {
     (*comb).damp1 = val;
-    (*comb).damp2 = 1 as i32 as libc::c_float - val;
+    (*comb).damp2 = 1 as i32 as f32 - val;
 }
 
 pub unsafe fn fluid_comb_setfeedback(comb: *mut Comb, val: f32) {
@@ -317,7 +317,7 @@ pub unsafe fn new_fluid_revmodel() -> *mut ReverbModel {
     );
     (*rev).roomsize = 0.5f32 * 0.28f32 + 0.7f32;
     (*rev).damp = 0.2f32 * 1.0f32;
-    (*rev).wet = 1 as i32 as libc::c_float * 3.0f32;
+    (*rev).wet = 1 as i32 as f32 * 3.0f32;
     (*rev).width = 1 as i32 as f32;
     (*rev).gain = 0.015f32;
     fluid_revmodel_update(rev);
@@ -364,7 +364,7 @@ pub unsafe fn fluid_revmodel_processreplace(
     while k < 64 as i32 {
         out_r = 0 as i32 as f32;
         out_l = out_r;
-        input = (((2 as i32 as libc::c_float * *in_0.offset(k as isize)) as f64 + 1e-8f64)
+        input = (((2 as i32 as f32 * *in_0.offset(k as isize)) as f64 + 1e-8f64)
             * (*rev).gain as f64) as f32;
         i = 0 as i32;
         while i < 8 as i32 {
@@ -455,7 +455,7 @@ pub unsafe fn fluid_revmodel_processmix(
     while k < 64 as i32 {
         out_r = 0 as i32 as f32;
         out_l = out_r;
-        input = (((2 as i32 as libc::c_float * *in_0.offset(k as isize)) as f64 + 1e-8f64)
+        input = (((2 as i32 as f32 * *in_0.offset(k as isize)) as f64 + 1e-8f64)
             * (*rev).gain as f64) as f32;
         i = 0 as i32;
         while i < 8 as i32 {
@@ -535,9 +535,9 @@ pub unsafe fn fluid_revmodel_processmix(
 
 pub unsafe fn fluid_revmodel_update(mut rev: *mut ReverbModel) {
     let mut i: i32;
-    (*rev).wet1 = (*rev).wet * ((*rev).width / 2 as i32 as libc::c_float + 0.5f32);
+    (*rev).wet1 = (*rev).wet * ((*rev).width / 2 as i32 as f32 + 0.5f32);
     (*rev).wet2 = (*rev).wet
-        * ((1 as i32 as libc::c_float - (*rev).width) / 2 as i32 as libc::c_float);
+        * ((1 as i32 as f32 - (*rev).width) / 2 as i32 as f32);
     i = 0 as i32;
     while i < 8 as i32 {
         fluid_comb_setfeedback(

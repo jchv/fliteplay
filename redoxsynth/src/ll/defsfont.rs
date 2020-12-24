@@ -26,7 +26,7 @@ use super::voice::fluid_voice_add_mod;
 use super::voice::fluid_voice_gen_incr;
 use super::voice::fluid_voice_gen_set;
 use super::voice::fluid_voice_optimize_sample;
-use super::voice::fluid_voice_t;
+use super::voice::Voice;
 use super::voice::FluidVoiceAddMod;
 use std::ffi::{CStr, CString};
 pub const FLUID_OK: i32 = 0;
@@ -926,7 +926,7 @@ pub unsafe fn fluid_defpreset_noteon(
     let mut inst_zone: *mut InstrumentZone;
     let mut global_inst_zone: *mut InstrumentZone;
     let mut sample: *mut Sample;
-    let mut voice: *mut fluid_voice_t;
+    let mut voice: *mut Voice;
     let mut mod_0: *mut Mod;
     let mut mod_list: [*mut Mod; 64] = [0 as *mut Mod; 64];
     let mut mod_list_count: i32;
@@ -954,7 +954,7 @@ pub unsafe fn fluid_defpreset_noteon(
                                 fluid_voice_gen_set(
                                     voice,
                                     i,
-                                    (*inst_zone).gen[i as usize].val as libc::c_float,
+                                    (*inst_zone).gen[i as usize].val as f32,
                                 );
                             } else if !global_inst_zone.is_null()
                                 && (*global_inst_zone).gen[i as usize].flags as i32 != 0
@@ -962,7 +962,7 @@ pub unsafe fn fluid_defpreset_noteon(
                                 fluid_voice_gen_set(
                                     voice,
                                     i,
-                                    (*global_inst_zone).gen[i as usize].val as libc::c_float,
+                                    (*global_inst_zone).gen[i as usize].val as f32,
                                 );
                             }
                             i += 1
@@ -1025,7 +1025,7 @@ pub unsafe fn fluid_defpreset_noteon(
                                     fluid_voice_gen_incr(
                                         voice,
                                         i,
-                                        (*preset_zone).gen[i as usize].val as libc::c_float,
+                                        (*preset_zone).gen[i as usize].val as f32,
                                     );
                                 } else if !global_preset_zone.is_null()
                                     && (*global_preset_zone).gen[i as usize].flags as i32
@@ -1034,7 +1034,7 @@ pub unsafe fn fluid_defpreset_noteon(
                                     fluid_voice_gen_incr(
                                         voice,
                                         i,
-                                        (*global_preset_zone).gen[i as usize].val as libc::c_float,
+                                        (*global_preset_zone).gen[i as usize].val as f32,
                                     );
                                 }
                             }
@@ -1220,7 +1220,7 @@ pub unsafe fn delete_fluid_preset_zone(zone: *mut PresetZone) -> i32 {
     while !mod_0.is_null() {
         tmp = mod_0;
         mod_0 = (*mod_0).next;
-        fluid_mod_delete(tmp);
+        fluid_mod_delete(tmp.as_mut().unwrap());
     }
     if !(*zone).name.is_null() {
         libc::free((*zone).name as *mut libc::c_void);
@@ -1573,7 +1573,7 @@ pub unsafe fn delete_fluid_inst_zone(zone: *mut InstrumentZone) -> i32 {
     while !mod_0.is_null() {
         tmp = mod_0;
         mod_0 = (*mod_0).next;
-        fluid_mod_delete(tmp);
+        fluid_mod_delete(tmp.as_mut().unwrap());
     }
     if !(*zone).name.is_null() {
         libc::free((*zone).name as *mut libc::c_void);

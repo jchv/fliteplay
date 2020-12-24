@@ -26,7 +26,7 @@ use super::sfont::Sample;
 use super::tuning::Tuning;
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct fluid_voice_t {
+pub struct Voice {
     pub id: u32,
     pub status: libc::c_uchar,
     pub chan: libc::c_uchar,
@@ -199,13 +199,13 @@ pub const SUSTAIN_SWITCH: MidiControlChange = 64;
 pub type MidiControlChange = u32;
 pub type LoopMode = u32;
 
-pub unsafe fn new_fluid_voice(output_rate: f32) -> *mut fluid_voice_t {
-    let voice: *mut fluid_voice_t;
+pub unsafe fn new_fluid_voice(output_rate: f32) -> *mut Voice {
+    let voice: *mut Voice;
     voice =
-        libc::malloc(::std::mem::size_of::<fluid_voice_t>() as libc::size_t) as *mut fluid_voice_t;
+        libc::malloc(::std::mem::size_of::<Voice>() as libc::size_t) as *mut Voice;
     if voice.is_null() {
         fluid_log!(FLUID_ERR, "Out of memory",);
-        return 0 as *mut fluid_voice_t;
+        return 0 as *mut Voice;
     }
     (*voice).status = FLUID_VOICE_CLEAN as i32 as libc::c_uchar;
     (*voice).chan = 0xff as i32 as libc::c_uchar;
@@ -241,7 +241,7 @@ pub unsafe fn new_fluid_voice(output_rate: f32) -> *mut fluid_voice_t {
     return voice;
 }
 
-pub unsafe fn delete_fluid_voice(voice: *mut fluid_voice_t) -> i32 {
+pub unsafe fn delete_fluid_voice(voice: *mut Voice) -> i32 {
     if voice.is_null() {
         return FLUID_OK as i32;
     }
@@ -250,7 +250,7 @@ pub unsafe fn delete_fluid_voice(voice: *mut fluid_voice_t) -> i32 {
 }
 
 pub unsafe fn fluid_voice_init(
-    voice: *mut fluid_voice_t,
+    voice: *mut Voice,
     sample: *mut Sample,
     channel: *mut Channel,
     key: i32,
@@ -281,7 +281,7 @@ pub unsafe fn fluid_voice_init(
     (*voice).modenv_count = 0 as i32 as u32;
     (*voice).modenv_section = 0 as i32;
     (*voice).modenv_val = 0.0f32;
-    (*voice).modlfo_val = 0.0f64 as f32;
+    (*voice).modlfo_val = 0.0f32;
     (*voice).viblfo_val = 0.0f32;
     (*voice).hist1 = 0 as i32 as f32;
     (*voice).hist2 = 0 as i32 as f32;
@@ -291,7 +291,7 @@ pub unsafe fn fluid_voice_init(
     );
     (*voice).synth_gain = gain;
     if ((*voice).synth_gain as f64) < 0.0000001f64 {
-        (*voice).synth_gain = 0.0000001f64 as f32
+        (*voice).synth_gain = 0.0000001f32
     }
     (*voice).amplitude_that_reaches_noise_floor_nonloop =
         (0.00003f64 / (*voice).synth_gain as f64) as f32;
@@ -302,25 +302,25 @@ pub unsafe fn fluid_voice_init(
 }
 
 pub unsafe fn fluid_voice_gen_set(
-    mut voice: *mut fluid_voice_t,
+    mut voice: *mut Voice,
     i: i32,
-    val: libc::c_float,
+    val: f32,
 ) {
     (*voice).gen[i as usize].val = val as f64;
     (*voice).gen[i as usize].flags = GEN_SET as i32 as libc::c_uchar;
 }
 
 pub unsafe fn fluid_voice_gen_incr(
-    mut voice: *mut fluid_voice_t,
+    mut voice: *mut Voice,
     i: i32,
-    val: libc::c_float,
+    val: f32,
 ) {
     (*voice).gen[i as usize].val += val as f64;
     (*voice).gen[i as usize].flags = GEN_SET as i32 as libc::c_uchar;
 }
 
 pub unsafe fn fluid_voice_write(
-    mut voice: *mut fluid_voice_t,
+    mut voice: *mut Voice,
     dsp_left_buf: *mut f32,
     dsp_right_buf: *mut f32,
     dsp_reverb_buf: *mut f32,
@@ -408,20 +408,20 @@ pub unsafe fn fluid_voice_write(
         (*voice).modlfo_val += (*voice).modlfo_incr;
         if (*voice).modlfo_val as f64 > 1.0f64 {
             (*voice).modlfo_incr = -(*voice).modlfo_incr;
-            (*voice).modlfo_val = 2.0f64 as f32 - (*voice).modlfo_val
+            (*voice).modlfo_val = 2.0f32 - (*voice).modlfo_val
         } else if ((*voice).modlfo_val as f64) < -1.0f64 {
             (*voice).modlfo_incr = -(*voice).modlfo_incr;
-            (*voice).modlfo_val = -2.0f64 as f32 - (*voice).modlfo_val
+            (*voice).modlfo_val = -2.0f32 - (*voice).modlfo_val
         }
     }
     if (*voice).ticks >= (*voice).viblfo_delay {
         (*voice).viblfo_val += (*voice).viblfo_incr;
-        if (*voice).viblfo_val > 1.0f64 as f32 {
+        if (*voice).viblfo_val > 1.0f32 {
             (*voice).viblfo_incr = -(*voice).viblfo_incr;
-            (*voice).viblfo_val = 2.0f64 as f32 - (*voice).viblfo_val
+            (*voice).viblfo_val = 2.0f32 - (*voice).viblfo_val
         } else if ((*voice).viblfo_val as f64) < -1.0f64 {
             (*voice).viblfo_incr = -(*voice).viblfo_incr;
-            (*voice).viblfo_val = -2.0f64 as f32 - (*voice).viblfo_val
+            (*voice).viblfo_val = -2.0f32 - (*voice).viblfo_val
         }
     }
     if !((*voice).volenv_section == FLUID_VOICE_ENVDELAY as i32) {
@@ -457,7 +457,7 @@ pub unsafe fn fluid_voice_write(
             3632332525568699835 => {}
             _ => {
                 (*voice).amp_incr =
-                    (target_amp - (*voice).amp) / 64 as i32 as libc::c_float;
+                    (target_amp - (*voice).amp) / 64 as i32 as f32;
                 if !((*voice).amp == 0.0f32 && (*voice).amp_incr == 0.0f32) {
                     (*voice).phase_incr = fluid_ct2hz_real(
                         (*voice).pitch
@@ -465,7 +465,7 @@ pub unsafe fn fluid_voice_write(
                             + (*voice).viblfo_val * (*voice).viblfo_to_pitch
                             + (*voice).modenv_val * (*voice).modenv_to_pitch,
                     ) / (*voice).root_pitch;
-                    if (*voice).phase_incr == 0 as i32 as libc::c_float {
+                    if (*voice).phase_incr == 0 as i32 as f32 {
                         (*voice).phase_incr = 1 as i32 as f32
                     }
                     fres = fluid_ct2hz(
@@ -475,7 +475,7 @@ pub unsafe fn fluid_voice_write(
                     );
                     if fres > 0.45f32 * (*voice).output_rate {
                         fres = 0.45f32 * (*voice).output_rate
-                    } else if fres < 5 as i32 as libc::c_float {
+                    } else if fres < 5 as i32 as f32 {
                         fres = 5 as i32 as f32
                     }
                     if f64::abs((fres - (*voice).last_fres) as f64) > 0.01f64 {
@@ -500,13 +500,13 @@ pub unsafe fn fluid_voice_write(
                         //       printf("Setting initial filter coefficients.\n");
                         } else {
                             (*voice).a1_incr =
-                                (a1_temp - (*voice).a1) / 64 as i32 as libc::c_float;
+                                (a1_temp - (*voice).a1) / 64 as i32 as f32;
                             (*voice).a2_incr =
-                                (a2_temp - (*voice).a2) / 64 as i32 as libc::c_float;
+                                (a2_temp - (*voice).a2) / 64 as i32 as f32;
                             (*voice).b02_incr =
-                                (b02_temp - (*voice).b02) / 64 as i32 as libc::c_float;
+                                (b02_temp - (*voice).b02) / 64 as i32 as f32;
                             (*voice).b1_incr =
-                                (b1_temp - (*voice).b1) / 64 as i32 as libc::c_float;
+                                (b1_temp - (*voice).b1) / 64 as i32 as f32;
                             (*voice).filter_coeff_incr_count = 64 as i32
                         }
                         (*voice).last_fres = fres
@@ -543,7 +543,7 @@ pub unsafe fn fluid_voice_write(
 //removed inline
 #[inline]
 unsafe fn fluid_voice_effects(
-    mut voice: *mut fluid_voice_t,
+    mut voice: *mut Voice,
     count: i32,
     dsp_left_buf: *mut f32,
     dsp_right_buf: *mut f32,
@@ -635,7 +635,7 @@ unsafe fn fluid_voice_effects(
             dsp_i += 1
         }
     }
-    if !dsp_chorus_buf.is_null() && (*voice).amp_chorus != 0 as i32 as libc::c_float {
+    if !dsp_chorus_buf.is_null() && (*voice).amp_chorus != 0 as i32 as f32 {
         dsp_i = 0 as i32;
         while dsp_i < count {
             let ref mut fresh6 = *dsp_chorus_buf.offset(dsp_i as isize);
@@ -652,18 +652,18 @@ unsafe fn fluid_voice_effects(
     (*voice).filter_coeff_incr_count = dsp_filter_coeff_incr_count;
 }
 
-pub unsafe fn fluid_voice_get_channel(voice: *mut fluid_voice_t) -> *mut Channel {
+pub unsafe fn fluid_voice_get_channel(voice: *mut Voice) -> *mut Channel {
     return (*voice).channel;
 }
 
-pub unsafe fn fluid_voice_start(mut voice: *mut fluid_voice_t) {
+pub unsafe fn fluid_voice_start(mut voice: *mut Voice) {
     fluid_voice_calculate_runtime_synthesis_parameters(voice);
     (*voice).check_sample_sanity_flag = (1 as i32) << 1 as i32;
     (*voice).status = FLUID_VOICE_ON as i32 as libc::c_uchar;
 }
 
 pub unsafe fn fluid_voice_calculate_runtime_synthesis_parameters(
-    mut voice: *mut fluid_voice_t,
+    mut voice: *mut Voice,
 ) -> i32 {
     let mut i;
     let list_of_generators_to_initialize: [i32; 35] = [
@@ -707,7 +707,7 @@ pub unsafe fn fluid_voice_calculate_runtime_synthesis_parameters(
     while i < (*voice).mod_count {
         let mod_0: *mut Mod =
             &mut *(*voice).mod_0.as_mut_ptr().offset(i as isize) as *mut Mod;
-        let modval: f32 = fluid_mod_get_value(mod_0, (*voice).channel, voice);
+        let modval: f32 = fluid_mod_get_value(mod_0.as_mut().unwrap(), (*voice).channel.as_mut().unwrap(), voice.as_mut().unwrap());
         let dest_gen_index: i32 = (*mod_0).dest as i32;
         let mut dest_gen: *mut fluid_gen_t =
             &mut *(*voice).gen.as_mut_ptr().offset(dest_gen_index as isize) as *mut fluid_gen_t;
@@ -724,7 +724,7 @@ pub unsafe fn fluid_voice_calculate_runtime_synthesis_parameters(
     } else {
         (*voice).gen[GEN_PITCH as i32 as usize].val =
             (*voice).gen[GEN_SCALETUNE as i32 as usize].val
-                * ((*voice).key as i32 as libc::c_float - 60.0f32) as f64
+                * ((*voice).key as i32 as f32 - 60.0f32) as f64
                 + (100.0f32 * 60.0f32) as f64
     }
     i = 0 as i32;
@@ -737,7 +737,7 @@ pub unsafe fn fluid_voice_calculate_runtime_synthesis_parameters(
 }
 
 pub unsafe fn calculate_hold_decay_buffers(
-    voice: *mut fluid_voice_t,
+    voice: *mut Voice,
     gen_base: i32,
     gen_key2base: i32,
     is_decay: i32,
@@ -754,18 +754,18 @@ pub unsafe fn calculate_hold_decay_buffers(
             * (60.0f64 - (*voice).key as i32 as f64)) as f32;
     if is_decay != 0 {
         if timecents as f64 > 8000.0f64 {
-            timecents = 8000.0f64 as f32
+            timecents = 8000.0f32
         }
     } else {
-        if timecents > 5000 as i32 as libc::c_float {
-            timecents = 5000.0f64 as f32
+        if timecents > 5000 as i32 as f32 {
+            timecents = 5000.0f32
         }
         if timecents as f64 <= -32768.0f64 {
             return 0 as i32;
         }
     }
     if (timecents as f64) < -12000.0f64 {
-        timecents = -12000.0f64 as f32
+        timecents = -12000.0f32
     }
     seconds = fluid_tc2sec(timecents);
     buffers = (((*voice).output_rate * seconds / 64 as i32 as f32) as f64 + 0.5f64)
@@ -773,13 +773,13 @@ pub unsafe fn calculate_hold_decay_buffers(
     return buffers;
 }
 
-pub unsafe fn fluid_voice_update_param(mut voice: *mut fluid_voice_t, gen: i32) {
+pub unsafe fn fluid_voice_update_param(mut voice: *mut Voice, gen: i32) {
     let mut q_d_b;
     let mut x;
     let mut y;
     let mut count;
     // Alternate attenuation scale used by EMU10K1 cards when setting the attenuation at the preset or instrument level within the SoundFont bank.
-    static mut ALT_ATTENUATION_SCALE: libc::c_float = 0.4f64 as libc::c_float;
+    static mut ALT_ATTENUATION_SCALE: f32 = 0.4f32;
     let current_block_195: u64;
     match gen {
         17 => {
@@ -861,13 +861,13 @@ pub unsafe fn fluid_voice_update_param(mut voice: *mut fluid_voice_t, gen: i32) 
                         * 100.0f32 as f64
                         - (*(*voice).sample).pitchadj as f64) as f32
             } else {
-                (*voice).root_pitch = (*(*voice).sample).origpitch as libc::c_float * 100.0f32
-                    - (*(*voice).sample).pitchadj as libc::c_float
+                (*voice).root_pitch = (*(*voice).sample).origpitch as f32 * 100.0f32
+                    - (*(*voice).sample).pitchadj as f32
             }
             (*voice).root_pitch = fluid_ct2hz((*voice).root_pitch);
             if !(*voice).sample.is_null() {
                 (*voice).root_pitch *=
-                    (*voice).output_rate / (*(*voice).sample).samplerate as libc::c_float
+                    (*voice).output_rate / (*(*voice).sample).samplerate as f32
             }
             current_block_195 = 5267916556966421873;
         }
@@ -893,7 +893,7 @@ pub unsafe fn fluid_voice_update_param(mut voice: *mut fluid_voice_t, gen: i32) 
             q_d_b -= 3.01f32 as f64;
             (*voice).q_lin = f64::powf(10.0f32 as f64, q_d_b / 20.0f32 as f64) as f32;
             (*voice).filter_gain = (1.0f64 / f64::sqrt((*voice).q_lin as f64)) as f32;
-            (*voice).last_fres = -1.0f64 as f32;
+            (*voice).last_fres = -1.0f32;
             current_block_195 = 5267916556966421873;
         }
         5 => {
@@ -930,10 +930,10 @@ pub unsafe fn fluid_voice_update_param(mut voice: *mut fluid_voice_t, gen: i32) 
                 + (*voice).gen[GEN_MODLFOTOFILTERFC as i32 as usize].mod_0 as f32
                 + (*voice).gen[GEN_MODLFOTOFILTERFC as i32 as usize].nrpn as f32;
             (*voice).modlfo_to_fc =
-                if (*voice).modlfo_to_fc < -(12000 as i32) as libc::c_float {
-                    -(12000 as i32) as libc::c_float
-                } else if (*voice).modlfo_to_fc > 12000 as i32 as libc::c_float {
-                    12000 as i32 as libc::c_float
+                if (*voice).modlfo_to_fc < -(12000 as i32) as f32 {
+                    -(12000 as i32) as f32
+                } else if (*voice).modlfo_to_fc > 12000 as i32 as f32 {
+                    12000 as i32 as f32
                 } else {
                     (*voice).modlfo_to_fc
                 };
@@ -964,7 +964,7 @@ pub unsafe fn fluid_voice_update_param(mut voice: *mut fluid_voice_t, gen: i32) 
             } else {
                 x
             };
-            (*voice).modlfo_incr = 4.0f32 * 64 as i32 as libc::c_float * fluid_act2hz(x)
+            (*voice).modlfo_incr = 4.0f32 * 64 as i32 as f32 * fluid_act2hz(x)
                 / (*voice).output_rate;
             current_block_195 = 5267916556966421873;
         }
@@ -979,7 +979,7 @@ pub unsafe fn fluid_voice_update_param(mut voice: *mut fluid_voice_t, gen: i32) 
             } else {
                 x
             };
-            (*voice).viblfo_incr = 4.0f32 * 64 as i32 as libc::c_float * fluid_act2hz(x)
+            (*voice).viblfo_incr = 4.0f32 * 64 as i32 as f32 * fluid_act2hz(x)
                 / (*voice).output_rate;
             current_block_195 = 5267916556966421873;
         }
@@ -1015,7 +1015,7 @@ pub unsafe fn fluid_voice_update_param(mut voice: *mut fluid_voice_t, gen: i32) 
             x = (*voice).gen[GEN_KEYNUM as i32 as usize].val as f32
                 + (*voice).gen[GEN_KEYNUM as i32 as usize].mod_0 as f32
                 + (*voice).gen[GEN_KEYNUM as i32 as usize].nrpn as f32;
-            if x >= 0 as i32 as libc::c_float {
+            if x >= 0 as i32 as f32 {
                 (*voice).key = x as libc::c_uchar
             }
             current_block_195 = 5267916556966421873;
@@ -1024,7 +1024,7 @@ pub unsafe fn fluid_voice_update_param(mut voice: *mut fluid_voice_t, gen: i32) 
             x = (*voice).gen[GEN_VELOCITY as i32 as usize].val as f32
                 + (*voice).gen[GEN_VELOCITY as i32 as usize].mod_0 as f32
                 + (*voice).gen[GEN_VELOCITY as i32 as usize].nrpn as f32;
-            if x > 0 as i32 as libc::c_float {
+            if x > 0 as i32 as f32 {
                 (*voice).vel = x as libc::c_uchar
             }
             current_block_195 = 5267916556966421873;
@@ -1164,7 +1164,7 @@ pub unsafe fn fluid_voice_update_param(mut voice: *mut fluid_voice_t, gen: i32) 
                 x
             };
             count = ((*voice).output_rate * fluid_tc2sec_delay(x)
-                / 64 as i32 as libc::c_float) as u32;
+                / 64 as i32 as f32) as u32;
             (*voice).volenv_data[FLUID_VOICE_ENVDELAY as i32 as usize].count = count;
             (*voice).volenv_data[FLUID_VOICE_ENVDELAY as i32 as usize].coeff = 0.0f32;
             (*voice).volenv_data[FLUID_VOICE_ENVDELAY as i32 as usize].incr = 0.0f32;
@@ -1184,14 +1184,14 @@ pub unsafe fn fluid_voice_update_param(mut voice: *mut fluid_voice_t, gen: i32) 
                 x
             };
             count = (1 as i32 as u32).wrapping_add(
-                ((*voice).output_rate * fluid_tc2sec_attack(x) / 64 as i32 as libc::c_float)
+                ((*voice).output_rate * fluid_tc2sec_attack(x) / 64 as i32 as f32)
                     as u32,
             );
             (*voice).volenv_data[FLUID_VOICE_ENVATTACK as i32 as usize].count = count;
             (*voice).volenv_data[FLUID_VOICE_ENVATTACK as i32 as usize].coeff = 1.0f32;
             (*voice).volenv_data[FLUID_VOICE_ENVATTACK as i32 as usize].incr = if count != 0
             {
-                (1.0f32) / count as libc::c_float
+                (1.0f32) / count as f32
             } else {
                 0.0f32
             };
@@ -1232,13 +1232,13 @@ pub unsafe fn fluid_voice_update_param(mut voice: *mut fluid_voice_t, gen: i32) 
             };
             count = (1 as i32 as u32).wrapping_add(
                 ((*voice).output_rate * fluid_tc2sec_release(x)
-                    / 64 as i32 as libc::c_float) as u32,
+                    / 64 as i32 as f32) as u32,
             );
             (*voice).volenv_data[FLUID_VOICE_ENVRELEASE as i32 as usize].count = count;
             (*voice).volenv_data[FLUID_VOICE_ENVRELEASE as i32 as usize].coeff = 1.0f32;
             (*voice).volenv_data[FLUID_VOICE_ENVRELEASE as i32 as usize].incr =
                 if count != 0 {
-                    (-1.0f32) / count as libc::c_float
+                    (-1.0f32) / count as f32
                 } else {
                     0.0f32
                 };
@@ -1258,7 +1258,7 @@ pub unsafe fn fluid_voice_update_param(mut voice: *mut fluid_voice_t, gen: i32) 
                 x
             };
             (*voice).modenv_data[FLUID_VOICE_ENVDELAY as i32 as usize].count =
-                ((*voice).output_rate * fluid_tc2sec_delay(x) / 64 as i32 as libc::c_float)
+                ((*voice).output_rate * fluid_tc2sec_delay(x) / 64 as i32 as f32)
                     as u32;
             (*voice).modenv_data[FLUID_VOICE_ENVDELAY as i32 as usize].coeff = 0.0f32;
             (*voice).modenv_data[FLUID_VOICE_ENVDELAY as i32 as usize].incr = 0.0f32;
@@ -1278,14 +1278,14 @@ pub unsafe fn fluid_voice_update_param(mut voice: *mut fluid_voice_t, gen: i32) 
                 x
             };
             count = (1 as i32 as u32).wrapping_add(
-                ((*voice).output_rate * fluid_tc2sec_attack(x) / 64 as i32 as libc::c_float)
+                ((*voice).output_rate * fluid_tc2sec_attack(x) / 64 as i32 as f32)
                     as u32,
             );
             (*voice).modenv_data[FLUID_VOICE_ENVATTACK as i32 as usize].count = count;
             (*voice).modenv_data[FLUID_VOICE_ENVATTACK as i32 as usize].coeff = 1.0f32;
             (*voice).modenv_data[FLUID_VOICE_ENVATTACK as i32 as usize].incr = if count != 0
             {
-                (1.0f32) / count as libc::c_float
+                (1.0f32) / count as f32
             } else {
                 0.0f32
             };
@@ -1326,13 +1326,13 @@ pub unsafe fn fluid_voice_update_param(mut voice: *mut fluid_voice_t, gen: i32) 
             };
             count = (1 as i32 as u32).wrapping_add(
                 ((*voice).output_rate * fluid_tc2sec_release(x)
-                    / 64 as i32 as libc::c_float) as u32,
+                    / 64 as i32 as f32) as u32,
             );
             (*voice).modenv_data[FLUID_VOICE_ENVRELEASE as i32 as usize].count = count;
             (*voice).modenv_data[FLUID_VOICE_ENVRELEASE as i32 as usize].coeff = 1.0f32;
             (*voice).modenv_data[FLUID_VOICE_ENVRELEASE as i32 as usize].incr =
                 if count != 0 {
-                    (-1.0f32 / count as libc::c_float) as f64
+                    (-1.0f32 / count as f32) as f64
                 } else {
                     0.0f64
                 } as f32;
@@ -1368,7 +1368,7 @@ pub unsafe fn fluid_voice_update_param(mut voice: *mut fluid_voice_t, gen: i32) 
             (*voice).modenv_data[FLUID_VOICE_ENVDECAY as i32 as usize].coeff = 1.0f32;
             (*voice).modenv_data[FLUID_VOICE_ENVDECAY as i32 as usize].incr = if count != 0
             {
-                (-1.0f32) / count as libc::c_float
+                (-1.0f32) / count as f32
             } else {
                 0.0f32
             };
@@ -1398,7 +1398,7 @@ pub unsafe fn fluid_voice_update_param(mut voice: *mut fluid_voice_t, gen: i32) 
             (*voice).volenv_data[FLUID_VOICE_ENVDECAY as i32 as usize].coeff = 1.0f32;
             (*voice).volenv_data[FLUID_VOICE_ENVDECAY as i32 as usize].incr = if count != 0
             {
-                (-1.0f32) / count as libc::c_float
+                (-1.0f32) / count as f32
             } else {
                 0.0f32
             };
@@ -1410,7 +1410,7 @@ pub unsafe fn fluid_voice_update_param(mut voice: *mut fluid_voice_t, gen: i32) 
 }
 
 pub unsafe fn fluid_voice_modulate(
-    mut voice: *mut fluid_voice_t,
+    mut voice: *mut Voice,
     cc: i32,
     ctrl: i32,
 ) -> i32 {
@@ -1436,15 +1436,15 @@ pub unsafe fn fluid_voice_modulate(
                         == 0 as i32
                     && cc == 0 as i32)
         {
-            gen = fluid_mod_get_dest(mod_0);
-            modval = 0.0f64 as f32;
+            gen = fluid_mod_get_dest(mod_0.as_ref().unwrap());
+            modval = 0.0f32;
             k = 0 as i32;
             while k < (*voice).mod_count {
                 if (*voice).mod_0[k as usize].dest as i32 == gen {
                     modval += fluid_mod_get_value(
                         &mut *(*voice).mod_0.as_mut_ptr().offset(k as isize),
-                        (*voice).channel,
-                        voice,
+                        (*voice).channel.as_mut().unwrap(),
+                        voice.as_mut().unwrap(),
                     )
                 }
                 k += 1
@@ -1457,7 +1457,7 @@ pub unsafe fn fluid_voice_modulate(
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_voice_modulate_all(mut voice: *mut fluid_voice_t) -> i32 {
+pub unsafe fn fluid_voice_modulate_all(mut voice: *mut Voice) -> i32 {
     let mut mod_0;
     let mut i;
     let mut k;
@@ -1466,15 +1466,15 @@ pub unsafe fn fluid_voice_modulate_all(mut voice: *mut fluid_voice_t) -> i32 {
     i = 0 as i32;
     while i < (*voice).mod_count {
         mod_0 = &mut *(*voice).mod_0.as_mut_ptr().offset(i as isize) as *mut Mod;
-        gen = fluid_mod_get_dest(mod_0);
-        modval = 0.0f64 as f32;
+        gen = fluid_mod_get_dest(mod_0.as_ref().unwrap());
+        modval = 0.0f32;
         k = 0 as i32;
         while k < (*voice).mod_count {
             if (*voice).mod_0[k as usize].dest as i32 == gen {
                 modval += fluid_mod_get_value(
                     &mut *(*voice).mod_0.as_mut_ptr().offset(k as isize),
-                    (*voice).channel,
-                    voice,
+                    (*voice).channel.as_mut().unwrap(),
+                    voice.as_mut().unwrap(),
                 )
             }
             k += 1
@@ -1486,7 +1486,7 @@ pub unsafe fn fluid_voice_modulate_all(mut voice: *mut fluid_voice_t) -> i32 {
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_voice_noteoff(mut voice: *mut fluid_voice_t) -> i32 {
+pub unsafe fn fluid_voice_noteoff(mut voice: *mut Voice) -> i32 {
     let at_tick;
     at_tick = (*(*(*voice).channel).synth).min_note_length_ticks;
     if at_tick > (*voice).ticks {
@@ -1500,12 +1500,12 @@ pub unsafe fn fluid_voice_noteoff(mut voice: *mut fluid_voice_t) -> i32 {
         (*voice).status = FLUID_VOICE_SUSTAINED as i32 as libc::c_uchar
     } else {
         if (*voice).volenv_section == FLUID_VOICE_ENVATTACK as i32 {
-            if (*voice).volenv_val > 0 as i32 as libc::c_float {
+            if (*voice).volenv_val > 0 as i32 as f32 {
                 let lfo: f32 = (*voice).modlfo_val * -(*voice).modlfo_to_vol;
                 let amp: f32 = ((*voice).volenv_val as f64
                     * f64::powf(
                         10.0f64,
-                        (lfo / -(200 as i32) as libc::c_float) as f64,
+                        (lfo / -(200 as i32) as f32) as f64,
                     )) as f32;
                 let mut env_value: f32 = -((-(200 as i32) as f64 * f64::ln(amp as f64)
                     / f64::ln(10.0f64)
@@ -1530,7 +1530,7 @@ pub unsafe fn fluid_voice_noteoff(mut voice: *mut fluid_voice_t) -> i32 {
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_voice_kill_excl(mut voice: *mut fluid_voice_t) -> i32 {
+pub unsafe fn fluid_voice_kill_excl(mut voice: *mut Voice) -> i32 {
     if !((*voice).status as i32 == FLUID_VOICE_ON as i32
         || (*voice).status as i32 == FLUID_VOICE_SUSTAINED as i32)
     {
@@ -1539,7 +1539,7 @@ pub unsafe fn fluid_voice_kill_excl(mut voice: *mut fluid_voice_t) -> i32 {
     fluid_voice_gen_set(
         voice,
         GEN_EXCLUSIVECLASS as i32,
-        0 as i32 as libc::c_float,
+        0 as i32 as f32,
     );
     if (*voice).volenv_section != FLUID_VOICE_ENVRELEASE as i32 {
         (*voice).volenv_section = FLUID_VOICE_ENVRELEASE as i32;
@@ -1550,19 +1550,19 @@ pub unsafe fn fluid_voice_kill_excl(mut voice: *mut fluid_voice_t) -> i32 {
     fluid_voice_gen_set(
         voice,
         GEN_VOLENVRELEASE as i32,
-        -(200 as i32) as libc::c_float,
+        -(200 as i32) as f32,
     );
     fluid_voice_update_param(voice, GEN_VOLENVRELEASE as i32);
     fluid_voice_gen_set(
         voice,
         GEN_MODENVRELEASE as i32,
-        -(200 as i32) as libc::c_float,
+        -(200 as i32) as f32,
     );
     fluid_voice_update_param(voice, GEN_MODENVRELEASE as i32);
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_voice_off(mut voice: *mut fluid_voice_t) -> i32 {
+pub unsafe fn fluid_voice_off(mut voice: *mut Voice) -> i32 {
     (*voice).chan = 0xff as i32 as libc::c_uchar;
     (*voice).volenv_section = FLUID_VOICE_ENVFINISHED as i32;
     (*voice).volenv_count = 0 as i32 as u32;
@@ -1589,7 +1589,7 @@ pub unsafe fn fluid_voice_off(mut voice: *mut fluid_voice_t) -> i32 {
 }
 
 pub unsafe fn fluid_voice_add_mod(
-    mut voice: *mut fluid_voice_t,
+    mut voice: *mut Voice,
     mod_0: &Mod,
     mode: i32,
 ) {
@@ -1645,17 +1645,17 @@ pub unsafe fn fluid_voice_add_mod(
     };
 }
 
-pub unsafe fn fluid_voice_get_id(voice: *mut fluid_voice_t) -> u32 {
+pub unsafe fn fluid_voice_get_id(voice: *mut Voice) -> u32 {
     return (*voice).id;
 }
 
-pub unsafe fn fluid_voice_is_playing(voice: *mut fluid_voice_t) -> i32 {
+pub unsafe fn fluid_voice_is_playing(voice: *mut Voice) -> i32 {
     return ((*voice).status as i32 == FLUID_VOICE_ON as i32
         || (*voice).status as i32 == FLUID_VOICE_SUSTAINED as i32)
         as i32;
 }
 
-pub unsafe fn fluid_voice_get_lower_boundary_for_attenuation(voice: *mut fluid_voice_t) -> f32 {
+pub unsafe fn fluid_voice_get_lower_boundary_for_attenuation(voice: *mut Voice) -> f32 {
     let mut i;
     let mut mod_0;
     let mut possible_att_reduction_c_b: f32 = 0 as i32 as f32;
@@ -1667,7 +1667,7 @@ pub unsafe fn fluid_voice_get_lower_boundary_for_attenuation(voice: *mut fluid_v
             && ((*mod_0).flags1 as i32 & FLUID_MOD_CC as i32 != 0
                 || (*mod_0).flags2 as i32 & FLUID_MOD_CC as i32 != 0)
         {
-            let current_val: f32 = fluid_mod_get_value(mod_0, (*voice).channel, voice);
+            let current_val: f32 = fluid_mod_get_value(mod_0.as_mut().unwrap(), (*voice).channel.as_mut().unwrap(), voice.as_mut().unwrap());
             let mut v: f32 = f64::abs((*mod_0).amount) as f32;
             if (*mod_0).src1 as i32 == FLUID_MOD_PITCHWHEEL as i32
                 || (*mod_0).flags1 as i32 & FLUID_MOD_BIPOLAR as i32 != 0
@@ -1685,13 +1685,13 @@ pub unsafe fn fluid_voice_get_lower_boundary_for_attenuation(voice: *mut fluid_v
         i += 1
     }
     lower_bound = (*voice).attenuation - possible_att_reduction_c_b;
-    if lower_bound < 0 as i32 as libc::c_float {
+    if lower_bound < 0 as i32 as f32 {
         lower_bound = 0 as i32 as f32
     }
     return lower_bound;
 }
 
-pub unsafe fn fluid_voice_check_sample_sanity(mut voice: *mut fluid_voice_t) {
+pub unsafe fn fluid_voice_check_sample_sanity(mut voice: *mut Voice) {
     let min_index_nonloop: i32 = (*(*voice).sample).start as i32;
     let max_index_nonloop: i32 = (*(*voice).sample).end as i32;
     let min_index_loop: i32 = (*(*voice).sample).start as i32 + 0 as i32;
@@ -1785,7 +1785,7 @@ pub unsafe fn fluid_voice_check_sample_sanity(mut voice: *mut fluid_voice_t) {
 }
 
 pub unsafe fn fluid_voice_set_param(
-    mut voice: *mut fluid_voice_t,
+    mut voice: *mut Voice,
     gen: i32,
     nrpn_value: f32,
     abs: i32,
@@ -1800,9 +1800,9 @@ pub unsafe fn fluid_voice_set_param(
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_voice_set_gain(mut voice: *mut fluid_voice_t, mut gain: f32) -> i32 {
+pub unsafe fn fluid_voice_set_gain(mut voice: *mut Voice, mut gain: f32) -> i32 {
     if (gain as f64) < 0.0000001f64 {
-        gain = 0.0000001f64 as f32
+        gain = 0.0000001f32
     }
     (*voice).synth_gain = gain;
     (*voice).amp_left = fluid_pan((*voice).pan, 1 as i32) * gain / 32768.0f32;

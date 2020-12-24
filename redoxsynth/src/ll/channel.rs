@@ -298,7 +298,7 @@ pub fn fluid_channel_cc(
                             < 100 as i32
                     {
                         if (chan.nrpn_select as i32) < GEN_LAST as i32 {
-                            let val: libc::c_float =
+                            let val: f32 =
                                 fluid_gen_scale_nrpn(chan.nrpn_select as i32, data);
                             fluid_synth_set_gen(
                                 chan.synth,
@@ -321,7 +321,7 @@ pub fn fluid_channel_cc(
                                 chan.channum,
                                 GEN_FINETUNE as i32,
                                 ((data - 8192 as i32) as f64 / 8192.0f64 * 100.0f64)
-                                    as libc::c_float,
+                                    as f32,
                             );
                         }
                         2 => {
@@ -329,7 +329,7 @@ pub fn fluid_channel_cc(
                                 chan.synth,
                                 chan.channum,
                                 GEN_COARSETUNE as i32,
-                                (value - 64 as i32) as libc::c_float,
+                                (value - 64 as i32) as f32,
                             );
                         }
                         3 | 4 | 5 | _ => {}
@@ -368,7 +368,7 @@ pub fn fluid_channel_cc(
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_channel_get_cc(chan: &Channel, num: i32) -> i32 {
+pub fn fluid_channel_get_cc(chan: &Channel, num: i32) -> i32 {
     return if num >= 0 as i32 && num < 128 as i32 {
         chan.cc[num as usize] as i32
     } else {
@@ -376,59 +376,65 @@ pub unsafe fn fluid_channel_get_cc(chan: &Channel, num: i32) -> i32 {
     };
 }
 
-pub unsafe fn fluid_channel_pressure(chan: &mut Channel, val: i32) -> i32 {
+pub fn fluid_channel_pressure(chan: &mut Channel, val: i32) -> i32 {
     chan.channel_pressure = val as i16;
-    fluid_synth_modulate_voices(
-        chan.synth,
-        chan.channum,
-        0 as i32,
-        FLUID_MOD_CHANNELPRESSURE as i32,
-    );
+    unsafe {
+        fluid_synth_modulate_voices(
+            chan.synth,
+            chan.channum,
+            0 as i32,
+            FLUID_MOD_CHANNELPRESSURE as i32,
+        );
+    }
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_channel_pitch_bend(mut chan: &mut Channel, val: i32) -> i32 {
+pub fn fluid_channel_pitch_bend(mut chan: &mut Channel, val: i32) -> i32 {
     chan.pitch_bend = val as i16;
-    fluid_synth_modulate_voices(
-        chan.synth,
-        chan.channum,
-        0 as i32,
-        FLUID_MOD_PITCHWHEEL as i32,
-    );
+    unsafe {
+        fluid_synth_modulate_voices(
+            chan.synth,
+            chan.channum,
+            0 as i32,
+            FLUID_MOD_PITCHWHEEL as i32,
+        );
+    }
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_channel_pitch_wheel_sens(
+pub fn fluid_channel_pitch_wheel_sens(
     mut chan: &mut Channel,
     val: i32,
 ) -> i32 {
     chan.pitch_wheel_sensitivity = val as i16;
-    fluid_synth_modulate_voices(
-        chan.synth,
-        chan.channum,
-        0 as i32,
-        FLUID_MOD_PITCHWHEELSENS as i32,
-    );
+    unsafe {
+        fluid_synth_modulate_voices(
+            chan.synth,
+            chan.channum,
+            0 as i32,
+            FLUID_MOD_PITCHWHEELSENS as i32,
+        );
+    }
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_channel_get_num(chan: &Channel) -> i32 {
+pub fn fluid_channel_get_num(chan: &Channel) -> i32 {
     return chan.channum;
 }
 
-pub unsafe fn fluid_channel_set_interp_method(mut chan: &mut Channel, new_method: i32) {
+pub fn fluid_channel_set_interp_method(mut chan: &mut Channel, new_method: i32) {
     chan.interp_method = new_method;
 }
 
-pub unsafe fn fluid_channel_get_interp_method(chan: &Channel) -> i32 {
+pub fn fluid_channel_get_interp_method(chan: &Channel) -> i32 {
     return chan.interp_method;
 }
 
-pub unsafe fn fluid_channel_get_sfontnum(chan: &Channel) -> u32 {
+pub fn fluid_channel_get_sfontnum(chan: &Channel) -> u32 {
     return chan.sfontnum;
 }
 
-pub unsafe fn fluid_channel_set_sfontnum(
+pub fn fluid_channel_set_sfontnum(
     mut chan: &mut Channel,
     sfontnum: u32,
 ) -> i32 {
