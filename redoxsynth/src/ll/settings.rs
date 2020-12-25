@@ -4,8 +4,6 @@ use super::hash::fluid_hashtable_lookup;
 use super::hash::fluid_hashtable_replace;
 use super::hash::new_fluid_hashtable;
 use super::hash::HashTable;
-use super::list::delete_fluid_list;
-use super::list::List;
 use super::synth::fluid_synth_settings;
 use super::sys::fluid_strtok;
 use std::ffi::CStr;
@@ -20,7 +18,6 @@ pub struct StrSetting {
     value: *mut libc::c_char,
     def: *mut libc::c_char,
     hints: i32,
-    options: *mut List,
     update: StrUpdateFn,
     data: *mut libc::c_void,
 }
@@ -77,7 +74,6 @@ unsafe fn new_fluid_str_setting(
         0 as *mut libc::c_char
     };
     (*str).hints = hints;
-    (*str).options = 0 as *mut List;
     (*str).update = fun;
     (*str).data = data;
     return str;
@@ -89,18 +85,6 @@ unsafe fn delete_fluid_str_setting(str: *mut StrSetting) {
         }
         if !(*str).def.is_null() {
             libc::free((*str).def as *mut libc::c_void);
-        }
-        if !(*str).options.is_null() {
-            let mut list: *mut List = (*str).options;
-            while !list.is_null() {
-                libc::free((*list).data);
-                list = if !list.is_null() {
-                    (*list).next
-                } else {
-                    0 as *mut List
-                }
-            }
-            delete_fluid_list((*str).options);
         }
         libc::free(str as *mut libc::c_void);
     };
