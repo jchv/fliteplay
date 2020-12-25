@@ -67,13 +67,6 @@ impl Synth {
     }
 }
 
-impl Drop for Synth {
-    fn drop(&mut self) {
-        let _settings = Settings::from_ptr(unsafe { ll::synth::fluid_synth_get_settings(&mut self.handle) });
-        ll::synth::delete_fluid_synth(&mut self.handle);
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::{Settings, Synth};

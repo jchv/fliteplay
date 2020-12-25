@@ -533,7 +533,6 @@ impl Synth {
                     }
                 }
             }
-            delete_fluid_synth(&mut synth);
             return Err("failed");
         }
     }
@@ -991,7 +990,7 @@ unsafe fn fluid_synth_init() {
 }
 
 pub unsafe fn fluid_synth_set_sample_rate(
-    mut synth: *mut Synth,
+    synth: *mut Synth,
     sample_rate: f32,
 ) {
     (*synth).sample_rate = sample_rate as f64;
@@ -1008,161 +1007,159 @@ pub unsafe fn fluid_synth_set_sample_rate(
     (*synth).chorus = Chorus::new((*synth).sample_rate as f32);
 }
 
-pub fn delete_fluid_synth(mut synth: *mut Synth) -> i32 {
-    unsafe {
-        let mut i;
-        let mut k;
-        let mut list;
-        let mut sfont;
-        let mut bank_offset;
-        let mut loader;
-        if synth.is_null() {
-            return FLUID_OK as i32;
-        }
-        (*synth).state = FLUID_SYNTH_STOPPED as i32 as u32;
-        if !(*synth).voice.is_null() {
-            i = 0 as i32;
-            while i < (*synth).nvoice {
-                if !(*(*synth).voice.offset(i as isize)).is_null()
-                    && fluid_voice_is_playing(*(*synth).voice.offset(i as isize)) != 0
-                {
-                    fluid_voice_off(*(*synth).voice.offset(i as isize));
-                }
-                i += 1
-            }
-        }
-        list = (*synth).sfont;
-        while !list.is_null() {
-            sfont = if !list.is_null() {
-                (*list).data
-            } else {
-                0 as *mut libc::c_void
-            } as *mut SoundFont;
-            if !sfont.is_null() && (*sfont).free.is_some() {
-                Some((*sfont).free.expect("non-null function pointer"))
-                    .expect("non-null function pointer")(sfont);
-            } else {
-            };
-            list = if !list.is_null() {
-                (*list).next
-            } else {
-                0 as *mut List
-            }
-        }
-        delete_fluid_list((*synth).sfont);
-        list = (*synth).bank_offsets;
-        while !list.is_null() {
-            bank_offset = if !list.is_null() {
-                (*list).data
-            } else {
-                0 as *mut libc::c_void
-            } as *mut BankOffset;
-            libc::free(bank_offset as *mut libc::c_void);
-            list = if !list.is_null() {
-                (*list).next
-            } else {
-                0 as *mut List
-            }
-        }
-        delete_fluid_list((*synth).bank_offsets);
-        list = (*synth).loaders;
-        while !list.is_null() {
-            loader = if !list.is_null() {
-                (*list).data
-            } else {
-                0 as *mut libc::c_void
-            } as *mut SoundfontLoader;
-            if !loader.is_null() {
-                if !(*loader).fileapi.is_null() && (*(*loader).fileapi).free.is_some() {
-                    Some(
-                        (*(*loader).fileapi)
-                            .free
-                            .expect("non-null function pointer"),
-                    )
-                    .expect("non-null function pointer")((*loader).fileapi);
-                }
-                if (*loader).free.is_some() {
-                    Some((*loader).free.expect("non-null function pointer"))
-                        .expect("non-null function pointer")(loader);
-                }
-            }
-            list = if !list.is_null() {
-                (*list).next
-            } else {
-                0 as *mut List
-            }
-        }
-        delete_fluid_list((*synth).loaders);
-        if !(*synth).voice.is_null() {
-            i = 0 as i32;
-            while i < (*synth).nvoice {
-                if !(*(*synth).voice.offset(i as isize)).is_null() {
-                    delete_fluid_voice(*(*synth).voice.offset(i as isize));
-                }
-                i += 1
-            }
-            libc::free((*synth).voice as *mut libc::c_void);
-        }
-        if !(*synth).left_buf.is_null() {
-            i = 0 as i32;
-            while i < (*synth).nbuf {
-                if !(*(*synth).left_buf.offset(i as isize)).is_null() {
-                    libc::free(*(*synth).left_buf.offset(i as isize) as *mut libc::c_void);
-                }
-                i += 1
-            }
-            libc::free((*synth).left_buf as *mut libc::c_void);
-        }
-        if !(*synth).right_buf.is_null() {
-            i = 0 as i32;
-            while i < (*synth).nbuf {
-                if !(*(*synth).right_buf.offset(i as isize)).is_null() {
-                    libc::free(*(*synth).right_buf.offset(i as isize) as *mut libc::c_void);
-                }
-                i += 1
-            }
-            libc::free((*synth).right_buf as *mut libc::c_void);
-        }
-        if !(*synth).fx_left_buf.is_null() {
-            i = 0 as i32;
-            while i < 2 as i32 {
-                if !(*(*synth).fx_left_buf.offset(i as isize)).is_null() {
-                    libc::free(*(*synth).fx_left_buf.offset(i as isize) as *mut libc::c_void);
-                }
-                i += 1
-            }
-            libc::free((*synth).fx_left_buf as *mut libc::c_void);
-        }
-        if !(*synth).fx_right_buf.is_null() {
-            i = 0 as i32;
-            while i < 2 as i32 {
-                if !(*(*synth).fx_right_buf.offset(i as isize)).is_null() {
-                    libc::free(*(*synth).fx_right_buf.offset(i as isize) as *mut libc::c_void);
-                }
-                i += 1
-            }
-            libc::free((*synth).fx_right_buf as *mut libc::c_void);
-        }
-        (*synth).chorus.delete();
-        if !(*synth).tuning.is_null() {
-            i = 0 as i32;
-            while i < 128 as i32 {
-                if !(*(*synth).tuning.offset(i as isize)).is_null() {
-                    k = 0 as i32;
-                    while k < 128 as i32 {
-                        if !(*(*(*synth).tuning.offset(i as isize)).offset(k as isize)).is_null() {
-                            libc::free(*(*(*synth).tuning.offset(i as isize)).offset(k as isize)
-                                as *mut libc::c_void);
-                        }
-                        k += 1
+impl Drop for Synth {
+    fn drop(&mut self) {
+        unsafe {
+            let mut i;
+            let mut k;
+            let mut list;
+            let mut sfont;
+            let mut bank_offset;
+            let mut loader;
+            self.state = FLUID_SYNTH_STOPPED as i32 as u32;
+            if !self.voice.is_null() {
+                i = 0 as i32;
+                while i < self.nvoice {
+                    if !(*self.voice.offset(i as isize)).is_null()
+                        && fluid_voice_is_playing(*self.voice.offset(i as isize)) != 0
+                    {
+                        fluid_voice_off(*self.voice.offset(i as isize));
                     }
-                    libc::free(*(*synth).tuning.offset(i as isize) as *mut libc::c_void);
+                    i += 1
                 }
-                i += 1
             }
-            libc::free((*synth).tuning as *mut libc::c_void);
+            list = self.sfont;
+            while !list.is_null() {
+                sfont = if !list.is_null() {
+                    (*list).data
+                } else {
+                    0 as *mut libc::c_void
+                } as *mut SoundFont;
+                if !sfont.is_null() && (*sfont).free.is_some() {
+                    Some((*sfont).free.expect("non-null function pointer"))
+                        .expect("non-null function pointer")(sfont);
+                } else {
+                };
+                list = if !list.is_null() {
+                    (*list).next
+                } else {
+                    0 as *mut List
+                }
+            }
+            delete_fluid_list(self.sfont);
+            list = self.bank_offsets;
+            while !list.is_null() {
+                bank_offset = if !list.is_null() {
+                    (*list).data
+                } else {
+                    0 as *mut libc::c_void
+                } as *mut BankOffset;
+                libc::free(bank_offset as *mut libc::c_void);
+                list = if !list.is_null() {
+                    (*list).next
+                } else {
+                    0 as *mut List
+                }
+            }
+            delete_fluid_list(self.bank_offsets);
+            list = self.loaders;
+            while !list.is_null() {
+                loader = if !list.is_null() {
+                    (*list).data
+                } else {
+                    0 as *mut libc::c_void
+                } as *mut SoundfontLoader;
+                if !loader.is_null() {
+                    if !(*loader).fileapi.is_null() && (*(*loader).fileapi).free.is_some() {
+                        Some(
+                            (*(*loader).fileapi)
+                                .free
+                                .expect("non-null function pointer"),
+                        )
+                        .expect("non-null function pointer")((*loader).fileapi);
+                    }
+                    if (*loader).free.is_some() {
+                        Some((*loader).free.expect("non-null function pointer"))
+                            .expect("non-null function pointer")(loader);
+                    }
+                }
+                list = if !list.is_null() {
+                    (*list).next
+                } else {
+                    0 as *mut List
+                }
+            }
+            delete_fluid_list(self.loaders);
+            if !self.voice.is_null() {
+                i = 0 as i32;
+                while i < self.nvoice {
+                    if !(*self.voice.offset(i as isize)).is_null() {
+                        delete_fluid_voice(*self.voice.offset(i as isize));
+                    }
+                    i += 1
+                }
+                libc::free(self.voice as *mut libc::c_void);
+            }
+            if !self.left_buf.is_null() {
+                i = 0 as i32;
+                while i < self.nbuf {
+                    if !(*self.left_buf.offset(i as isize)).is_null() {
+                        libc::free(*self.left_buf.offset(i as isize) as *mut libc::c_void);
+                    }
+                    i += 1
+                }
+                libc::free(self.left_buf as *mut libc::c_void);
+            }
+            if !self.right_buf.is_null() {
+                i = 0 as i32;
+                while i < self.nbuf {
+                    if !(*self.right_buf.offset(i as isize)).is_null() {
+                        libc::free(*self.right_buf.offset(i as isize) as *mut libc::c_void);
+                    }
+                    i += 1
+                }
+                libc::free(self.right_buf as *mut libc::c_void);
+            }
+            if !self.fx_left_buf.is_null() {
+                i = 0 as i32;
+                while i < 2 as i32 {
+                    if !(*self.fx_left_buf.offset(i as isize)).is_null() {
+                        libc::free(*self.fx_left_buf.offset(i as isize) as *mut libc::c_void);
+                    }
+                    i += 1
+                }
+                libc::free(self.fx_left_buf as *mut libc::c_void);
+            }
+            if !self.fx_right_buf.is_null() {
+                i = 0 as i32;
+                while i < 2 as i32 {
+                    if !(*self.fx_right_buf.offset(i as isize)).is_null() {
+                        libc::free(*self.fx_right_buf.offset(i as isize) as *mut libc::c_void);
+                    }
+                    i += 1
+                }
+                libc::free(self.fx_right_buf as *mut libc::c_void);
+            }
+            self.chorus.delete();
+            if !self.tuning.is_null() {
+                i = 0 as i32;
+                while i < 128 as i32 {
+                    if !(*self.tuning.offset(i as isize)).is_null() {
+                        k = 0 as i32;
+                        while k < 128 as i32 {
+                            if !(*(*self.tuning.offset(i as isize)).offset(k as isize)).is_null() {
+                                libc::free(*(*self.tuning.offset(i as isize)).offset(k as isize)
+                                    as *mut libc::c_void);
+                            }
+                            k += 1
+                        }
+                        libc::free(*self.tuning.offset(i as isize) as *mut libc::c_void);
+                    }
+                    i += 1
+                }
+                libc::free(self.tuning as *mut libc::c_void);
+            }
         }
-        return FLUID_OK as i32;
     }
 }
 
@@ -1171,7 +1168,7 @@ pub unsafe fn fluid_synth_error() -> *mut libc::c_char {
 }
 
 pub unsafe fn fluid_synth_noteon(
-    mut synth: *mut Synth,
+    synth: *mut Synth,
     chan: i32,
     key: i32,
     vel: i32,
@@ -1788,7 +1785,7 @@ pub unsafe fn fluid_synth_update_gain(
     return 0 as i32;
 }
 
-pub unsafe fn fluid_synth_set_gain(mut synth: *mut Synth, mut gain: f32) {
+pub unsafe fn fluid_synth_set_gain(synth: *mut Synth, mut gain: f32) {
     let mut i;
     gain = if gain < 0.0f32 {
         0.0f32
@@ -1824,7 +1821,7 @@ pub unsafe fn fluid_synth_update_polyphony(
 }
 
 pub unsafe fn fluid_synth_set_polyphony(
-    mut synth: *mut Synth,
+    synth: *mut Synth,
     polyphony: i32,
 ) -> i32 {
     let mut i;
@@ -1899,7 +1896,7 @@ pub unsafe fn fluid_synth_set_chorus(
 }
 
 pub unsafe fn fluid_synth_write_float(
-    mut synth: *mut Synth,
+    synth: *mut Synth,
     len: i32,
     lout: *mut libc::c_void,
     loff: i32,
@@ -1968,7 +1965,7 @@ unsafe fn roundi(x: f32) -> i32 {
 }
 
 pub unsafe fn fluid_synth_write_s16(
-    mut synth: *mut Synth,
+    synth: *mut Synth,
     len: i32,
     lout: *mut libc::c_void,
     loff: i32,
@@ -2037,7 +2034,7 @@ pub unsafe fn fluid_synth_write_s16(
 }
 
 pub unsafe fn fluid_synth_one_block(
-    mut synth: *mut Synth,
+    synth: *mut Synth,
     do_not_mix_fx_to_out: i32,
 ) -> i32 {
     let mut i;
@@ -2356,7 +2353,7 @@ pub unsafe fn fluid_synth_start_voice(synth: *mut Synth, voice: *mut Voice) {
 }
 
 pub fn fluid_synth_add_sfloader(
-    mut synth: *mut Synth,
+    synth: *mut Synth,
     loader: *mut SoundfontLoader,
 ) {
     unsafe {
@@ -2365,7 +2362,7 @@ pub fn fluid_synth_add_sfloader(
 }
 
 pub unsafe fn fluid_synth_sfload(
-    mut synth: *mut Synth,
+    synth: *mut Synth,
     filename: *const libc::c_char,
     reset_presets: i32,
 ) -> i32 {
@@ -2405,7 +2402,7 @@ pub unsafe fn fluid_synth_sfload(
 }
 
 pub unsafe fn fluid_synth_sfunload(
-    mut synth: *mut Synth,
+    synth: *mut Synth,
     id: u32,
     reset_presets: i32,
 ) -> i32 {
@@ -2441,7 +2438,7 @@ pub unsafe fn fluid_synth_sfunload(
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_synth_sfreload(mut synth: *mut Synth, id: u32) -> i32 {
+pub unsafe fn fluid_synth_sfreload(synth: *mut Synth, id: u32) -> i32 {
     let mut filename: [libc::c_char; 1024] = [0; 1024];
     let mut sfont;
     let mut index: i32 = 0 as i32;
@@ -2508,7 +2505,7 @@ pub unsafe fn fluid_synth_sfreload(mut synth: *mut Synth, id: u32) -> i32 {
     return -(1 as i32);
 }
 
-pub unsafe fn fluid_synth_remove_sfont(mut synth: *mut Synth, sfont: *mut SoundFont) {
+pub unsafe fn fluid_synth_remove_sfont(synth: *mut Synth, sfont: *mut SoundFont) {
     let sfont_id: i32 = (*sfont).id as i32;
     (*synth).sfont = fluid_list_remove((*synth).sfont, sfont as *mut libc::c_void);
     fluid_synth_remove_bank_offset(synth, sfont_id);
@@ -2564,11 +2561,11 @@ pub unsafe fn fluid_synth_get_channel_preset(
     return 0 as *mut Preset;
 }
 
-pub unsafe fn fluid_synth_set_reverb_on(mut synth: *mut Synth, on: i32) {
+pub unsafe fn fluid_synth_set_reverb_on(synth: *mut Synth, on: i32) {
     (*synth).with_reverb = on as libc::c_char;
 }
 
-pub unsafe fn fluid_synth_set_chorus_on(mut synth: *mut Synth, on: i32) {
+pub unsafe fn fluid_synth_set_chorus_on(synth: *mut Synth, on: i32) {
     (*synth).with_chorus = on as libc::c_char;
 }
 
@@ -2686,7 +2683,7 @@ unsafe fn fluid_synth_get_tuning(
     return *(*(*synth).tuning.offset(bank as isize)).offset(prog as isize);
 }
 unsafe fn fluid_synth_create_tuning(
-    mut synth: *mut Synth,
+    synth: *mut Synth,
     bank: i32,
     prog: i32,
     name: *const libc::c_char,
@@ -2913,12 +2910,12 @@ pub unsafe fn fluid_synth_reset_tuning(
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_synth_tuning_iteration_start(mut synth: *mut Synth) {
+pub unsafe fn fluid_synth_tuning_iteration_start(synth: *mut Synth) {
     (*synth).cur_tuning = 0 as *mut Tuning;
 }
 
 pub unsafe fn fluid_synth_tuning_iteration_next(
-    mut synth: *mut Synth,
+    synth: *mut Synth,
     bank: *mut i32,
     prog: *mut i32,
 ) -> i32 {
@@ -3038,7 +3035,7 @@ pub unsafe fn fluid_synth_get_gen(
 }
 
 pub unsafe fn fluid_synth_start(
-    mut synth: *mut Synth,
+    synth: *mut Synth,
     id: u32,
     preset: *mut Preset,
     _audio_chan: i32,
@@ -3115,7 +3112,7 @@ pub unsafe fn fluid_synth_get_mut_bank_offset0(
 
 
 pub unsafe fn fluid_synth_set_bank_offset(
-    mut synth: *mut Synth,
+    synth: *mut Synth,
     sfont_id: i32,
     offset: i32,
 ) -> i32 {
@@ -3150,7 +3147,7 @@ pub unsafe fn fluid_synth_get_bank_offset(
     };
 }
 
-pub unsafe fn fluid_synth_remove_bank_offset(mut synth: *mut Synth, sfont_id: i32) {
+pub unsafe fn fluid_synth_remove_bank_offset(synth: *mut Synth, sfont_id: i32) {
     let bank_offset;
     bank_offset = fluid_synth_get_bank_offset0(synth, sfont_id);
     if !bank_offset.is_null() {
