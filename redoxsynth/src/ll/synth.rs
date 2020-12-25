@@ -18,9 +18,6 @@ use super::channel::Channel;
 use super::chorus::Chorus;
 use super::defsfont::new_fluid_defsfloader;
 use super::dsp_float::fluid_dsp_float_config;
-use super::list::delete_fluid_list;
-use super::list::fluid_list_prepend;
-use super::list::List;
 use super::modulator::fluid_mod_set_amount;
 use super::modulator::fluid_mod_set_dest;
 use super::modulator::fluid_mod_set_source1;
@@ -80,7 +77,7 @@ pub struct Synth {
     effects_channels: i32,
     state: u32,
     ticks: u32,
-    loaders: *mut List,
+    loaders: Vec<*mut SoundfontLoader>,
     sfont: Vec<SoundFont>,
     sfont_id: u32,
     bank_offsets: Vec<*mut BankOffset>,
@@ -128,7 +125,7 @@ impl Synth {
                 effects_channels: 0 as _,
                 state: 0 as _,
                 ticks: 0 as _,
-                loaders: 0 as _,
+                loaders: Vec::new(),
                 sfont: Vec::new(),
                 sfont_id: 0 as _,
                 bank_offsets: Vec::new(),
@@ -837,8 +834,6 @@ pub unsafe fn fluid_synth_set_sample_rate(
 impl Drop for Synth {
     fn drop(&mut self) {
         unsafe {
-            let mut list;
-            let mut loader;
             self.state = FLUID_SYNTH_STOPPED as i32 as u32;
             for voice in self.voice.iter() {
                 fluid_voice_off(*voice);
@@ -847,34 +842,23 @@ impl Drop for Synth {
                 libc::free(*bank_offset as *mut libc::c_void);
             }
             self.bank_offsets.clear();
-            list = self.loaders;
-            while !list.is_null() {
-                loader = if !list.is_null() {
-                    (*list).data
-                } else {
-                    0 as *mut libc::c_void
-                } as *mut SoundfontLoader;
-                if !loader.is_null() {
-                    if !(*loader).fileapi.is_null() && (*(*loader).fileapi).free.is_some() {
+            for loader in self.loaders.iter() {
+                if !(*loader).is_null() {
+                    if !(*(*loader)).fileapi.is_null() && (*(*(*loader)).fileapi).free.is_some() {
                         Some(
-                            (*(*loader).fileapi)
+                            (*(*(*loader)).fileapi)
                                 .free
                                 .expect("non-null function pointer"),
                         )
-                        .expect("non-null function pointer")((*loader).fileapi);
+                        .expect("non-null function pointer")((*(*loader)).fileapi);
                     }
-                    if (*loader).free.is_some() {
-                        Some((*loader).free.expect("non-null function pointer"))
-                            .expect("non-null function pointer")(loader);
+                    if (*(*loader)).free.is_some() {
+                        Some((*(*loader)).free.expect("non-null function pointer"))
+                            .expect("non-null function pointer")(*loader);
                     }
-                }
-                list = if !list.is_null() {
-                    (*list).next
-                } else {
-                    0 as *mut List
                 }
             }
-            delete_fluid_list(self.loaders);
+            self.loaders.clear();
             for voice in self.voice.iter_mut() {
                 delete_fluid_voice(*voice);
             }
@@ -2084,7 +2068,7 @@ pub fn fluid_synth_add_sfloader(
     loader: *mut SoundfontLoader,
 ) {
     unsafe {
-        (*synth).loaders = fluid_list_prepend((*synth).loaders, loader as *mut libc::c_void);
+        (*synth).loaders.insert(0, loader);
     }
 }
 
@@ -2093,21 +2077,13 @@ pub unsafe fn fluid_synth_sfload(
     filename: *const libc::c_char,
     reset_presets: i32,
 ) -> i32 {
-    let list;
-    let loader;
     if filename.is_null() {
         fluid_log!(FLUID_ERR, "Invalid filename",);
         return FLUID_FAILED as i32;
     }
-    list = (*synth).loaders;
-    if !list.is_null() {
-        loader = if !list.is_null() {
-            (*list).data
-        } else {
-            0 as *mut libc::c_void
-        } as *mut SoundfontLoader;
-        let sfont = Some((*loader).load.expect("non-null function pointer"))
-            .expect("non-null function pointer")(loader, filename);
+    for loader in (*synth).loaders.iter() {
+        let sfont = Some((*(*loader)).load.expect("non-null function pointer"))
+            .expect("non-null function pointer")(*loader, filename);
         match sfont {
             Some(mut sfont) => {
                 (*synth).sfont_id = (*synth).sfont_id.wrapping_add(1);
@@ -2172,7 +2148,6 @@ pub unsafe fn fluid_synth_sfreload(synth: *mut Synth, id: u32) -> i32 {
     let mut filename: [libc::c_char; 1024] = [0; 1024];
     let sfont;
     let index;
-    let mut loader;
     index = (*synth).sfont.iter().position(|x| x.id == id).expect("Soundfont with ID");
     sfont = &(*synth).sfont[index];
     libc::strcpy(
@@ -2183,15 +2158,9 @@ pub unsafe fn fluid_synth_sfreload(synth: *mut Synth, id: u32) -> i32 {
     if fluid_synth_sfunload(synth, id, 0 as i32) != FLUID_OK as i32 {
         return FLUID_FAILED as i32;
     }
-    let mut list = (*synth).loaders;
-    while !list.is_null() {
-        loader = if !list.is_null() {
-            (*list).data
-        } else {
-            0 as *mut libc::c_void
-        } as *mut SoundfontLoader;
-        match Some((*loader).load.expect("non-null function pointer"))
-            .expect("non-null function pointer")(loader, filename.as_mut_ptr()) {
+    for loader in (*synth).loaders.iter() {
+        match Some((*(*loader)).load.expect("non-null function pointer"))
+            .expect("non-null function pointer")(*loader, filename.as_mut_ptr()) {
             Some(mut sfont) => {
                 sfont.id = id;
                 (*synth).sfont.insert(index, sfont);
@@ -2199,11 +2168,6 @@ pub unsafe fn fluid_synth_sfreload(synth: *mut Synth, id: u32) -> i32 {
                 return id as _;
             },
             None => {}
-        }
-        list = if !list.is_null() {
-            (*list).next
-        } else {
-            0 as *mut List
         }
     }
     fluid_log!(
