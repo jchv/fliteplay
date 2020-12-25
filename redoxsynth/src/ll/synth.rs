@@ -106,7 +106,7 @@ pub struct Synth {
     pub right_buf: *mut *mut f32,
     pub fx_left_buf: *mut *mut f32,
     pub fx_right_buf: *mut *mut f32,
-    pub reverb: Box<ReverbModel>,
+    pub reverb: ReverbModel,
     pub chorus: Chorus,
     pub cur: i32,
     pub dither_index: i32,
