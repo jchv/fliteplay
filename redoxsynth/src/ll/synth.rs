@@ -97,10 +97,10 @@ pub struct Synth {
     noteid: u32,
     storeid: u32,
     nbuf: i32,
-    left_buf: *mut *mut f32,
-    right_buf: *mut *mut f32,
-    fx_left_buf: *mut *mut f32,
-    fx_right_buf: *mut *mut f32,
+    left_buf: Vec<[f32; 64]>,
+    right_buf: Vec<[f32; 64]>,
+    fx_left_buf: Vec<[f32; 64]>,
+    fx_right_buf: Vec<[f32; 64]>,
     reverb: ReverbModel,
     chorus: Chorus,
     cur: i32,
@@ -114,7 +114,6 @@ pub struct Synth {
 impl Synth {
     pub fn new(mut settings: Settings) -> Result<Self, &'static str> {
         unsafe {
-            let mut current_block: u64;
             let mut i: i32 = 0;
             let loader;
         
@@ -148,10 +147,10 @@ impl Synth {
                 noteid: 0 as _,
                 storeid: 0 as _,
                 nbuf: 0 as _,
-                left_buf: 0 as _,
-                right_buf: 0 as _,
-                fx_left_buf: 0 as _,
-                fx_right_buf: 0 as _,
+                left_buf: Vec::new(),
+                right_buf: Vec::new(),
+                fx_left_buf: Vec::new(),
+                fx_right_buf: Vec::new(),
                 reverb: ReverbModel::new(),
                 chorus: Chorus::new(44100f32),
                 cur: 0 as _,
@@ -336,178 +335,42 @@ impl Synth {
             for _ in 0..synth.nvoice {
                 synth.voice.push(new_fluid_voice(synth.sample_rate as f32));
             }
-            synth.left_buf = 0 as *mut *mut f32;
-            synth.right_buf = 0 as *mut *mut f32;
-            synth.fx_left_buf = 0 as *mut *mut f32;
-            synth.fx_right_buf = 0 as *mut *mut f32;
-            synth.left_buf = 
-                libc::malloc(
-                    (synth.nbuf as libc::size_t).wrapping_mul(
-                        ::std::mem::size_of::<*mut f32>() as libc::size_t,
-                    ),
-                ) as *mut *mut f32;
-            synth.right_buf =
-                libc::malloc(
-                    (synth.nbuf as libc::size_t).wrapping_mul(
-                        ::std::mem::size_of::<*mut f32>() as libc::size_t,
-                    ),
-                ) as *mut *mut f32;
-            if synth.left_buf.is_null() || synth.right_buf.is_null() {
-                panic!("out of memory");
-            }
-            libc::memset(
-                synth.left_buf as *mut libc::c_void,
-                0 as i32,
-                (synth.nbuf as libc::size_t).wrapping_mul(
-                    ::std::mem::size_of::<*mut f32>() as libc::size_t,
-                ),
+            synth.left_buf.resize(synth.nbuf as usize, [0f32; 64]);
+            synth.right_buf.resize(synth.nbuf as usize, [0f32; 64]);
+            synth.fx_left_buf.resize(synth.effects_channels as usize, [0f32; 64]);
+            synth.fx_right_buf.resize(synth.effects_channels as usize, [0f32; 64]);
+            synth.cur = 64 as i32;
+            synth.dither_index = 0 as i32;
+            synth.reverb = ReverbModel::new();
+            fluid_synth_set_reverb(
+                &mut synth,
+                0.2f32 as f64,
+                0.0f32 as f64,
+                0.5f32 as f64,
+                0.9f32 as f64,
             );
-            libc::memset(
-                synth.right_buf as *mut libc::c_void,
-                0 as i32,
-                (synth.nbuf as libc::size_t).wrapping_mul(
-                    ::std::mem::size_of::<*mut f32>() as libc::size_t,
-                ),
+            synth.chorus = Chorus::new(
+                synth.sample_rate as f32,
             );
-            i = 0 as i32;
-            loop {
-                if !(i < synth.nbuf) {
-                    current_block = 178030534879405462;
-                    break;
-                }
-                let ref mut fresh2 = *synth.left_buf.offset(i as isize);
-                *fresh2 = libc::malloc(
-                    (64 as i32 as libc::size_t).wrapping_mul(
-                        ::std::mem::size_of::<f32>() as libc::size_t,
-                    ),
-                ) as *mut f32;
-                let ref mut fresh3 = *synth.right_buf.offset(i as isize);
-                *fresh3 = libc::malloc(
-                    (64 as i32 as libc::size_t).wrapping_mul(
-                        ::std::mem::size_of::<f32>() as libc::size_t,
-                    ),
-                ) as *mut f32;
-                if (*synth.left_buf.offset(i as isize)).is_null()
-                    || (*synth.right_buf.offset(i as isize)).is_null()
-                {
-                    fluid_log!(FLUID_ERR, "Out of memory",);
-                    current_block = 2776114520721993823;
-                    break;
-                } else {
-                    i += 1
-                }
+            if fluid_settings_str_equal(
+                &settings,
+                b"synth.drums-channel.active\x00"
+                    as *const u8
+                    as *const libc::c_char,
+                b"yes\x00" as *const u8
+                    as *const libc::c_char
+                    as *mut libc::c_char,
+            ) != 0
+            {
+                fluid_synth_bank_select(
+                    &mut synth,
+                    9 as i32,
+                    128 as i32
+                        as u32,
+                );
             }
-            match current_block {
-                2776114520721993823 => {}
-                _ => {
-                    synth.fx_left_buf = libc::malloc(
-                        (synth.effects_channels as libc::size_t)
-                            .wrapping_mul(::std::mem::size_of::<*mut f32>()
-                                as libc::size_t),
-                    )
-                        as *mut *mut f32;
-                    synth.fx_right_buf = libc::malloc(
-                        (synth.effects_channels as libc::size_t)
-                            .wrapping_mul(::std::mem::size_of::<*mut f32>()
-                                as libc::size_t),
-                    )
-                        as *mut *mut f32;
-                    if synth.fx_left_buf.is_null()
-                        || synth.fx_right_buf.is_null()
-                    {
-                        fluid_log!(FLUID_ERR, "Out of memory",);
-                    } else {
-                        libc::memset(
-                            synth.fx_left_buf as *mut libc::c_void,
-                            0 as i32,
-                            (2 as i32 as libc::size_t).wrapping_mul(
-                                ::std::mem::size_of::<*mut f32>()
-                                    as libc::size_t,
-                            ),
-                        );
-                        libc::memset(
-                            synth.fx_right_buf as *mut libc::c_void,
-                            0 as i32,
-                            (2 as i32 as libc::size_t).wrapping_mul(
-                                ::std::mem::size_of::<*mut f32>()
-                                    as libc::size_t,
-                            ),
-                        );
-                        i = 0 as i32;
-                        loop {
-                            if !(i < synth.effects_channels) {
-                                current_block = 7739940392431776979;
-                                break;
-                            }
-                            let ref mut fresh4 =
-                                *synth.fx_left_buf.offset(i as isize);
-                            *fresh4 = libc::malloc(
-                                (64 as i32 as libc::size_t)
-                                    .wrapping_mul(::std::mem::size_of::<f32>()
-                                        as libc::size_t),
-                            )
-                                as *mut f32;
-                            let ref mut fresh5 =
-                                *synth.fx_right_buf.offset(i as isize);
-                            *fresh5 = libc::malloc(
-                                (64 as i32 as libc::size_t)
-                                    .wrapping_mul(::std::mem::size_of::<f32>()
-                                        as libc::size_t),
-                            )
-                                as *mut f32;
-                            if (*synth.fx_left_buf.offset(i as isize))
-                                .is_null()
-                                || (*synth.fx_right_buf.offset(i as isize))
-                                    .is_null()
-                            {
-                                fluid_log!(FLUID_ERR, "Out of memory",);
-                                current_block = 2776114520721993823;
-                                break;
-                            } else {
-                                i += 1
-                            }
-                        }
-                        match current_block {
-                            2776114520721993823 => {}
-                            _ => {
-                                synth.cur = 64 as i32;
-                                synth.dither_index = 0 as i32;
-                                synth.reverb = ReverbModel::new();
-                                fluid_synth_set_reverb(
-                                    &mut synth,
-                                    0.2f32 as f64,
-                                    0.0f32 as f64,
-                                    0.5f32 as f64,
-                                    0.9f32 as f64,
-                                );
-                                synth.chorus = Chorus::new(
-                                    synth.sample_rate as f32,
-                                );
-                                if fluid_settings_str_equal(
-                                    &settings,
-                                    b"synth.drums-channel.active\x00"
-                                        as *const u8
-                                        as *const libc::c_char,
-                                    b"yes\x00" as *const u8
-                                        as *const libc::c_char
-                                        as *mut libc::c_char,
-                                ) != 0
-                                {
-                                    fluid_synth_bank_select(
-                                        &mut synth,
-                                        9 as i32,
-                                        128 as i32
-                                            as u32,
-                                    );
-                                }
-                                synth.settings = settings;
-                                return Ok(synth);
-                            }
-                        }
-                    }
-                }
-            }
-            return Err("failed");
+            synth.settings = settings;
+            return Ok(synth);
         }
     }
 }
@@ -1062,46 +925,6 @@ impl Drop for Synth {
                 delete_fluid_voice(*voice);
             }
             self.voice.clear();
-            if !self.left_buf.is_null() {
-                i = 0 as i32;
-                while i < self.nbuf {
-                    if !(*self.left_buf.offset(i as isize)).is_null() {
-                        libc::free(*self.left_buf.offset(i as isize) as *mut libc::c_void);
-                    }
-                    i += 1
-                }
-                libc::free(self.left_buf as *mut libc::c_void);
-            }
-            if !self.right_buf.is_null() {
-                i = 0 as i32;
-                while i < self.nbuf {
-                    if !(*self.right_buf.offset(i as isize)).is_null() {
-                        libc::free(*self.right_buf.offset(i as isize) as *mut libc::c_void);
-                    }
-                    i += 1
-                }
-                libc::free(self.right_buf as *mut libc::c_void);
-            }
-            if !self.fx_left_buf.is_null() {
-                i = 0 as i32;
-                while i < 2 as i32 {
-                    if !(*self.fx_left_buf.offset(i as isize)).is_null() {
-                        libc::free(*self.fx_left_buf.offset(i as isize) as *mut libc::c_void);
-                    }
-                    i += 1
-                }
-                libc::free(self.fx_left_buf as *mut libc::c_void);
-            }
-            if !self.fx_right_buf.is_null() {
-                i = 0 as i32;
-                while i < 2 as i32 {
-                    if !(*self.fx_right_buf.offset(i as isize)).is_null() {
-                        libc::free(*self.fx_right_buf.offset(i as isize) as *mut libc::c_void);
-                    }
-                    i += 1
-                }
-                libc::free(self.fx_right_buf as *mut libc::c_void);
-            }
             self.chorus.delete();
             if !self.tuning.is_null() {
                 i = 0 as i32;
@@ -1873,8 +1696,8 @@ pub unsafe fn fluid_synth_write_float(
     let mut l;
     let left_out: *mut f32 = lout as *mut f32;
     let right_out: *mut f32 = rout as *mut f32;
-    let left_in: *mut f32 = *(*synth).left_buf.offset(0 as i32 as isize);
-    let right_in: *mut f32 = *(*synth).right_buf.offset(0 as i32 as isize);
+    let left_in: *mut f32 = (*synth).left_buf[0].as_mut_ptr();
+    let right_in: *mut f32 = (*synth).right_buf[0].as_mut_ptr();
     if (*synth).state != FLUID_SYNTH_PLAYING as i32 as u32 {
         return 0 as i32;
     }
@@ -1942,8 +1765,8 @@ pub unsafe fn fluid_synth_write_s16(
     let mut cur;
     let left_out: *mut i16 = lout as *mut i16;
     let right_out: *mut i16 = rout as *mut i16;
-    let left_in: *mut f32 = *(*synth).left_buf.offset(0 as i32 as isize);
-    let right_in: *mut f32 = *(*synth).right_buf.offset(0 as i32 as isize);
+    let left_in: *mut f32 = (*synth).left_buf[0].as_mut_ptr();
+    let right_in: *mut f32 = (*synth).right_buf[0].as_mut_ptr();
     let mut left_sample;
     let mut right_sample;
     let mut di: i32 = (*synth).dither_index;
@@ -2012,12 +1835,12 @@ pub unsafe fn fluid_synth_one_block(
     i = 0 as i32;
     while i < (*synth).nbuf {
         libc::memset(
-            *(*synth).left_buf.offset(i as isize) as *mut libc::c_void,
+            (*synth).left_buf[i as usize].as_mut_ptr() as *mut libc::c_void,
             0 as i32,
             byte_size as libc::size_t,
         );
         libc::memset(
-            *(*synth).right_buf.offset(i as isize) as *mut libc::c_void,
+            (*synth).right_buf[i as usize].as_mut_ptr() as *mut libc::c_void,
             0 as i32,
             byte_size as libc::size_t,
         );
@@ -2026,24 +1849,24 @@ pub unsafe fn fluid_synth_one_block(
     i = 0 as i32;
     while i < (*synth).effects_channels {
         libc::memset(
-            *(*synth).fx_left_buf.offset(i as isize) as *mut libc::c_void,
+            (*synth).fx_left_buf[i as usize].as_mut_ptr() as *mut libc::c_void,
             0 as i32,
             byte_size as libc::size_t,
         );
         libc::memset(
-            *(*synth).fx_right_buf.offset(i as isize) as *mut libc::c_void,
+            (*synth).fx_right_buf[i as usize].as_mut_ptr() as *mut libc::c_void,
             0 as i32,
             byte_size as libc::size_t,
         );
         i += 1
     }
     reverb_buf = if (*synth).with_reverb as i32 != 0 {
-        *(*synth).fx_left_buf.offset(0 as i32 as isize)
+        (*synth).fx_left_buf[0].as_mut_ptr()
     } else {
         0 as *mut f32
     };
     chorus_buf = if (*synth).with_chorus as i32 != 0 {
-        *(*synth).fx_left_buf.offset(1 as i32 as isize)
+        (*synth).fx_left_buf[1].as_mut_ptr()
     } else {
         0 as *mut f32
     };
@@ -2055,8 +1878,8 @@ pub unsafe fn fluid_synth_one_block(
         {
             auchan = fluid_channel_get_num(fluid_voice_get_channel(voice).as_ref().unwrap());
             auchan %= (*synth).audio_groups;
-            left_buf = *(*synth).left_buf.offset(auchan as isize);
-            right_buf = *(*synth).right_buf.offset(auchan as isize);
+            left_buf = (*synth).left_buf[auchan as usize].as_mut_ptr();
+            right_buf = (*synth).right_buf[auchan as usize].as_mut_ptr();
             fluid_voice_write(voice, &*synth, left_buf, right_buf, reverb_buf, chorus_buf);
         }
         i += 1
@@ -2065,30 +1888,30 @@ pub unsafe fn fluid_synth_one_block(
         if !reverb_buf.is_null() {
             (*synth).reverb.process_replace(
                 reverb_buf,
-                *(*synth).fx_left_buf.offset(0 as i32 as isize),
-                *(*synth).fx_right_buf.offset(0 as i32 as isize),
+                (*synth).fx_left_buf[0].as_mut_ptr(),
+                (*synth).fx_right_buf[0].as_mut_ptr(),
             );
         }
         if !chorus_buf.is_null() {
             (*synth).chorus.process_replace(
                 chorus_buf,
-                *(*synth).fx_left_buf.offset(1 as i32 as isize),
-                *(*synth).fx_right_buf.offset(1 as i32 as isize),
+                (*synth).fx_left_buf[1].as_mut_ptr(),
+                (*synth).fx_right_buf[1].as_mut_ptr(),
             );
         }
     } else {
         if !reverb_buf.is_null() {
             (*synth).reverb.process_mix(
                 reverb_buf,
-                *(*synth).left_buf.offset(0 as i32 as isize),
-                *(*synth).right_buf.offset(0 as i32 as isize),
+                (*synth).left_buf[0].as_mut_ptr(),
+                (*synth).right_buf[0].as_mut_ptr(),
             );
         }
         if !chorus_buf.is_null() {
             (*synth).chorus.process_mix(
                 chorus_buf,
-                *(*synth).left_buf.offset(0 as i32 as isize),
-                *(*synth).right_buf.offset(0 as i32 as isize),
+                (*synth).left_buf[0].as_mut_ptr(),
+                (*synth).right_buf[0].as_mut_ptr(),
             );
         }
     }
