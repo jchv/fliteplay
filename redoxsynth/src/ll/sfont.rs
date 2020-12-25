@@ -1,9 +1,11 @@
+use std::any::Any;
+
 use super::synth::Synth;
 #[derive(Copy, Clone)]
 pub struct SoundfontLoader {
     pub data: *mut libc::c_void,
     pub free: Option<unsafe fn(_: *mut SoundfontLoader) -> i32>,
-    pub load: Option<unsafe fn(_: *mut SoundfontLoader, _: *const libc::c_char) -> *mut SoundFont>,
+    pub load: Option<unsafe fn(_: *mut SoundfontLoader, _: *const libc::c_char) -> Option<SoundFont>>,
     pub fileapi: *mut FileApi,
 }
 #[derive(Copy, Clone)]
@@ -38,9 +40,9 @@ pub struct Preset {
     >,
     pub notify: Option<unsafe fn(_: *mut Preset, _: i32, _: i32) -> i32>,
 }
-#[derive(Copy, Clone)]
+
 pub struct SoundFont {
-    pub data: *mut libc::c_void,
+    pub data: Box<dyn Any>,
     pub id: u32,
     pub free: Option<unsafe fn(_: *mut SoundFont) -> i32>,
     pub get_name: Option<unsafe fn(_: *const SoundFont) -> *mut libc::c_char>,

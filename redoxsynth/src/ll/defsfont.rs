@@ -31,16 +31,15 @@ use super::voice::FluidVoiceAddMod;
 use std::ffi::{CStr, CString};
 pub const FLUID_OK: i32 = 0;
 pub const FLUID_FAILED: i32 = -1;
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct DefSFont {
     filename: *mut libc::c_char,
     samplepos: u32,
     samplesize: u32,
     sampledata: *mut i16,
-    sample: *mut List,
+    sample: Vec<*mut Sample>,
     preset: *mut DefPreset,
-    iter_preset: Preset,
     iter_cur: *mut DefPreset,
 }
 #[derive(Copy, Clone)]
@@ -350,12 +349,8 @@ pub fn new_fluid_defsfloader() -> *mut SoundfontLoader {
         }
         (*loader).data = 0 as *mut libc::c_void;
         (*loader).fileapi = FLUID_DEFAULT_FILEAPI;
-        (*loader).free =
-            Some(delete_fluid_defsfloader as unsafe fn(_: *mut SoundfontLoader) -> i32);
-        (*loader).load = Some(
-            fluid_defsfloader_load
-                as unsafe fn(_: *mut SoundfontLoader, _: *const libc::c_char) -> *mut SoundFont,
-        );
+        (*loader).free = Some(delete_fluid_defsfloader as _);
+        (*loader).load = Some(fluid_defsfloader_load as _);
         return loader;
     }
 }
@@ -370,54 +365,46 @@ pub unsafe fn delete_fluid_defsfloader(loader: *mut SoundfontLoader) -> i32 {
 pub unsafe fn fluid_defsfloader_load(
     loader: *mut SoundfontLoader,
     filename: *const libc::c_char,
-) -> *mut SoundFont {
-    let defsfont: *mut DefSFont;
-    let mut sfont: *mut SoundFont;
-    defsfont = new_fluid_defsfont();
-    if defsfont.is_null() {
-        return 0 as *mut SoundFont;
-    }
-    sfont = if !(*loader).data.is_null() {
-        (*loader).data as *mut SoundFont
-    } else {
-        libc::malloc(::std::mem::size_of::<SoundFont>() as libc::size_t) as *mut SoundFont
+) -> Option<SoundFont> {
+    let defsfont = new_fluid_defsfont();
+    let mut sfont = SoundFont {
+        data: Box::new(defsfont),
+        id: 0 as _,
+        free: Some(fluid_defsfont_sfont_delete as _),
+        get_name: Some(fluid_defsfont_sfont_get_name as _),
+        get_preset: Some(fluid_defsfont_sfont_get_preset as _),
+        iteration_start: Some(fluid_defsfont_sfont_iteration_start as _),
+        iteration_next: Some(fluid_defsfont_sfont_iteration_next as _),
     };
-    if sfont.is_null() {
-        fluid_log!(FLUID_ERR, "Out of memory",);
-        return 0 as *mut SoundFont;
+    if fluid_defsfont_load(sfont.data.downcast_mut::<DefSFont>().unwrap(), filename, (*loader).fileapi) == FLUID_FAILED as i32 {
+        delete_fluid_defsfont(sfont.data.downcast_mut::<DefSFont>().unwrap());
+        return None;
     }
-    (*sfont).data = defsfont as *mut libc::c_void;
-    (*sfont).free =
-        Some(fluid_defsfont_sfont_delete as unsafe fn(_: *mut SoundFont) -> i32);
-    (*sfont).get_name =
-        Some(fluid_defsfont_sfont_get_name as unsafe fn(_: *const SoundFont) -> *mut libc::c_char);
-    (*sfont).get_preset = Some(
-        fluid_defsfont_sfont_get_preset
-            as unsafe fn(_: *const SoundFont, _: u32, _: u32) -> *mut Preset,
-    );
-    (*sfont).iteration_start =
-        Some(fluid_defsfont_sfont_iteration_start as unsafe fn(_: *mut SoundFont) -> ());
-    (*sfont).iteration_next = Some(
-        fluid_defsfont_sfont_iteration_next
-            as unsafe fn(_: *mut SoundFont, _: *mut Preset) -> i32,
-    );
-    if fluid_defsfont_load(defsfont, filename, (*loader).fileapi) == FLUID_FAILED as i32 {
-        delete_fluid_defsfont(defsfont);
-        return 0 as *mut SoundFont;
-    }
-    return sfont;
+    return Some(sfont);
 }
 
 pub unsafe fn fluid_defsfont_sfont_delete(sfont: *mut SoundFont) -> i32 {
-    if delete_fluid_defsfont((*sfont).data as *mut DefSFont) != 0 as i32 {
-        return -(1 as i32);
+    match (*sfont).data.downcast_mut::<DefSFont>() {
+        Some(defsfont) => {
+            if delete_fluid_defsfont(defsfont) != 0 as i32 {
+                return -(1 as i32);
+            }
+            libc::free(sfont as *mut libc::c_void);
+        },
+        None => {}
     }
-    libc::free(sfont as *mut libc::c_void);
-    return 0 as i32;
+    return 0;
 }
 
 pub unsafe fn fluid_defsfont_sfont_get_name(sfont: *const SoundFont) -> *mut libc::c_char {
-    return fluid_defsfont_get_name((*sfont).data as *mut DefSFont);
+    match (*sfont).data.downcast_ref::<DefSFont>() {
+        Some(defsfont) => {
+            return fluid_defsfont_get_name(defsfont);
+        },
+        None => {
+            return 0 as _;
+        }
+    }
 }
 
 pub unsafe fn fluid_defsfont_sfont_get_preset(
@@ -425,43 +412,55 @@ pub unsafe fn fluid_defsfont_sfont_get_preset(
     bank: u32,
     prenum: u32,
 ) -> *mut Preset {
-    let mut preset: *mut Preset;
-    let defpreset: *mut DefPreset;
-    defpreset = fluid_defsfont_get_preset((*sfont).data as *mut DefSFont, bank, prenum);
-    if defpreset.is_null() {
-        return 0 as *mut Preset;
+    match (*sfont).data.downcast_ref::<DefSFont>() {
+        Some(defsfont) => {
+            let mut preset: *mut Preset;
+            let defpreset: *mut DefPreset;
+            defpreset = fluid_defsfont_get_preset(defsfont, bank, prenum);
+            if defpreset.is_null() {
+                return 0 as *mut Preset;
+            }
+            preset = libc::malloc(::std::mem::size_of::<Preset>() as libc::size_t) as *mut Preset;
+            if preset.is_null() {
+                fluid_log!(FLUID_ERR, "Out of memory",);
+                return 0 as *mut Preset;
+            }
+            (*preset).sfont = sfont;
+            (*preset).data = defpreset as *mut libc::c_void;
+            (*preset).free =
+                Some(fluid_defpreset_preset_delete as unsafe fn(_: *mut Preset) -> i32);
+            (*preset).get_name =
+                Some(fluid_defpreset_preset_get_name as unsafe fn(_: *const Preset) -> *mut libc::c_char);
+            (*preset).get_banknum =
+                Some(fluid_defpreset_preset_get_banknum as unsafe fn(_: *const Preset) -> i32);
+            (*preset).get_num =
+                Some(fluid_defpreset_preset_get_num as unsafe fn(_: *const Preset) -> i32);
+            (*preset).noteon = Some(
+                fluid_defpreset_preset_noteon
+                    as unsafe fn(
+                        _: *mut Preset,
+                        _: *mut Synth,
+                        _: i32,
+                        _: i32,
+                        _: i32,
+                    ) -> i32,
+            );
+            (*preset).notify = None;
+            return preset;
+        },
+        None => {
+            return 0 as _;
+        }
     }
-    preset = libc::malloc(::std::mem::size_of::<Preset>() as libc::size_t) as *mut Preset;
-    if preset.is_null() {
-        fluid_log!(FLUID_ERR, "Out of memory",);
-        return 0 as *mut Preset;
-    }
-    (*preset).sfont = sfont;
-    (*preset).data = defpreset as *mut libc::c_void;
-    (*preset).free =
-        Some(fluid_defpreset_preset_delete as unsafe fn(_: *mut Preset) -> i32);
-    (*preset).get_name =
-        Some(fluid_defpreset_preset_get_name as unsafe fn(_: *const Preset) -> *mut libc::c_char);
-    (*preset).get_banknum =
-        Some(fluid_defpreset_preset_get_banknum as unsafe fn(_: *const Preset) -> i32);
-    (*preset).get_num =
-        Some(fluid_defpreset_preset_get_num as unsafe fn(_: *const Preset) -> i32);
-    (*preset).noteon = Some(
-        fluid_defpreset_preset_noteon
-            as unsafe fn(
-                _: *mut Preset,
-                _: *mut Synth,
-                _: i32,
-                _: i32,
-                _: i32,
-            ) -> i32,
-    );
-    (*preset).notify = None;
-    return preset;
 }
 
 pub unsafe fn fluid_defsfont_sfont_iteration_start(sfont: *mut SoundFont) {
-    fluid_defsfont_iteration_start((*sfont).data as *mut DefSFont);
+    match (*sfont).data.downcast_mut::<DefSFont>() {
+        Some(defsfont) => {
+            fluid_defsfont_iteration_start(defsfont);
+        }
+        None => {}
+    }
 }
 
 pub unsafe fn fluid_defsfont_sfont_iteration_next(
@@ -487,7 +486,14 @@ pub unsafe fn fluid_defsfont_sfont_iteration_next(
             ) -> i32,
     );
     (*preset).notify = None;
-    return fluid_defsfont_iteration_next((*sfont).data as *mut DefSFont, preset);
+    match (*sfont).data.downcast_mut::<DefSFont>() {
+        Some(defsfont) => {
+            return fluid_defsfont_iteration_next(defsfont, preset);
+        },
+        None => {
+            return 0;
+        }
+    }
 }
 
 pub unsafe fn fluid_defpreset_preset_delete(preset: *mut Preset) -> i32 {
@@ -523,61 +529,30 @@ pub unsafe fn fluid_defpreset_preset_noteon(
     );
 }
 
-pub unsafe fn new_fluid_defsfont() -> *mut DefSFont {
-    let mut sfont: *mut DefSFont;
-    sfont = libc::malloc(::std::mem::size_of::<DefSFont>() as libc::size_t)
-        as *mut DefSFont;
-    if sfont.is_null() {
-        fluid_log!(FLUID_ERR, "Out of memory",);
-        return 0 as *mut DefSFont;
-    }
-    (*sfont).filename = 0 as *mut libc::c_char;
-    (*sfont).samplepos = 0 as i32 as u32;
-    (*sfont).samplesize = 0 as i32 as u32;
-    (*sfont).sample = 0 as *mut List;
-    (*sfont).sampledata = 0 as *mut i16;
-    (*sfont).preset = 0 as *mut DefPreset;
-    return sfont;
+pub unsafe fn new_fluid_defsfont() -> DefSFont {
+    return DefSFont{
+        filename: 0 as _,
+        samplepos: 0 as _,
+        samplesize: 0 as _,
+        sample: Vec::new(),
+        sampledata: 0 as _,
+        preset: 0 as _,
+        iter_cur: 0 as _,
+    };
 }
 
 pub unsafe fn delete_fluid_defsfont(mut sfont: *mut DefSFont) -> i32 {
-    let mut list: *mut List;
     let mut preset: *mut DefPreset;
-    let mut sample: *mut Sample;
-    list = (*sfont).sample;
-    while !list.is_null() {
-        sample = if !list.is_null() {
-            (*list).data
-        } else {
-            0 as *mut libc::c_void
-        } as *mut Sample;
-        if (*sample).refcount != 0 as i32 as u32 {
+    for sample in (*sfont).sample.iter() {
+        if (**sample).refcount != 0 as i32 as u32 {
             return -(1 as i32);
-        }
-        list = if !list.is_null() {
-            (*list).next
-        } else {
-            0 as *mut List
         }
     }
     if !(*sfont).filename.is_null() {
         libc::free((*sfont).filename as *mut libc::c_void);
     }
-    list = (*sfont).sample;
-    while !list.is_null() {
-        delete_fluid_sample(if !list.is_null() {
-            (*list).data
-        } else {
-            0 as *mut libc::c_void
-        } as *mut Sample);
-        list = if !list.is_null() {
-            (*list).next
-        } else {
-            0 as *mut List
-        }
-    }
-    if !(*sfont).sample.is_null() {
-        delete_fluid_list((*sfont).sample);
+    for sample in (*sfont).sample.iter() {
+        delete_fluid_sample(*sample);
     }
     if !(*sfont).sampledata.is_null() {
         libc::free((*sfont).sampledata as *mut libc::c_void);
@@ -592,7 +567,7 @@ pub unsafe fn delete_fluid_defsfont(mut sfont: *mut DefSFont) -> i32 {
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_defsfont_get_name(sfont: *mut DefSFont) -> *mut libc::c_char {
+pub unsafe fn fluid_defsfont_get_name(sfont: *const DefSFont) -> *mut libc::c_char {
     return (*sfont).filename;
 }
 
@@ -700,10 +675,10 @@ pub unsafe fn fluid_defsfont_load(
 }
 
 pub unsafe fn fluid_defsfont_add_sample(
-    mut sfont: *mut DefSFont,
+    sfont: *mut DefSFont,
     sample: *mut Sample,
 ) -> i32 {
-    (*sfont).sample = fluid_list_append((*sfont).sample, sample as *mut libc::c_void);
+    (*sfont).sample.push(sample);
     return FLUID_OK as i32;
 }
 
@@ -808,29 +783,16 @@ pub unsafe fn fluid_defsfont_get_sample(
     sfont: *mut DefSFont,
     s: *mut libc::c_char,
 ) -> *mut Sample {
-    let mut list: *mut List;
-    let mut sample: *mut Sample;
-    list = (*sfont).sample;
-    while !list.is_null() {
-        sample = if !list.is_null() {
-            (*list).data
-        } else {
-            0 as *mut libc::c_void
-        } as *mut Sample;
-        if libc::strcmp((*sample).name.as_mut_ptr(), s) == 0 as i32 {
-            return sample;
-        }
-        list = if !list.is_null() {
-            (*list).next
-        } else {
-            0 as *mut List
+    for sample in (*sfont).sample.iter() {
+        if libc::strcmp((**sample).name.as_mut_ptr(), s) == 0 as i32 {
+            return *sample;
         }
     }
     return 0 as *mut Sample;
 }
 
 pub unsafe fn fluid_defsfont_get_preset(
-    sfont: *mut DefSFont,
+    sfont: *const DefSFont,
     bank: u32,
     num: u32,
 ) -> *mut DefPreset {

@@ -19,11 +19,8 @@ use super::chorus::Chorus;
 use super::defsfont::new_fluid_defsfloader;
 use super::dsp_float::fluid_dsp_float_config;
 use super::list::delete_fluid_list;
-use super::list::fluid_list_insert_at;
-use super::list::fluid_list_nth;
 use super::list::fluid_list_prepend;
 use super::list::fluid_list_remove;
-use super::list::fluid_list_size;
 use super::list::List;
 use super::modulator::fluid_mod_set_amount;
 use super::modulator::fluid_mod_set_dest;
@@ -70,7 +67,6 @@ use super::voice::new_fluid_voice;
 use super::voice::FluidVoiceAddMod;
 use std::ffi::CStr;
 
-#[derive(Clone)]
 pub struct Synth {
     pub settings: Settings,
     polyphony: i32,
@@ -86,12 +82,11 @@ pub struct Synth {
     state: u32,
     ticks: u32,
     loaders: *mut List,
-    sfont: *mut List,
+    sfont: Vec<SoundFont>,
     sfont_id: u32,
     bank_offsets: *mut List,
     gain: f64,
     channel: Vec<Channel>,
-    num_channels: i32,
     nvoice: i32,
     voice: Vec<*mut Voice>,
     noteid: u32,
@@ -105,7 +100,6 @@ pub struct Synth {
     chorus: Chorus,
     cur: i32,
     dither_index: i32,
-    outbuf: [libc::c_char; 256],
     tuning: *mut *mut *mut Tuning,
     cur_tuning: *mut Tuning,
     pub(crate) min_note_length_ticks: u32,
@@ -136,12 +130,11 @@ impl Synth {
                 state: 0 as _,
                 ticks: 0 as _,
                 loaders: 0 as _,
-                sfont: 0 as _,
+                sfont: Vec::new(),
                 sfont_id: 0 as _,
                 bank_offsets: 0 as _,
                 gain: 0 as _,
                 channel: Vec::new(),
-                num_channels: 0 as _,
                 nvoice: 0 as _,
                 voice: Vec::new(),
                 noteid: 0 as _,
@@ -155,7 +148,6 @@ impl Synth {
                 chorus: Chorus::new(44100f32),
                 cur: 0 as _,
                 dither_index: 0 as _,
-                outbuf: [0; 256],
                 tuning: 0 as _,
                 cur_tuning: 0 as _,
                 min_note_length_ticks: 0 as _,
@@ -318,7 +310,6 @@ impl Synth {
                 synth.nbuf = synth.audio_groups
             }
             synth.state = FLUID_SYNTH_PLAYING as i32 as u32;
-            synth.sfont = 0 as *mut List;
             synth.noteid = 0 as i32 as u32;
             synth.ticks = 0 as i32 as u32;
             synth.tuning = 0 as *mut *mut *mut Tuning;
@@ -850,7 +841,6 @@ impl Drop for Synth {
             let mut i;
             let mut k;
             let mut list;
-            let mut sfont;
             let mut bank_offset;
             let mut loader;
             self.state = FLUID_SYNTH_STOPPED as i32 as u32;
@@ -859,25 +849,6 @@ impl Drop for Synth {
                 fluid_voice_off(self.voice[i as usize]);
                 i += 1
             }
-            list = self.sfont;
-            while !list.is_null() {
-                sfont = if !list.is_null() {
-                    (*list).data
-                } else {
-                    0 as *mut libc::c_void
-                } as *mut SoundFont;
-                if !sfont.is_null() && (*sfont).free.is_some() {
-                    Some((*sfont).free.expect("non-null function pointer"))
-                        .expect("non-null function pointer")(sfont);
-                } else {
-                };
-                list = if !list.is_null() {
-                    (*list).next
-                } else {
-                    0 as *mut List
-                }
-            }
-            delete_fluid_list(self.sfont);
             list = self.bank_offsets;
             while !list.is_null() {
                 bank_offset = if !list.is_null() {
@@ -1348,18 +1319,9 @@ pub unsafe fn fluid_synth_find_preset(
     banknum: u32,
     prognum: u32,
 ) -> *mut Preset {
-    let mut preset;
-    let mut sfont;
-    let mut list: *mut List = (*synth).sfont;
-    let mut offset;
-    while !list.is_null() {
-        sfont = if !list.is_null() {
-            (*list).data
-        } else {
-            0 as *mut libc::c_void
-        } as *mut SoundFont;
-        offset = fluid_synth_get_bank_offset(synth, (*sfont).id as i32);
-        preset = Some((*sfont).get_preset.expect("non-null function pointer"))
+    for sfont in (*synth).sfont.iter() {
+        let offset = fluid_synth_get_bank_offset(synth, sfont.id as i32);
+        let preset = Some(sfont.get_preset.expect("non-null function pointer"))
             .expect("non-null function pointer")(
             sfont,
             banknum.wrapping_sub(offset as u32),
@@ -1368,11 +1330,6 @@ pub unsafe fn fluid_synth_find_preset(
         if !preset.is_null() {
             (*preset).sfont = sfont;
             return preset;
-        }
-        list = if !list.is_null() {
-            (*list).next
-        } else {
-            0 as *mut List
         }
     }
     return 0 as *mut Preset;
@@ -2151,7 +2108,6 @@ pub unsafe fn fluid_synth_sfload(
     filename: *const libc::c_char,
     reset_presets: i32,
 ) -> i32 {
-    let mut sfont;
     let list;
     let loader;
     if filename.is_null() {
@@ -2165,18 +2121,22 @@ pub unsafe fn fluid_synth_sfload(
         } else {
             0 as *mut libc::c_void
         } as *mut SoundfontLoader;
-        sfont = Some((*loader).load.expect("non-null function pointer"))
+        let sfont = Some((*loader).load.expect("non-null function pointer"))
             .expect("non-null function pointer")(loader, filename);
-        if sfont.is_null() {
-            return -(1 as i32);
+        match sfont {
+            Some(mut sfont) => {
+                (*synth).sfont_id = (*synth).sfont_id.wrapping_add(1);
+                sfont.id = (*synth).sfont_id;
+                (*synth).sfont.push(sfont);
+                if reset_presets != 0 {
+                    fluid_synth_program_reset(synth);
+                }
+                return (*synth).sfont_id as i32;
+            }
+            None => {
+                return -(1 as i32);
+            }
         }
-        (*synth).sfont_id = (*synth).sfont_id.wrapping_add(1);
-        (*sfont).id = (*synth).sfont_id;
-        (*synth).sfont = fluid_list_prepend((*synth).sfont, sfont as *mut libc::c_void);
-        if reset_presets != 0 {
-            fluid_synth_program_reset(synth);
-        }
-        return (*sfont).id as i32;
     }
     fluid_log!(
         FLUID_ERR,
@@ -2196,7 +2156,7 @@ pub unsafe fn fluid_synth_sfunload(
         fluid_log!(FLUID_ERR, "No SoundFont with id = {}", id);
         return FLUID_FAILED as i32;
     }
-    (*synth).sfont = fluid_list_remove((*synth).sfont, sfont as *mut libc::c_void);
+    (*synth).sfont.retain(|s| s.id != (*sfont).id);
     if reset_presets != 0 {
         fluid_synth_program_reset(synth);
     } else {
@@ -2225,56 +2185,35 @@ pub unsafe fn fluid_synth_sfunload(
 
 pub unsafe fn fluid_synth_sfreload(synth: *mut Synth, id: u32) -> i32 {
     let mut filename: [libc::c_char; 1024] = [0; 1024];
-    let mut sfont;
-    let mut index: i32 = 0 as i32;
-    let mut list;
+    let sfont;
+    let index;
     let mut loader;
-    sfont = fluid_synth_get_sfont_by_id(synth, id);
-    if sfont.is_null() {
-        fluid_log!(FLUID_ERR, "No SoundFont with id = {}", id);
-        return FLUID_FAILED as i32;
-    }
-    list = (*synth).sfont;
-    while !list.is_null() {
-        if sfont
-            == (if !list.is_null() {
-                (*list).data
-            } else {
-                0 as *mut libc::c_void
-            }) as *mut SoundFont
-        {
-            break;
-        }
-        list = if !list.is_null() {
-            (*list).next
-        } else {
-            0 as *mut List
-        };
-        index += 1
-    }
+    index = (*synth).sfont.iter().position(|x| x.id == id).expect("Soundfont with ID");
+    sfont = &(*synth).sfont[index];
     libc::strcpy(
         filename.as_mut_ptr(),
-        Some((*sfont).get_name.expect("non-null function pointer"))
+        Some(sfont.get_name.expect("non-null function pointer"))
             .expect("non-null function pointer")(sfont),
     );
     if fluid_synth_sfunload(synth, id, 0 as i32) != FLUID_OK as i32 {
         return FLUID_FAILED as i32;
     }
-    list = (*synth).loaders;
+    let mut list = (*synth).loaders;
     while !list.is_null() {
         loader = if !list.is_null() {
             (*list).data
         } else {
             0 as *mut libc::c_void
         } as *mut SoundfontLoader;
-        sfont = Some((*loader).load.expect("non-null function pointer"))
-            .expect("non-null function pointer")(loader, filename.as_mut_ptr());
-        if !sfont.is_null() {
-            (*sfont).id = id;
-            (*synth).sfont =
-                fluid_list_insert_at((*synth).sfont, index, sfont as *mut libc::c_void);
-            fluid_synth_update_presets(synth);
-            return (*sfont).id as i32;
+        match Some((*loader).load.expect("non-null function pointer"))
+            .expect("non-null function pointer")(loader, filename.as_mut_ptr()) {
+            Some(mut sfont) => {
+                sfont.id = id;
+                (*synth).sfont.insert(index, sfont);
+                fluid_synth_update_presets(synth);
+                return id as _;
+            },
+            None => {}
         }
         list = if !list.is_null() {
             (*list).next
@@ -2292,48 +2231,33 @@ pub unsafe fn fluid_synth_sfreload(synth: *mut Synth, id: u32) -> i32 {
 
 pub unsafe fn fluid_synth_remove_sfont(synth: *mut Synth, sfont: *mut SoundFont) {
     let sfont_id: i32 = (*sfont).id as i32;
-    (*synth).sfont = fluid_list_remove((*synth).sfont, sfont as *mut libc::c_void);
+    (*synth).sfont.retain(|s| s as *const SoundFont != sfont);
     fluid_synth_remove_bank_offset(synth, sfont_id);
     fluid_synth_program_reset(synth);
 }
 
 pub unsafe fn fluid_synth_sfcount(synth: *const Synth) -> i32 {
-    return fluid_list_size((*synth).sfont);
+    return (*synth).sfont.len() as _;
 }
 
 pub unsafe fn fluid_synth_get_sfont(
-    synth: *const Synth,
+    synth: *mut Synth,
     num: u32,
 ) -> *mut SoundFont {
-    return if !fluid_list_nth((*synth).sfont, num as i32).is_null() {
-        (*fluid_list_nth((*synth).sfont, num as i32)).data
-    } else {
-        0 as *mut libc::c_void
-    } as *mut SoundFont;
+    return match (*synth).sfont.get_mut(num as usize) {
+        Some(sfont) => { sfont },
+        None => { 0 as _ }
+    };
 }
 
 pub unsafe fn fluid_synth_get_sfont_by_id(
-    synth: *const Synth,
+    synth: *mut Synth,
     id: u32,
 ) -> *mut SoundFont {
-    let mut list: *mut List = (*synth).sfont;
-    let mut sfont;
-    while !list.is_null() {
-        sfont = if !list.is_null() {
-            (*list).data
-        } else {
-            0 as *mut libc::c_void
-        } as *mut SoundFont;
-        if (*sfont).id == id {
-            return sfont;
-        }
-        list = if !list.is_null() {
-            (*list).next
-        } else {
-            0 as *mut List
-        }
-    }
-    return 0 as *mut SoundFont;
+    return match (*synth).sfont.iter_mut().find(|x| x.id == id) {
+        Some(sfont) => sfont,
+        None => 0 as _
+    };
 }
 
 pub unsafe fn fluid_synth_get_channel_preset(

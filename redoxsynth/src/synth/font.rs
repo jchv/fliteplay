@@ -51,8 +51,8 @@ impl Synth {
 
     - `num` The number of the SoundFont (0 <= num < sfcount)
      */
-    pub fn get_sfont(&self, num: u32) -> Option<FontRef<'_>> {
-        option_from_ptr(unsafe { ll::synth::fluid_synth_get_sfont(&self.handle, num) })
+    pub fn get_sfont(&mut self, num: u32) -> Option<FontRef<'_>> {
+        option_from_ptr(unsafe { ll::synth::fluid_synth_get_sfont(&mut self.handle, num) })
             .map(FontRef::from_ptr)
     }
 
@@ -66,8 +66,8 @@ impl Synth {
     /**
     Get a SoundFont. The SoundFont is specified by its ID.
      */
-    pub fn get_sfont_by_id(&self, id: FontId) -> Option<FontRef<'_>> {
-        option_from_ptr(unsafe { ll::synth::fluid_synth_get_sfont_by_id(&self.handle, id) })
+    pub fn get_sfont_by_id(&mut self, id: FontId) -> Option<FontRef<'_>> {
+        option_from_ptr(unsafe { ll::synth::fluid_synth_get_sfont_by_id(&mut self.handle, id) })
             .map(FontRef::from_ptr)
     }
 
