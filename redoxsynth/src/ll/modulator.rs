@@ -5,13 +5,13 @@ use super::conv::fluid_convex;
 use super::voice::Voice;
 #[derive(Copy, Clone)]
 pub struct Mod {
-    pub dest: libc::c_uchar,
-    pub src1: libc::c_uchar,
-    pub flags1: libc::c_uchar,
-    pub src2: libc::c_uchar,
-    pub flags2: libc::c_uchar,
-    pub amount: f64,
-    pub next: *mut Mod,
+    pub(crate) dest: libc::c_uchar,
+    pub(crate) src1: libc::c_uchar,
+    pub(crate) flags1: libc::c_uchar,
+    pub(crate) src2: libc::c_uchar,
+    pub(crate) flags2: libc::c_uchar,
+    pub(crate) amount: f64,
+    pub(crate) next: *mut Mod,
 }
 pub type ModFlags = u32;
 pub const FLUID_MOD_CC: ModFlags = 16;

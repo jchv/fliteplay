@@ -63,10 +63,10 @@ pub const GEN_ENDADDROFS: GenType = 1;
 pub const GEN_STARTADDROFS: GenType = 0;
 #[derive(Copy, Clone)]
 pub struct Gen {
-    pub flags: libc::c_uchar,
-    pub val: f64,
-    pub mod_0: f64,
-    pub nrpn: f64,
+    pub(crate) flags: libc::c_uchar,
+    pub(crate) val: f64,
+    pub(crate) mod_0: f64,
+    pub(crate) nrpn: f64,
 }
 pub type GenFlags = u32;
 pub const GEN_ABS_NRPN: GenFlags = 2;

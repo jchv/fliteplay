@@ -1,7 +1,7 @@
 #[derive(Copy, Clone)]
 pub struct List {
-    pub data: *mut libc::c_void,
-    pub next: *mut List,
+    pub(crate) data: *mut libc::c_void,
+    pub(crate) next: *mut List,
 }
 pub type CompareFn = Option<unsafe fn(_: *mut libc::c_void, _: *mut libc::c_void) -> i32>;
 

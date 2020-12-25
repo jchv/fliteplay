@@ -34,111 +34,111 @@ pub const FLUID_FAILED: i32 = -1;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct DefSFont {
-    pub filename: *mut libc::c_char,
-    pub samplepos: u32,
-    pub samplesize: u32,
-    pub sampledata: *mut i16,
-    pub sample: *mut List,
-    pub preset: *mut DefPreset,
-    pub iter_preset: Preset,
-    pub iter_cur: *mut DefPreset,
+    filename: *mut libc::c_char,
+    samplepos: u32,
+    samplesize: u32,
+    sampledata: *mut i16,
+    sample: *mut List,
+    preset: *mut DefPreset,
+    iter_preset: Preset,
+    iter_cur: *mut DefPreset,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct DefPreset {
-    pub next: *mut DefPreset,
-    pub sfont: *mut DefSFont,
-    pub name: [libc::c_char; 21],
-    pub bank: u32,
-    pub num: u32,
-    pub global_zone: *mut PresetZone,
-    pub zone: *mut PresetZone,
+    next: *mut DefPreset,
+    sfont: *mut DefSFont,
+    name: [libc::c_char; 21],
+    bank: u32,
+    num: u32,
+    global_zone: *mut PresetZone,
+    zone: *mut PresetZone,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct PresetZone {
-    pub next: *mut PresetZone,
-    pub name: *mut libc::c_char,
-    pub inst: *mut Instrument,
-    pub keylo: i32,
-    pub keyhi: i32,
-    pub vello: i32,
-    pub velhi: i32,
-    pub gen: [Gen; 60],
-    pub mod_0: *mut Mod,
+    next: *mut PresetZone,
+    name: *mut libc::c_char,
+    inst: *mut Instrument,
+    keylo: i32,
+    keyhi: i32,
+    vello: i32,
+    velhi: i32,
+    gen: [Gen; 60],
+    mod_0: *mut Mod,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct Instrument {
-    pub name: [libc::c_char; 21],
-    pub global_zone: *mut InstrumentZone,
-    pub zone: *mut InstrumentZone,
+    name: [libc::c_char; 21],
+    global_zone: *mut InstrumentZone,
+    zone: *mut InstrumentZone,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct InstrumentZone {
-    pub next: *mut InstrumentZone,
-    pub name: *mut libc::c_char,
-    pub sample: *mut Sample,
-    pub keylo: i32,
-    pub keyhi: i32,
-    pub vello: i32,
-    pub velhi: i32,
-    pub gen: [Gen; 60],
-    pub mod_0: *mut Mod,
+    next: *mut InstrumentZone,
+    name: *mut libc::c_char,
+    sample: *mut Sample,
+    keylo: i32,
+    keyhi: i32,
+    vello: i32,
+    velhi: i32,
+    gen: [Gen; 60],
+    mod_0: *mut Mod,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct SFData {
-    pub version: SFVersion,
-    pub romver: SFVersion,
-    pub samplepos: u32,
-    pub samplesize: u32,
-    pub fname: *mut libc::c_char,
-    pub sffd: *mut libc::FILE,
-    pub info: *mut List,
-    pub preset: *mut List,
-    pub inst: *mut List,
-    pub sample: *mut List,
+    version: SFVersion,
+    romver: SFVersion,
+    samplepos: u32,
+    samplesize: u32,
+    fname: *mut libc::c_char,
+    sffd: *mut libc::FILE,
+    info: *mut List,
+    preset: *mut List,
+    inst: *mut List,
+    sample: *mut List,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct SFVersion {
-    pub major: u16,
-    pub minor: u16,
+    major: u16,
+    minor: u16,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct SFInst {
-    pub name: [libc::c_char; 21],
-    pub zone: *mut List,
+    name: [libc::c_char; 21],
+    zone: *mut List,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct SFZone {
-    pub instsamp: *mut List,
-    pub gen: *mut List,
-    pub mod_0: *mut List,
+    instsamp: *mut List,
+    gen: *mut List,
+    mod_0: *mut List,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct SFPreset {
-    pub name: [libc::c_char; 21],
-    pub prenum: u16,
-    pub bank: u16,
-    pub libr: u32,
-    pub genre: u32,
-    pub morph: u32,
-    pub zone: *mut List,
+    name: [libc::c_char; 21],
+    prenum: u16,
+    bank: u16,
+    libr: u32,
+    genre: u32,
+    morph: u32,
+    zone: *mut List,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct SFMod {
-    pub src: u16,
-    pub dest: u16,
-    pub amount: i16,
-    pub amtsrc: u16,
-    pub trans: u16,
+    src: u16,
+    dest: u16,
+    amount: i16,
+    amtsrc: u16,
+    trans: u16,
 }
 pub const FLUID_MOD_SWITCH: ModFlags = 12;
 pub const FLUID_MOD_CONVEX: ModFlags = 8;
@@ -153,42 +153,42 @@ pub const FLUID_MOD_CC: ModFlags = 16;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct SFSample {
-    pub name: [libc::c_char; 21],
-    pub samfile: libc::c_uchar,
-    pub start: u32,
-    pub end: u32,
-    pub loopstart: u32,
-    pub loopend: u32,
-    pub samplerate: u32,
-    pub origpitch: libc::c_uchar,
-    pub pitchadj: libc::c_schar,
-    pub sampletype: u16,
+    name: [libc::c_char; 21],
+    samfile: libc::c_uchar,
+    start: u32,
+    end: u32,
+    loopstart: u32,
+    loopend: u32,
+    samplerate: u32,
+    origpitch: libc::c_uchar,
+    pitchadj: libc::c_schar,
+    sampletype: u16,
 }
 pub const GEN_SET: GenFlags = 1;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct SFGen {
-    pub id: u16,
-    pub amount: SFGenAmount,
+    id: u16,
+    amount: SFGenAmount,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub union SFGenAmount {
-    pub sword: i16,
-    pub uword: u16,
-    pub range: SFGenAmountRange,
+    sword: i16,
+    uword: u16,
+    range: SFGenAmountRange,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct SFGenAmountRange {
-    pub lo: libc::c_uchar,
-    pub hi: libc::c_uchar,
+    lo: libc::c_uchar,
+    hi: libc::c_uchar,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct SFChunk {
-    pub id: u32,
-    pub size: u32,
+    id: u32,
+    size: u32,
 }
 pub const SHDR_ID: u32 = 28;
 pub const UNKN_ID: u32 = 0;

@@ -18,37 +18,37 @@ pub const FLUID_NUM_TYPE: SettingsType = 0;
 pub const FLUID_NO_TYPE: SettingsType = -1;
 #[derive(Copy, Clone)]
 pub struct StrSetting {
-    pub value: *mut libc::c_char,
-    pub def: *mut libc::c_char,
-    pub hints: i32,
-    pub options: *mut List,
-    pub update: StrUpdateFn,
-    pub data: *mut libc::c_void,
+    value: *mut libc::c_char,
+    def: *mut libc::c_char,
+    hints: i32,
+    options: *mut List,
+    update: StrUpdateFn,
+    data: *mut libc::c_void,
 }
 pub type StrUpdateFn = Option<
     unsafe fn(_: *mut libc::c_void, _: *const libc::c_char, _: *mut libc::c_char) -> i32,
 >;
 #[derive(Copy, Clone)]
 pub struct IntSetting {
-    pub value: i32,
-    pub def: i32,
-    pub min: i32,
-    pub max: i32,
-    pub hints: i32,
-    pub update: IntUpdateFn,
-    pub data: *mut libc::c_void,
+    value: i32,
+    def: i32,
+    min: i32,
+    max: i32,
+    hints: i32,
+    update: IntUpdateFn,
+    data: *mut libc::c_void,
 }
 pub type IntUpdateFn =
     Option<unsafe fn(_: *mut libc::c_void, _: *const libc::c_char, _: i32) -> i32>;
 #[derive(Copy, Clone)]
 pub struct NumSetting {
-    pub value: f64,
-    pub def: f64,
-    pub min: f64,
-    pub max: f64,
-    pub hints: i32,
-    pub update: NumUpdateFn,
-    pub data: *mut libc::c_void,
+    value: f64,
+    def: f64,
+    min: f64,
+    max: f64,
+    hints: i32,
+    update: NumUpdateFn,
+    data: *mut libc::c_void,
 }
 pub type NumUpdateFn =
     Option<unsafe fn(_: *mut libc::c_void, _: *const libc::c_char, _: f64) -> i32>;

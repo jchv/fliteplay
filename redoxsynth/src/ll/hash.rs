@@ -1,17 +1,17 @@
 #[derive(Copy, Clone)]
 pub struct HashTable {
-    pub size: u32,
-    pub nnodes: u32,
-    pub nodes: *mut *mut HashNode,
-    pub del: DeleteFn,
+    pub(crate) size: u32,
+    pub(crate) nnodes: u32,
+    pub(crate) nodes: *mut *mut HashNode,
+    pub(crate) del: DeleteFn,
 }
 pub type DeleteFn = Option<unsafe fn(_: *mut libc::c_void, _: i32) -> ()>;
 #[derive(Copy, Clone)]
 pub struct HashNode {
-    pub key: *mut libc::c_char,
-    pub value: *mut libc::c_void,
-    pub type_0: i32,
-    pub next: *mut HashNode,
+    key: *mut libc::c_char,
+    value: *mut libc::c_void,
+    type_0: i32,
+    next: *mut HashNode,
 }
 
 pub unsafe fn new_fluid_hashtable(del: DeleteFn) -> *mut HashTable {

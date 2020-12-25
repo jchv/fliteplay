@@ -1,9 +1,9 @@
 #[derive(Copy, Clone)]
 pub struct Tuning {
-    pub name: *mut libc::c_char,
-    pub bank: i32,
-    pub prog: i32,
-    pub pitch: [f64; 128],
+    name: *mut libc::c_char,
+    pub(crate) bank: i32,
+    pub(crate) prog: i32,
+    pub(crate) pitch: [f64; 128],
 }
 
 pub unsafe fn new_fluid_tuning(
