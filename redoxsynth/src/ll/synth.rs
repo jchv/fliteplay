@@ -20,7 +20,6 @@ use super::defsfont::new_fluid_defsfloader;
 use super::dsp_float::fluid_dsp_float_config;
 use super::list::delete_fluid_list;
 use super::list::fluid_list_prepend;
-use super::list::fluid_list_remove;
 use super::list::List;
 use super::modulator::fluid_mod_set_amount;
 use super::modulator::fluid_mod_set_dest;
@@ -84,7 +83,7 @@ pub struct Synth {
     loaders: *mut List,
     sfont: Vec<SoundFont>,
     sfont_id: u32,
-    bank_offsets: *mut List,
+    bank_offsets: Vec<*mut BankOffset>,
     gain: f64,
     channel: Vec<Channel>,
     nvoice: i32,
@@ -132,7 +131,7 @@ impl Synth {
                 loaders: 0 as _,
                 sfont: Vec::new(),
                 sfont_id: 0 as _,
-                bank_offsets: 0 as _,
+                bank_offsets: Vec::new(),
                 gain: 0 as _,
                 channel: Vec::new(),
                 nvoice: 0 as _,
@@ -838,32 +837,16 @@ pub unsafe fn fluid_synth_set_sample_rate(
 impl Drop for Synth {
     fn drop(&mut self) {
         unsafe {
-            let mut i;
-            let mut k;
             let mut list;
-            let mut bank_offset;
             let mut loader;
             self.state = FLUID_SYNTH_STOPPED as i32 as u32;
-            i = 0 as i32;
-            while i < self.nvoice {
-                fluid_voice_off(self.voice[i as usize]);
-                i += 1
+            for voice in self.voice.iter() {
+                fluid_voice_off(*voice);
             }
-            list = self.bank_offsets;
-            while !list.is_null() {
-                bank_offset = if !list.is_null() {
-                    (*list).data
-                } else {
-                    0 as *mut libc::c_void
-                } as *mut BankOffset;
-                libc::free(bank_offset as *mut libc::c_void);
-                list = if !list.is_null() {
-                    (*list).next
-                } else {
-                    0 as *mut List
-                }
+            for bank_offset in self.bank_offsets.iter() {
+                libc::free(*bank_offset as *mut libc::c_void);
             }
-            delete_fluid_list(self.bank_offsets);
+            self.bank_offsets.clear();
             list = self.loaders;
             while !list.is_null() {
                 loader = if !list.is_null() {
@@ -897,6 +880,8 @@ impl Drop for Synth {
             }
             self.voice.clear();
             self.chorus.delete();
+            let mut i;
+            let mut k;
             if !self.tuning.is_null() {
                 i = 0 as i32;
                 while i < 128 as i32 {
@@ -2127,7 +2112,7 @@ pub unsafe fn fluid_synth_sfload(
             Some(mut sfont) => {
                 (*synth).sfont_id = (*synth).sfont_id.wrapping_add(1);
                 sfont.id = (*synth).sfont_id;
-                (*synth).sfont.push(sfont);
+                (*synth).sfont.insert(0, sfont);
                 if reset_presets != 0 {
                     fluid_synth_program_reset(synth);
                 }
@@ -2771,50 +2756,15 @@ pub unsafe fn fluid_synth_get_bank_offset0(
     synth: *const Synth,
     sfont_id: i32,
 ) -> *const BankOffset {
-    let mut list = (*synth).bank_offsets as *const List;
-    let mut offset;
-    while !list.is_null() {
-        offset = if !list.is_null() {
-            (*list).data
-        } else {
-            0 as *const libc::c_void
-        } as *const BankOffset;
-        if (*offset).sfont_id == sfont_id {
-            return offset;
-        }
-        list = if !list.is_null() {
-            (*list).next
-        } else {
-            0 as *const List
-        }
-    }
-    return 0 as *const BankOffset;
+    return (*synth).bank_offsets.iter().find(|x| (*(*(*x))).sfont_id == sfont_id).map(|x| *x as *const BankOffset).unwrap_or(0 as _);
 }
 
 pub unsafe fn fluid_synth_get_mut_bank_offset0(
     synth: *mut Synth,
     sfont_id: i32,
 ) -> *mut BankOffset {
-    let mut list = (*synth).bank_offsets;
-    let mut offset;
-    while !list.is_null() {
-        offset = if !list.is_null() {
-            (*list).data
-        } else {
-            0 as *mut libc::c_void
-        } as *mut BankOffset;
-        if (*offset).sfont_id == sfont_id {
-            return offset;
-        }
-        list = if !list.is_null() {
-            (*list).next
-        } else {
-            0 as *mut List
-        }
-    }
-    return 0 as *mut BankOffset;
+    return (*synth).bank_offsets.iter_mut().find(|x| (*(*(*x))).sfont_id == sfont_id).map(|x| *x as *mut BankOffset).unwrap_or(0 as _);
 }
-
 
 pub unsafe fn fluid_synth_set_bank_offset(
     synth: *mut Synth,
@@ -2831,8 +2781,7 @@ pub unsafe fn fluid_synth_set_bank_offset(
         }
         (*bank_offset).sfont_id = sfont_id;
         (*bank_offset).offset = offset;
-        (*synth).bank_offsets =
-            fluid_list_prepend((*synth).bank_offsets, bank_offset as *mut libc::c_void)
+        (*synth).bank_offsets.insert(0, bank_offset);
     } else {
         (*bank_offset).offset = offset
     }
@@ -2853,10 +2802,5 @@ pub unsafe fn fluid_synth_get_bank_offset(
 }
 
 pub unsafe fn fluid_synth_remove_bank_offset(synth: *mut Synth, sfont_id: i32) {
-    let bank_offset;
-    bank_offset = fluid_synth_get_bank_offset0(synth, sfont_id);
-    if !bank_offset.is_null() {
-        (*synth).bank_offsets =
-            fluid_list_remove((*synth).bank_offsets, bank_offset as *mut libc::c_void)
-    };
+    (*synth).bank_offsets.retain(|x| (*(*x)).sfont_id != sfont_id);
 }
