@@ -16,22 +16,6 @@ use super::channel::fluid_channel_set_prognum;
 use super::channel::fluid_channel_set_sfontnum;
 use super::channel::new_fluid_channel;
 use super::channel::Channel;
-use super::chorus::delete_fluid_chorus;
-use super::chorus::fluid_chorus_get_depth_ms;
-use super::chorus::fluid_chorus_get_level;
-use super::chorus::fluid_chorus_get_nr;
-use super::chorus::fluid_chorus_get_speed_hz;
-use super::chorus::fluid_chorus_get_type;
-use super::chorus::fluid_chorus_processmix;
-use super::chorus::fluid_chorus_processreplace;
-use super::chorus::fluid_chorus_reset;
-use super::chorus::fluid_chorus_set_depth_ms;
-use super::chorus::fluid_chorus_set_level;
-use super::chorus::fluid_chorus_set_nr;
-use super::chorus::fluid_chorus_set_speed_hz;
-use super::chorus::fluid_chorus_set_type;
-use super::chorus::fluid_chorus_update;
-use super::chorus::new_fluid_chorus;
 use super::chorus::Chorus;
 use super::conv::fluid_conversion_config;
 use super::defsfont::new_fluid_defsfloader;
@@ -123,7 +107,7 @@ pub struct Synth {
     pub fx_left_buf: *mut *mut f32,
     pub fx_right_buf: *mut *mut f32,
     pub reverb: ReverbModel,
-    pub chorus: *mut Chorus,
+    pub chorus: Chorus,
     pub cur: i32,
     pub dither_index: i32,
     pub outbuf: [libc::c_char; 256],
@@ -961,31 +945,27 @@ pub unsafe fn new_fluid_synth(settings: *mut Settings) -> *mut Synth {
                                                         0.5f32 as f64,
                                                         0.9f32 as f64,
                                                     );
-                                                    (*synth).chorus = new_fluid_chorus(
+                                                    (*synth).chorus = Chorus::new(
                                                         (*synth).sample_rate as f32,
                                                     );
-                                                    if (*synth).chorus.is_null() {
-                                                        fluid_log!(FLUID_ERR, "Out of memory",);
-                                                    } else {
-                                                        if fluid_settings_str_equal(
-                                                            settings,
-                                                            b"synth.drums-channel.active\x00"
-                                                                as *const u8
-                                                                as *const libc::c_char,
-                                                            b"yes\x00" as *const u8
-                                                                as *const libc::c_char
-                                                                as *mut libc::c_char,
-                                                        ) != 0
-                                                        {
-                                                            fluid_synth_bank_select(
-                                                                synth,
-                                                                9 as i32,
-                                                                128 as i32
-                                                                    as u32,
-                                                            );
-                                                        }
-                                                        return synth;
+                                                    if fluid_settings_str_equal(
+                                                        settings,
+                                                        b"synth.drums-channel.active\x00"
+                                                            as *const u8
+                                                            as *const libc::c_char,
+                                                        b"yes\x00" as *const u8
+                                                            as *const libc::c_char
+                                                            as *mut libc::c_char,
+                                                    ) != 0
+                                                    {
+                                                        fluid_synth_bank_select(
+                                                            synth,
+                                                            9 as i32,
+                                                            128 as i32
+                                                                as u32,
+                                                        );
                                                     }
+                                                    return synth;
                                                 }
                                             }
                                         }
@@ -1016,8 +996,8 @@ pub unsafe fn fluid_synth_set_sample_rate(
         *fresh6 = new_fluid_voice((*synth).sample_rate as f32);
         i += 1
     }
-    delete_fluid_chorus((*synth).chorus.as_mut().unwrap());
-    (*synth).chorus = new_fluid_chorus((*synth).sample_rate as f32);
+    (*synth).chorus.delete();
+    (*synth).chorus = Chorus::new((*synth).sample_rate as f32);
 }
 
 pub unsafe fn delete_fluid_synth(mut synth: *mut Synth) -> i32 {
@@ -1164,9 +1144,7 @@ pub unsafe fn delete_fluid_synth(mut synth: *mut Synth) -> i32 {
         }
         libc::free((*synth).fx_right_buf as *mut libc::c_void);
     }
-    if !(*synth).chorus.is_null() {
-        delete_fluid_chorus((*synth).chorus.as_mut().unwrap());
-    }
+    (*synth).chorus.delete();
     if !(*synth).tuning.is_null() {
         i = 0 as i32;
         while i < 128 as i32 {
@@ -1407,7 +1385,7 @@ pub unsafe fn fluid_synth_system_reset(synth: *mut Synth) -> i32 {
         fluid_channel_reset((*(*synth).channel.offset(i as isize)).as_mut().unwrap());
         i += 1
     }
-    fluid_chorus_reset((*synth).chorus.as_mut().unwrap());
+    (*synth).chorus.reset();
     (*synth).reverb.reset();
     return FLUID_OK as i32;
 }
@@ -1909,12 +1887,12 @@ pub unsafe fn fluid_synth_set_chorus(
     depth_ms: f64,
     type_0: i32,
 ) {
-    fluid_chorus_set_nr((*synth).chorus.as_mut().unwrap(), nr);
-    fluid_chorus_set_level((*synth).chorus.as_mut().unwrap(), level as f32);
-    fluid_chorus_set_speed_hz((*synth).chorus.as_mut().unwrap(), speed as f32);
-    fluid_chorus_set_depth_ms((*synth).chorus.as_mut().unwrap(), depth_ms as f32);
-    fluid_chorus_set_type((*synth).chorus.as_mut().unwrap(), type_0);
-    fluid_chorus_update((*synth).chorus.as_mut().unwrap());
+    (*synth).chorus.set_nr(nr);
+    (*synth).chorus.set_level(level as f32);
+    (*synth).chorus.set_speed_hz(speed as f32);
+    (*synth).chorus.set_depth_ms(depth_ms as f32);
+    (*synth).chorus.set_type(type_0);
+    (*synth).chorus.update();
 }
 
 pub unsafe fn fluid_synth_write_float(
@@ -2130,8 +2108,7 @@ pub unsafe fn fluid_synth_one_block(
             );
         }
         if !chorus_buf.is_null() {
-            fluid_chorus_processreplace(
-                (*synth).chorus.as_mut().unwrap(),
+            (*synth).chorus.process_replace(
                 chorus_buf,
                 *(*synth).fx_left_buf.offset(1 as i32 as isize),
                 *(*synth).fx_right_buf.offset(1 as i32 as isize),
@@ -2146,8 +2123,7 @@ pub unsafe fn fluid_synth_one_block(
             );
         }
         if !chorus_buf.is_null() {
-            fluid_chorus_processmix(
-                (*synth).chorus.as_mut().unwrap(),
+            (*synth).chorus.process_mix(
                 chorus_buf,
                 *(*synth).left_buf.offset(0 as i32 as isize),
                 *(*synth).right_buf.offset(0 as i32 as isize),
@@ -2592,23 +2568,23 @@ pub unsafe fn fluid_synth_set_chorus_on(mut synth: *mut Synth, on: i32) {
 }
 
 pub unsafe fn fluid_synth_get_chorus_nr(synth: *mut Synth) -> i32 {
-    return fluid_chorus_get_nr((*synth).chorus.as_ref().unwrap());
+    return (*synth).chorus.get_nr();
 }
 
 pub unsafe fn fluid_synth_get_chorus_level(synth: *mut Synth) -> f64 {
-    return fluid_chorus_get_level((*synth).chorus.as_ref().unwrap()) as f64;
+    return (*synth).chorus.get_level() as f64;
 }
 
 pub unsafe fn fluid_synth_get_chorus_speed_hz(synth: *mut Synth) -> f64 {
-    return fluid_chorus_get_speed_hz((*synth).chorus.as_ref().unwrap()) as f64;
+    return (*synth).chorus.get_speed_hz() as f64;
 }
 
 pub unsafe fn fluid_synth_get_chorus_depth_ms(synth: *mut Synth) -> f64 {
-    return fluid_chorus_get_depth_ms((*synth).chorus.as_ref().unwrap()) as f64;
+    return (*synth).chorus.get_depth_ms() as f64;
 }
 
 pub unsafe fn fluid_synth_get_chorus_type(synth: *mut Synth) -> i32 {
-    return fluid_chorus_get_type((*synth).chorus.as_ref().unwrap());
+    return (*synth).chorus.get_type();
 }
 
 pub unsafe fn fluid_synth_get_reverb_roomsize(synth: *mut Synth) -> f64 {
