@@ -1648,12 +1648,6 @@ pub unsafe fn fluid_voice_get_id(voice: *mut Voice) -> u32 {
     return (*voice).id;
 }
 
-pub unsafe fn fluid_voice_is_playing(voice: *mut Voice) -> i32 {
-    return ((*voice).status as i32 == FLUID_VOICE_ON as i32
-        || (*voice).status as i32 == FLUID_VOICE_SUSTAINED as i32)
-        as i32;
-}
-
 pub unsafe fn fluid_voice_get_lower_boundary_for_attenuation(voice: *mut Voice) -> f32 {
     let mut i;
     let mut mod_0;
