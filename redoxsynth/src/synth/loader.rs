@@ -6,9 +6,7 @@ impl Synth {
     loader don't necessarily load SoundFonts. They can load any type
     of wavetable data but export a SoundFont interface.
      */
-    pub fn add_sfloader(&self, loader: Loader) {
-        unsafe {
-            ll::synth::fluid_synth_add_sfloader(self.handle, loader.into_ptr());
-        }
+    pub fn add_sfloader(&mut self, loader: Loader) {
+        ll::synth::fluid_synth_add_sfloader(&mut self.handle, loader.into_ptr());
     }
 }

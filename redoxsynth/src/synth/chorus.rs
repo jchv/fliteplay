@@ -54,9 +54,9 @@ impl Synth {
     If faulty parameters are given, all new settings are discarded.
     Keep in mind, that the needed CPU time is proportional to `nr`.
      */
-    pub fn set_chorus_params(&self, nr: u32, level: f64, speed: f64, depth: f64, mode: ChorusMode) {
+    pub fn set_chorus_params(&mut self, nr: u32, level: f64, speed: f64, depth: f64, mode: ChorusMode) {
         unsafe {
-            ll::synth::fluid_synth_set_chorus(self.handle, nr as i32, level, speed, depth, mode as i32);
+            ll::synth::fluid_synth_set_chorus(&mut self.handle, nr as i32, level, speed, depth, mode as i32);
         }
     }
 
@@ -65,7 +65,7 @@ impl Synth {
     If faulty parameters are given, all new settings are discarded.
     Keep in mind, that the needed CPU time is proportional to `nr`.
      */
-    pub fn set_chorus(&self, params: &ChorusParams) {
+    pub fn set_chorus(&mut self, params: &ChorusParams) {
         self.set_chorus_params(
             params.nr,
             params.level,
@@ -76,9 +76,9 @@ impl Synth {
     }
 
     /** Turn on/off the built-in chorus unit */
-    pub fn set_chorus_on(&self, on: bool) {
+    pub fn set_chorus_on(&mut self, on: bool) {
         unsafe {
-            ll::synth::fluid_synth_set_chorus_on(self.handle, on as _);
+            ll::synth::fluid_synth_set_chorus_on(&mut self.handle, on as _);
         }
     }
 
@@ -86,35 +86,35 @@ impl Synth {
     Query the current chorus nr
      */
     pub fn get_chorus_nr(&self) -> u32 {
-        unsafe { ll::synth::fluid_synth_get_chorus_nr(self.handle) as _ }
+        unsafe { ll::synth::fluid_synth_get_chorus_nr(&self.handle) as _ }
     }
 
     /**
     Query the current chorus level
      */
     pub fn get_chorus_level(&self) -> f64 {
-        unsafe { ll::synth::fluid_synth_get_chorus_level(self.handle) as _ }
+        unsafe { ll::synth::fluid_synth_get_chorus_level(&self.handle) as _ }
     }
 
     /**
     Query the current chorus speed (Hz)
      */
     pub fn get_chorus_speed(&self) -> f64 {
-        unsafe { ll::synth::fluid_synth_get_chorus_speed_hz(self.handle) as _ }
+        unsafe { ll::synth::fluid_synth_get_chorus_speed_hz(&self.handle) as _ }
     }
 
     /**
     Query the current chorus depth (mS)
      */
     pub fn get_chorus_depth(&self) -> f64 {
-        unsafe { ll::synth::fluid_synth_get_chorus_depth_ms(self.handle) as _ }
+        unsafe { ll::synth::fluid_synth_get_chorus_depth_ms(&self.handle) as _ }
     }
 
     /**
     Query the current chorus mode
      */
     pub fn get_chorus_mode(&self) -> ChorusMode {
-        ChorusMode::from_i32(unsafe { ll::synth::fluid_synth_get_chorus_type(self.handle) }).unwrap()
+        ChorusMode::from_i32(unsafe { ll::synth::fluid_synth_get_chorus_type(&self.handle) }).unwrap()
     }
 
     /**

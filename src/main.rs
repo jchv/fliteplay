@@ -6,7 +6,7 @@ use byte_slice_cast::AsByteSlice;
 use redoxsynth::{Settings, Synth};
 fn main() {
     let settings = Settings::new().unwrap();
-    let synth = Synth::new(settings).unwrap();
+    let mut synth = Synth::new(settings).unwrap();
     synth.sfload("gm.sf2", true).unwrap();
     let mut buffer = [0i16; 44100 * 2];
     let mut file = File::create("soundfont-sample.pcm").unwrap();

@@ -29,25 +29,23 @@ impl Synth {
     /**
     Set the parameters for the built-in reverb unit
      */
-    pub fn set_reverb_params(&self, roomsize: f64, damp: f64, width: f64, level: f64) {
-        unsafe {
-            ll::synth::fluid_synth_set_reverb(self.handle, roomsize, damp, width, level);
-        }
+    pub fn set_reverb_params(&mut self, roomsize: f64, damp: f64, width: f64, level: f64) {
+        ll::synth::fluid_synth_set_reverb(&mut self.handle, roomsize, damp, width, level);
     }
 
     /**
     Set the parameters for the built-in reverb unit
      */
-    pub fn set_reverb(&self, params: &ReverbParams) {
+    pub fn set_reverb(&mut self, params: &ReverbParams) {
         self.set_reverb_params(params.roomsize, params.damp, params.width, params.level);
     }
 
     /**
     Turn on/off the built-in reverb unit
      */
-    pub fn set_reverb_on(&self, on: bool) {
+    pub fn set_reverb_on(&mut self, on: bool) {
         unsafe {
-            ll::synth::fluid_synth_set_reverb_on(self.handle, on as _);
+            ll::synth::fluid_synth_set_reverb_on(&mut self.handle, on as _);
         }
     }
 
@@ -55,28 +53,28 @@ impl Synth {
     Query the current reverb room size
      */
     pub fn get_reverb_roomsize(&self) -> f64 {
-        unsafe { ll::synth::fluid_synth_get_reverb_roomsize(self.handle) }
+        unsafe { ll::synth::fluid_synth_get_reverb_roomsize(&self.handle) }
     }
 
     /**
     Query the current reverb dumping
      */
     pub fn get_reverb_damp(&self) -> f64 {
-        unsafe { ll::synth::fluid_synth_get_reverb_damp(self.handle) }
+        unsafe { ll::synth::fluid_synth_get_reverb_damp(&self.handle) }
     }
 
     /**
     Query the current reverb level
      */
     pub fn get_reverb_level(&self) -> f64 {
-        unsafe { ll::synth::fluid_synth_get_reverb_level(self.handle) }
+        unsafe { ll::synth::fluid_synth_get_reverb_level(&self.handle) }
     }
 
     /**
     Query the current reverb width
      */
     pub fn get_reverb_width(&self) -> f64 {
-        unsafe { ll::synth::fluid_synth_get_reverb_width(self.handle) }
+        unsafe { ll::synth::fluid_synth_get_reverb_width(&self.handle) }
     }
 
     /**

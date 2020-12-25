@@ -17,16 +17,16 @@ impl Synth {
     NULL, a new tuning is created with the well-tempered scale.
      */
     pub fn create_key_tuning<S: AsRef<str>>(
-        &self,
+        &mut self,
         tuning_bank: Bank,
         tuning_prog: Prog,
         name: S,
         pitch: &[f64; 128],
     ) -> Status {
         let name = CString::new(name.as_ref()).unwrap();
-        self.zero_ok(unsafe {
+        Synth::zero_ok(unsafe {
             ll::synth::fluid_synth_create_key_tuning(
-                self.handle,
+                &mut self.handle,
                 tuning_bank as _,
                 tuning_prog as _,
                 name.as_ptr(),
@@ -43,16 +43,16 @@ impl Synth {
     below the well-tempered C.
      */
     pub fn create_octave_tuning<S: AsRef<str>>(
-        &self,
+        &mut self,
         tuning_bank: Bank,
         tuning_prog: Prog,
         name: S,
         pitch: &[f64; 12],
     ) -> Status {
         let name = CString::new(name.as_ref()).unwrap();
-        self.zero_ok(unsafe {
+        Synth::zero_ok(unsafe {
             ll::synth::fluid_synth_create_octave_tuning(
-                self.handle,
+                &mut self.handle,
                 tuning_bank as _,
                 tuning_prog as _,
                 name.as_ptr(),
@@ -62,7 +62,7 @@ impl Synth {
     }
 
     pub fn activate_octave_tuning<S: AsRef<str>>(
-        &self,
+        &mut self,
         bank: Bank,
         prog: Prog,
         name: S,
@@ -70,9 +70,9 @@ impl Synth {
         apply: bool,
     ) -> Status {
         let name = CString::new(name.as_ref()).unwrap();
-        self.zero_ok(unsafe {
+        Synth::zero_ok(unsafe {
             ll::synth::fluid_synth_activate_octave_tuning(
-                self.handle,
+                &mut self.handle,
                 bank as _,
                 prog as _,
                 name.as_ptr(),
@@ -90,7 +90,7 @@ impl Synth {
     changes will be available for newly triggered notes only.
      */
     pub fn tune_notes<K, P>(
-        &self,
+        &mut self,
         tuning_bank: Bank,
         tuning_prog: Prog,
         keys: K,
@@ -104,9 +104,9 @@ impl Synth {
         let keys = keys.as_ref();
         let pitch = pitch.as_ref();
         let len = keys.len().min(pitch.len());
-        self.zero_ok(unsafe {
+        Synth::zero_ok(unsafe {
             ll::synth::fluid_synth_tune_notes(
-                self.handle,
+                &mut self.handle,
                 tuning_bank as _,
                 tuning_prog as _,
                 len as _,
@@ -120,10 +120,10 @@ impl Synth {
     /**
     Select a tuning for a channel.
      */
-    pub fn select_tuning(&self, chan: Chan, tuning_bank: Bank, tuning_prog: Prog) -> Status {
-        self.zero_ok(unsafe {
+    pub fn select_tuning(&mut self, chan: Chan, tuning_bank: Bank, tuning_prog: Prog) -> Status {
+        Synth::zero_ok(unsafe {
             ll::synth::fluid_synth_select_tuning(
-                self.handle,
+                &mut self.handle,
                 chan as _,
                 tuning_bank as _,
                 tuning_prog as _,
@@ -131,10 +131,10 @@ impl Synth {
         })
     }
 
-    pub fn activate_tuning(&self, chan: Chan, bank: Bank, prog: Prog, apply: bool) -> Status {
-        self.zero_ok(unsafe {
+    pub fn activate_tuning(&mut self, chan: Chan, bank: Bank, prog: Prog, apply: bool) -> Status {
+        Synth::zero_ok(unsafe {
             ll::synth::fluid_synth_activate_tuning(
-                self.handle,
+                &mut self.handle,
                 chan as _,
                 bank as _,
                 prog as _,
@@ -146,15 +146,15 @@ impl Synth {
     /**
     Set the tuning to the default well-tempered tuning on a channel.
      */
-    pub fn reset_tuning(&self, chan: Chan) -> Status {
-        self.zero_ok(unsafe { ll::synth::fluid_synth_reset_tuning(self.handle, chan as _) })
+    pub fn reset_tuning(&mut self, chan: Chan) -> Status {
+        Synth::zero_ok(unsafe { ll::synth::fluid_synth_reset_tuning(&mut self.handle, chan as _) })
     }
 
     /**
     Get the iterator throught the list of available tunings.
      */
-    pub fn tuning_iter(&self) -> TuningIter<'_> {
-        TuningIter::from_ptr(self.handle)
+    pub fn tuning_iter(&mut self) -> TuningIter<'_> {
+        TuningIter::from_ptr(&mut self.handle)
     }
 
     /**
@@ -168,9 +168,9 @@ impl Synth {
         let mut name = MaybeUninit::<[u8; NAME_LEN]>::uninit();
         let mut pitch = MaybeUninit::<[f64; 128]>::uninit();
 
-        self.zero_ok(unsafe {
+        Synth::zero_ok(unsafe {
             ll::synth::fluid_synth_tuning_dump(
-                self.handle,
+                &self.handle,
                 bank as _,
                 prog as _,
                 name.as_mut_ptr() as _,
@@ -197,9 +197,9 @@ impl Synth {
 
         let mut name = MaybeUninit::<[u8; NAME_LEN]>::uninit();
 
-        self.zero_ok(unsafe {
+        Synth::zero_ok(unsafe {
             ll::synth::fluid_synth_tuning_dump(
-                self.handle,
+                &self.handle,
                 bank as _,
                 prog as _,
                 name.as_mut_ptr() as _,
@@ -221,9 +221,9 @@ impl Synth {
     pub fn tuning_dump_pitch(&self, bank: Bank, prog: Prog) -> Result<[f64; 128]> {
         let mut pitch = MaybeUninit::<[f64; 128]>::uninit();
 
-        self.zero_ok(unsafe {
+        Synth::zero_ok(unsafe {
             ll::synth::fluid_synth_tuning_dump(
-                self.handle,
+                &self.handle,
                 bank as _,
                 prog as _,
                 null_mut(),

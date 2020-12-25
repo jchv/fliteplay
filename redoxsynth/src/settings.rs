@@ -317,9 +317,7 @@ where
     fn eq(&self, other: &S) -> bool {
         let mut other = String::from(other.as_ref());
         other.push('\0');
-        0 < unsafe {
-            ll::settings::fluid_settings_str_equal(self.handle, self.name_ptr(), other.as_ptr() as *mut _)
-        }
+        0 < ll::settings::fluid_settings_str_equal(self.handle, self.name_ptr(), other.as_ptr() as *mut _)
     }
 }
 
@@ -391,9 +389,7 @@ impl<'a> Setting<'a, f64> {
     pub fn get(&self) -> Option<f64> {
         let mut value = MaybeUninit::uninit();
 
-        if 0 < unsafe {
-            ll::settings::fluid_settings_getnum(self.handle, self.name_ptr(), value.as_mut_ptr())
-        } {
+        if 0 < ll::settings::fluid_settings_getnum(self.handle, self.name_ptr(), value.as_mut_ptr()) {
             let value = unsafe { value.assume_init() };
             Some(value)
         } else {
@@ -436,7 +432,7 @@ impl<'a> Setting<'a, i32> {
     Returns `true` if the value has been set, `false` otherwise
      */
     pub fn set(&self, value: i32) -> bool {
-        0 < unsafe { ll::settings::fluid_settings_setint(self.handle, self.name_ptr(), value) }
+        0 < ll::settings::fluid_settings_setint(self.handle, self.name_ptr(), value)
     }
 
     /**
@@ -447,9 +443,7 @@ impl<'a> Setting<'a, i32> {
     pub fn get(&self) -> Option<i32> {
         let mut value = MaybeUninit::uninit();
 
-        if 0 < unsafe {
-            ll::settings::fluid_settings_getint(self.handle, self.name_ptr(), value.as_mut_ptr())
-        } {
+        if 0 < ll::settings::fluid_settings_getint(self.handle, self.name_ptr(), value.as_mut_ptr()) {
             let value = unsafe { value.assume_init() };
             Some(value)
         } else {

@@ -47,7 +47,7 @@ impl Loader {
     Create default SoundFont loader
      */
     pub fn new_default() -> Result<Self> {
-        result_from_ptr(unsafe { ll::defsfont::new_fluid_defsfloader() }).map(|handle| Self { handle })
+        result_from_ptr(ll::defsfont::new_fluid_defsfloader()).map(|handle| Self { handle })
     }
 
     pub(crate) fn into_ptr(self) -> *mut ll::sfont::SoundfontLoader {
@@ -225,7 +225,7 @@ mod test {
     #[test]
     fn fileapi() {
         let settings = Settings::new().unwrap();
-        let synth = Synth::new(settings).unwrap();
+        let mut synth = Synth::new(settings).unwrap();
         let loader = Loader::new_default().unwrap();
 
         loader.set_file_api(TestFileApi);

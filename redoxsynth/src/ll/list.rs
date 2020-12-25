@@ -176,7 +176,7 @@ pub unsafe fn fluid_list_last(mut list: *mut List) -> *mut List {
     return list;
 }
 
-pub unsafe fn fluid_list_size(mut list: *mut List) -> i32 {
+pub unsafe fn fluid_list_size(mut list: *const List) -> i32 {
     let mut n: i32 = 0 as i32;
     while !list.is_null() {
         n += 1;

@@ -2,12 +2,12 @@ use crate::{ll, Status, Synth};
 
 /// The trait which implements samples data buffer interface
 pub trait IsSamples {
-    fn write_samples(self, synth: &Synth) -> Status;
+    fn write_samples(self, synth: &mut Synth) -> Status;
 }
 
 impl IsSamples for &mut [i16] {
     /// Write samples interleaved
-    fn write_samples(self, synth: &Synth) -> Status {
+    fn write_samples(self, synth: &mut Synth) -> Status {
         let len = self.len() / 2;
         unsafe { synth.write_i16(len, self.as_mut_ptr(), 0, 2, self.as_mut_ptr(), 1, 2) }
     }
@@ -15,7 +15,7 @@ impl IsSamples for &mut [i16] {
 
 impl IsSamples for (&mut [i16], &mut [i16]) {
     /// Write samples non-interleaved
-    fn write_samples(self, synth: &Synth) -> Status {
+    fn write_samples(self, synth: &mut Synth) -> Status {
         let len = self.0.len().min(self.1.len());
         unsafe { synth.write_i16(len, self.0.as_mut_ptr(), 0, 1, self.1.as_mut_ptr(), 0, 1) }
     }
@@ -23,7 +23,7 @@ impl IsSamples for (&mut [i16], &mut [i16]) {
 
 impl IsSamples for &mut [f32] {
     /// Write samples interleaved
-    fn write_samples(self, synth: &Synth) -> Status {
+    fn write_samples(self, synth: &mut Synth) -> Status {
         let len = self.len() / 2;
         unsafe { synth.write_f32(len, self.as_mut_ptr(), 0, 2, self.as_mut_ptr(), 1, 2) }
     }
@@ -31,7 +31,7 @@ impl IsSamples for &mut [f32] {
 
 impl IsSamples for (&mut [f32], &mut [f32]) {
     /// Write samples non-interleaved
-    fn write_samples(self, synth: &Synth) -> Status {
+    fn write_samples(self, synth: &mut Synth) -> Status {
         let len = self.0.len().min(self.1.len());
         unsafe { synth.write_f32(len, self.0.as_mut_ptr(), 0, 1, self.1.as_mut_ptr(), 0, 1) }
     }
@@ -44,7 +44,7 @@ impl Synth {
     /**
     Write sound samples to the sample data buffer
      */
-    pub fn write<S: IsSamples>(&self, samples: S) -> Status {
+    pub fn write<S: IsSamples>(&mut self, samples: S) -> Status {
         samples.write_samples(self)
     }
 
@@ -59,7 +59,7 @@ impl Synth {
     #[allow(clippy::too_many_arguments)]
     #[inline]
     pub unsafe fn write_i16(
-        &self,
+        &mut self,
         len: usize,
         lbuf: *mut i16,
         loff: u32,
@@ -68,8 +68,8 @@ impl Synth {
         roff: u32,
         rincr: u32,
     ) -> Status {
-        self.zero_ok(ll::synth::fluid_synth_write_s16(
-            self.handle,
+        Synth::zero_ok(ll::synth::fluid_synth_write_s16(
+            &mut self.handle,
             len as _,
             lbuf as _,
             loff as _,
@@ -91,7 +91,7 @@ impl Synth {
     #[allow(clippy::too_many_arguments)]
     #[inline]
     pub unsafe fn write_f32(
-        &self,
+        &mut self,
         len: usize,
         lbuf: *mut f32,
         loff: u32,
@@ -100,8 +100,8 @@ impl Synth {
         roff: u32,
         rincr: u32,
     ) -> Status {
-        self.zero_ok(ll::synth::fluid_synth_write_float(
-            self.handle,
+        Synth::zero_ok(ll::synth::fluid_synth_write_float(
+            &mut self.handle,
             len as _,
             lbuf as _,
             loff as _,

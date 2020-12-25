@@ -14,7 +14,7 @@ mod write;
 pub use self::tuning::TuningIter;
 pub use self::write::IsSamples;
 
-use crate::{ll, result_from_ptr, Result, Settings, SettingsRef};
+use crate::{Error, Result, Settings, SettingsRef, ll};
 
 /**
 The synth object
@@ -32,7 +32,7 @@ The API for sending MIDI events is probably what you expect:
 `Synth::noteon()`, `Synth::noteoff()`, ...
  */
 pub struct Synth {
-    handle: *mut ll::synth::Synth,
+    handle: ll::synth::Synth,
 }
 
 unsafe impl Send for Synth {}
@@ -44,33 +44,33 @@ impl Synth {
     As soon as the synthesizer is created, it will start playing.
      */
     pub fn new(settings: Settings) -> Result<Self> {
-        result_from_ptr(unsafe { ll::synth::new_fluid_synth(settings.into_ptr()) })
-            .map(|handle| Self { handle })
+        match ll::synth::Synth::new(settings.into_ptr()) {
+            Ok(handle) => return Ok(Synth{ handle }),
+            Err(_) => return Err(Error::Alloc),
+        }
     }
 
     /**
     Set synth sample rate
      */
-    pub fn set_sample_rate(&self, sample_rate: f32) {
+    pub fn set_sample_rate(&mut self, sample_rate: f32) {
         unsafe {
-            ll::synth::fluid_synth_set_sample_rate(self.handle, sample_rate);
+            ll::synth::fluid_synth_set_sample_rate(&mut self.handle, sample_rate);
         }
     }
 
     /**
     Get a reference to the settings of the synthesizer.
      */
-    pub fn get_settings(&self) -> SettingsRef<'_> {
-        SettingsRef::from_ptr(unsafe { ll::synth::fluid_synth_get_settings(self.handle) })
+    pub fn get_settings(&mut self) -> SettingsRef<'_> {
+        SettingsRef::from_ptr(unsafe { ll::synth::fluid_synth_get_settings(&mut self.handle) })
     }
 }
 
 impl Drop for Synth {
     fn drop(&mut self) {
-        let _settings = Settings::from_ptr(unsafe { ll::synth::fluid_synth_get_settings(self.handle) });
-        unsafe {
-            ll::synth::delete_fluid_synth(self.handle);
-        }
+        let _settings = Settings::from_ptr(unsafe { ll::synth::fluid_synth_get_settings(&mut self.handle) });
+        ll::synth::delete_fluid_synth(&mut self.handle);
     }
 }
 
@@ -86,7 +86,7 @@ mod test {
 
         let settings = Settings::new().unwrap();
 
-        let synth = Synth::new(settings).unwrap();
+        let mut synth = Synth::new(settings).unwrap();
 
         synth.sfload("../sf_/Boomwhacker.sf2", true).unwrap();
 
@@ -111,7 +111,7 @@ mod test {
 
         let settings = Settings::new().unwrap();
 
-        let synth = Synth::new(settings).unwrap();
+        let mut synth = Synth::new(settings).unwrap();
 
         synth.sfload("../sf_/Boomwhacker.sf3", true).unwrap();
 

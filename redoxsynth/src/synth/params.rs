@@ -37,9 +37,9 @@ impl Synth {
     /**
     Set the master gain
      */
-    pub fn set_gain(&self, gain: f32) {
+    pub fn set_gain(&mut self, gain: f32) {
         unsafe {
-            ll::synth::fluid_synth_set_gain(self.handle, gain);
+            ll::synth::fluid_synth_set_gain(&mut self.handle, gain);
         }
     }
 
@@ -47,21 +47,21 @@ impl Synth {
     Get the master gain
      */
     pub fn get_gain(&self) -> f32 {
-        unsafe { ll::synth::fluid_synth_get_gain(self.handle) }
+        unsafe { ll::synth::fluid_synth_get_gain(&self.handle) }
     }
 
     /**
     Set the polyphony limit (FluidSynth >= 1.0.6)
      */
-    pub fn set_polyphony(&self, polyphony: u32) -> Status {
-        self.zero_ok(unsafe { ll::synth::fluid_synth_set_polyphony(self.handle, polyphony as _) })
+    pub fn set_polyphony(&mut self, polyphony: u32) -> Status {
+        Synth::zero_ok(unsafe { ll::synth::fluid_synth_set_polyphony(&mut self.handle, polyphony as _) })
     }
 
     /**
     Get the polyphony limit (FluidSynth >= 1.0.6)
      */
     pub fn get_polyphony(&self) -> u32 {
-        unsafe { ll::synth::fluid_synth_get_polyphony(self.handle) as _ }
+        unsafe { ll::synth::fluid_synth_get_polyphony(&self.handle) as _ }
     }
 
     /**
@@ -75,14 +75,14 @@ impl Synth {
     size is useful for client who want to optimize their buffer sizes.
      */
     pub fn get_internal_buffer_size(&self) -> usize {
-        unsafe { ll::synth::fluid_synth_get_internal_bufsize(self.handle) as _ }
+        unsafe { ll::synth::fluid_synth_get_internal_bufsize(&self.handle) as _ }
     }
 
     /** Set the interpolation method for one channel (`Some(chan)`) or all channels (`None`) */
-    pub fn set_interp_method(&self, chan: Option<u32>, interp_method: InterpMethod) -> Status {
+    pub fn set_interp_method(&mut self, chan: Option<u32>, interp_method: InterpMethod) -> Status {
         let chan = if let Some(chan) = chan { chan as _ } else { -1 };
-        self.zero_ok(unsafe {
-            ll::synth::fluid_synth_set_interp_method(self.handle, chan, interp_method as _)
+        Synth::zero_ok(unsafe {
+            ll::synth::fluid_synth_set_interp_method(&mut self.handle, chan, interp_method as _)
         })
     }
 }

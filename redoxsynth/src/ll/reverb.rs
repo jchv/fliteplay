@@ -137,42 +137,45 @@ pub struct ReverbModel {
 }
 
 impl ReverbModel {
-    pub fn new() -> Self {
-        let mut rev = Self{
-            roomsize: 0.5f32 * 0.28f32 + 0.7f32,
-            damp: 0.2f32 * 1.0f32,
-            wet: 1f32 * 3.0f32,
-            wet1: 0f32,
-            wet2: 0f32,
-            width: 1f32,
-            gain: 0.015f32,
-            comb_l1: Comb::new(),
-            comb_r1: Comb::new(),
-            comb_l2: Comb::new(),
-            comb_r2: Comb::new(),
-            comb_l3: Comb::new(),
-            comb_r3: Comb::new(),
-            comb_l4: Comb::new(),
-            comb_r4: Comb::new(),
-            comb_l5: Comb::new(),
-            comb_r5: Comb::new(),
-            comb_l6: Comb::new(),
-            comb_r6: Comb::new(),
-            comb_l7: Comb::new(),
-            comb_r7: Comb::new(),
-            comb_l8: Comb::new(),
-            comb_r8: Comb::new(),
-            allpass_l1: AllPass::new(0.5f32),
-            allpass_r1: AllPass::new(0.5f32),
-            allpass_l2: AllPass::new(0.5f32),
-            allpass_r2: AllPass::new(0.5f32),
-            allpass_l3: AllPass::new(0.5f32),
-            allpass_r3: AllPass::new(0.5f32),
-            allpass_l4: AllPass::new(0.5f32),
-            allpass_r4: AllPass::new(0.5f32),
-        };
-        rev.update();
-        return rev;
+    pub fn new() -> Box<Self> {
+        use std::alloc::{alloc, Layout};
+        unsafe {
+            let layout = Layout::new::<Self>();
+            let rev = alloc(layout) as *mut Self;
+            (*rev).roomsize = 0.5f32 * 0.28f32 + 0.7f32;
+            (*rev).damp = 0.2f32 * 1.0f32;
+            (*rev).wet = 1f32 * 3.0f32;
+            (*rev).wet1 = 0f32;
+            (*rev).wet2 = 0f32;
+            (*rev).width = 1f32;
+            (*rev).gain = 0.015f32;
+            (*rev).comb_l1 = Comb::new();
+            (*rev).comb_r1 = Comb::new();
+            (*rev).comb_l2 = Comb::new();
+            (*rev).comb_r2 = Comb::new();
+            (*rev).comb_l3 = Comb::new();
+            (*rev).comb_r3 = Comb::new();
+            (*rev).comb_l4 = Comb::new();
+            (*rev).comb_r4 = Comb::new();
+            (*rev).comb_l5 = Comb::new();
+            (*rev).comb_r5 = Comb::new();
+            (*rev).comb_l6 = Comb::new();
+            (*rev).comb_r6 = Comb::new();
+            (*rev).comb_l7 = Comb::new();
+            (*rev).comb_r7 = Comb::new();
+            (*rev).comb_l8 = Comb::new();
+            (*rev).comb_r8 = Comb::new();
+            (*rev).allpass_l1 = AllPass::new(0.5f32);
+            (*rev).allpass_r1 = AllPass::new(0.5f32);
+            (*rev).allpass_l2 = AllPass::new(0.5f32);
+            (*rev).allpass_r2 = AllPass::new(0.5f32);
+            (*rev).allpass_l3 = AllPass::new(0.5f32);
+            (*rev).allpass_r3 = AllPass::new(0.5f32);
+            (*rev).allpass_l4 = AllPass::new(0.5f32);
+            (*rev).allpass_r4 = AllPass::new(0.5f32);
+            (*rev).update();
+            return Box::from_raw(rev);
+        }
     }
 
     pub fn reset(self: &mut Self) {
@@ -343,7 +346,7 @@ impl ReverbModel {
         self.update();
     }
 
-    pub fn get_room_size(&mut self) -> f32 {
+    pub fn get_room_size(&self) -> f32 {
         return (self.roomsize - 0.7f32) / 0.28f32;
     }
 
