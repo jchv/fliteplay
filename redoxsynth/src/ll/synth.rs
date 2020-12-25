@@ -17,7 +17,6 @@ use super::channel::fluid_channel_set_sfontnum;
 use super::channel::new_fluid_channel;
 use super::channel::Channel;
 use super::chorus::Chorus;
-use super::conv::fluid_conversion_config;
 use super::defsfont::new_fluid_defsfloader;
 use super::dsp_float::fluid_dsp_float_config;
 use super::hash::HashTable;
@@ -876,7 +875,6 @@ pub fn fluid_version(
 
 unsafe fn fluid_synth_init() {
     FLUID_SYNTH_INITIALIZED += 1;
-    fluid_conversion_config();
     fluid_dsp_float_config();
     fluid_sys_config();
     init_dither();
