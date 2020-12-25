@@ -34,18 +34,20 @@ pub unsafe fn new_fluid_hashtable(del: DeleteFn) -> *mut HashTable {
     return hash_table;
 }
 
-pub unsafe fn delete_fluid_hashtable(hash_table: *mut HashTable) {
-    let mut i: u32;
-    if hash_table.is_null() {
-        return;
+pub fn delete_fluid_hashtable(hash_table: *mut HashTable) {
+    unsafe {
+        let mut i: u32;
+        if hash_table.is_null() {
+            return;
+        }
+        i = 0 as i32 as u32;
+        while i < (*hash_table).size {
+            delete_fluid_hashnodes(*(*hash_table).nodes.offset(i as isize), (*hash_table).del);
+            i = i.wrapping_add(1)
+        }
+        libc::free((*hash_table).nodes as *mut libc::c_void);
+        libc::free(hash_table as *mut libc::c_void);
     }
-    i = 0 as i32 as u32;
-    while i < (*hash_table).size {
-        delete_fluid_hashnodes(*(*hash_table).nodes.offset(i as isize), (*hash_table).del);
-        i = i.wrapping_add(1)
-    }
-    libc::free((*hash_table).nodes as *mut libc::c_void);
-    libc::free(hash_table as *mut libc::c_void);
 }
 unsafe fn fluid_hashtable_lookup_node(
     hash_table: *mut HashTable,

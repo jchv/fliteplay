@@ -22,11 +22,11 @@ pub struct FileApi {
 #[derive(Copy, Clone)]
 pub struct Preset {
     pub data: *mut libc::c_void,
-    pub sfont: *mut SoundFont,
+    pub sfont: *const SoundFont,
     pub free: Option<unsafe fn(_: *mut Preset) -> i32>,
-    pub get_name: Option<unsafe fn(_: *mut Preset) -> *mut libc::c_char>,
-    pub get_banknum: Option<unsafe fn(_: *mut Preset) -> i32>,
-    pub get_num: Option<unsafe fn(_: *mut Preset) -> i32>,
+    pub get_name: Option<unsafe fn(_: *const Preset) -> *mut libc::c_char>,
+    pub get_banknum: Option<unsafe fn(_: *const Preset) -> i32>,
+    pub get_num: Option<unsafe fn(_: *const Preset) -> i32>,
     pub noteon: Option<
         unsafe fn(
             _: *mut Preset,
@@ -43,9 +43,9 @@ pub struct SoundFont {
     pub data: *mut libc::c_void,
     pub id: u32,
     pub free: Option<unsafe fn(_: *mut SoundFont) -> i32>,
-    pub get_name: Option<unsafe fn(_: *mut SoundFont) -> *mut libc::c_char>,
+    pub get_name: Option<unsafe fn(_: *const SoundFont) -> *mut libc::c_char>,
     pub get_preset:
-        Option<unsafe fn(_: *mut SoundFont, _: u32, _: u32) -> *mut Preset>,
+        Option<unsafe fn(_: *const SoundFont, _: u32, _: u32) -> *mut Preset>,
     pub iteration_start: Option<unsafe fn(_: *mut SoundFont) -> ()>,
     pub iteration_next: Option<unsafe fn(_: *mut SoundFont, _: *mut Preset) -> i32>,
 }

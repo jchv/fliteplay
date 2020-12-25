@@ -44,7 +44,7 @@ impl Synth {
     As soon as the synthesizer is created, it will start playing.
      */
     pub fn new(settings: Settings) -> Result<Self> {
-        match ll::synth::Synth::new(settings.into_ptr()) {
+        match ll::synth::Synth::new(settings.handle) {
             Ok(handle) => return Ok(Synth{ handle }),
             Err(_) => return Err(Error::Alloc),
         }
@@ -63,7 +63,7 @@ impl Synth {
     Get a reference to the settings of the synthesizer.
      */
     pub fn get_settings(&mut self) -> SettingsRef<'_> {
-        SettingsRef::from_ptr(unsafe { ll::synth::fluid_synth_get_settings(&mut self.handle) })
+        SettingsRef::from_ptr(&mut self.handle.settings)
     }
 }
 

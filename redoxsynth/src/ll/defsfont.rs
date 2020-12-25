@@ -390,10 +390,10 @@ pub unsafe fn fluid_defsfloader_load(
     (*sfont).free =
         Some(fluid_defsfont_sfont_delete as unsafe fn(_: *mut SoundFont) -> i32);
     (*sfont).get_name =
-        Some(fluid_defsfont_sfont_get_name as unsafe fn(_: *mut SoundFont) -> *mut libc::c_char);
+        Some(fluid_defsfont_sfont_get_name as unsafe fn(_: *const SoundFont) -> *mut libc::c_char);
     (*sfont).get_preset = Some(
         fluid_defsfont_sfont_get_preset
-            as unsafe fn(_: *mut SoundFont, _: u32, _: u32) -> *mut Preset,
+            as unsafe fn(_: *const SoundFont, _: u32, _: u32) -> *mut Preset,
     );
     (*sfont).iteration_start =
         Some(fluid_defsfont_sfont_iteration_start as unsafe fn(_: *mut SoundFont) -> ());
@@ -416,12 +416,12 @@ pub unsafe fn fluid_defsfont_sfont_delete(sfont: *mut SoundFont) -> i32 {
     return 0 as i32;
 }
 
-pub unsafe fn fluid_defsfont_sfont_get_name(sfont: *mut SoundFont) -> *mut libc::c_char {
+pub unsafe fn fluid_defsfont_sfont_get_name(sfont: *const SoundFont) -> *mut libc::c_char {
     return fluid_defsfont_get_name((*sfont).data as *mut DefSFont);
 }
 
 pub unsafe fn fluid_defsfont_sfont_get_preset(
-    sfont: *mut SoundFont,
+    sfont: *const SoundFont,
     bank: u32,
     prenum: u32,
 ) -> *mut Preset {
@@ -441,11 +441,11 @@ pub unsafe fn fluid_defsfont_sfont_get_preset(
     (*preset).free =
         Some(fluid_defpreset_preset_delete as unsafe fn(_: *mut Preset) -> i32);
     (*preset).get_name =
-        Some(fluid_defpreset_preset_get_name as unsafe fn(_: *mut Preset) -> *mut libc::c_char);
+        Some(fluid_defpreset_preset_get_name as unsafe fn(_: *const Preset) -> *mut libc::c_char);
     (*preset).get_banknum =
-        Some(fluid_defpreset_preset_get_banknum as unsafe fn(_: *mut Preset) -> i32);
+        Some(fluid_defpreset_preset_get_banknum as unsafe fn(_: *const Preset) -> i32);
     (*preset).get_num =
-        Some(fluid_defpreset_preset_get_num as unsafe fn(_: *mut Preset) -> i32);
+        Some(fluid_defpreset_preset_get_num as unsafe fn(_: *const Preset) -> i32);
     (*preset).noteon = Some(
         fluid_defpreset_preset_noteon
             as unsafe fn(
@@ -471,11 +471,11 @@ pub unsafe fn fluid_defsfont_sfont_iteration_next(
     (*preset).free =
         Some(fluid_defpreset_preset_delete as unsafe fn(_: *mut Preset) -> i32);
     (*preset).get_name =
-        Some(fluid_defpreset_preset_get_name as unsafe fn(_: *mut Preset) -> *mut libc::c_char);
+        Some(fluid_defpreset_preset_get_name as unsafe fn(_: *const Preset) -> *mut libc::c_char);
     (*preset).get_banknum =
-        Some(fluid_defpreset_preset_get_banknum as unsafe fn(_: *mut Preset) -> i32);
+        Some(fluid_defpreset_preset_get_banknum as unsafe fn(_: *const Preset) -> i32);
     (*preset).get_num =
-        Some(fluid_defpreset_preset_get_num as unsafe fn(_: *mut Preset) -> i32);
+        Some(fluid_defpreset_preset_get_num as unsafe fn(_: *const Preset) -> i32);
     (*preset).noteon = Some(
         fluid_defpreset_preset_noteon
             as unsafe fn(
@@ -495,15 +495,15 @@ pub unsafe fn fluid_defpreset_preset_delete(preset: *mut Preset) -> i32 {
     return 0 as i32;
 }
 
-pub unsafe fn fluid_defpreset_preset_get_name(preset: *mut Preset) -> *mut libc::c_char {
+pub unsafe fn fluid_defpreset_preset_get_name(preset: *const Preset) -> *mut libc::c_char {
     return fluid_defpreset_get_name((*preset).data as *mut DefPreset);
 }
 
-pub unsafe fn fluid_defpreset_preset_get_banknum(preset: *mut Preset) -> i32 {
+pub unsafe fn fluid_defpreset_preset_get_banknum(preset: *const Preset) -> i32 {
     return fluid_defpreset_get_banknum((*preset).data as *mut DefPreset);
 }
 
-pub unsafe fn fluid_defpreset_preset_get_num(preset: *mut Preset) -> i32 {
+pub unsafe fn fluid_defpreset_preset_get_num(preset: *const Preset) -> i32 {
     return fluid_defpreset_get_num((*preset).data as *mut DefPreset);
 }
 

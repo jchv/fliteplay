@@ -1,4 +1,4 @@
-use super::{channel::fluid_channel_cc, settings::Settings};
+use super::{channel::fluid_channel_cc, settings::{Settings, new_fluid_settings}};
 use super::channel::fluid_channel_get_banknum;
 use super::channel::fluid_channel_get_num;
 use super::channel::fluid_channel_get_preset;
@@ -73,7 +73,7 @@ use std::ffi::CStr;
 
 #[derive(Clone)]
 pub struct Synth {
-    pub(crate) settings: *mut Settings,
+    pub settings: Settings,
     polyphony: i32,
     with_reverb: libc::c_char,
     with_chorus: libc::c_char,
@@ -113,7 +113,7 @@ pub struct Synth {
 }
 
 impl Synth {
-    pub fn new(settings: *mut Settings) -> Result<Self, &'static str> {
+    pub fn new(mut settings: Settings) -> Result<Self, &'static str> {
         unsafe {
             let mut current_block: u64;
             let mut i: i32 = 0;
@@ -124,7 +124,7 @@ impl Synth {
             }
 
             let mut synth = Self {
-                settings: 0 as _,
+                settings: new_fluid_settings(),
                 polyphony: 0 as _,
                 with_reverb: 0 as _,
                 with_chorus: 0 as _,
@@ -163,71 +163,70 @@ impl Synth {
                 min_note_length_ticks: 0 as _,
             };
 
-            synth.settings = settings;
             synth.with_reverb = fluid_settings_str_equal(
-                settings,
+                &settings,
                 b"synth.reverb.active\x00" as *const u8 as *const libc::c_char,
                 b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
             ) as libc::c_char;
             synth.with_chorus = fluid_settings_str_equal(
-                settings,
+                &settings,
                 b"synth.chorus.active\x00" as *const u8 as *const libc::c_char,
                 b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
             ) as libc::c_char;
             synth.verbose = fluid_settings_str_equal(
-                settings,
+                &settings,
                 b"synth.verbose\x00" as *const u8 as *const libc::c_char,
                 b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
             ) as libc::c_char;
             synth.dump = fluid_settings_str_equal(
-                settings,
+                &settings,
                 b"synth.dump\x00" as *const u8 as *const libc::c_char,
                 b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
             ) as libc::c_char;
             fluid_settings_getint(
-                settings,
+                &settings,
                 b"synth.polyphony\x00" as *const u8 as *const libc::c_char,
                 &mut synth.polyphony,
             );
             fluid_settings_getnum(
-                settings,
+                &settings,
                 b"synth.sample-rate\x00" as *const u8 as *const libc::c_char,
                 &mut synth.sample_rate,
             );
             fluid_settings_getint(
-                settings,
+                &settings,
                 b"synth.midi-channels\x00" as *const u8 as *const libc::c_char,
                 &mut synth.midi_channels,
             );
             fluid_settings_getint(
-                settings,
+                &settings,
                 b"synth.audio-channels\x00" as *const u8 as *const libc::c_char,
                 &mut synth.audio_channels,
             );
             fluid_settings_getint(
-                settings,
+                &settings,
                 b"synth.audio-groups\x00" as *const u8 as *const libc::c_char,
                 &mut synth.audio_groups,
             );
             fluid_settings_getint(
-                settings,
+                &settings,
                 b"synth.effects-channels\x00" as *const u8 as *const libc::c_char,
                 &mut synth.effects_channels,
             );
             fluid_settings_getnum(
-                settings,
+                &settings,
                 b"synth.gain\x00" as *const u8 as *const libc::c_char,
                 &mut synth.gain,
             );
             fluid_settings_getint(
-                settings,
+                &settings,
                 b"synth.min-note-length\x00" as *const u8 as *const libc::c_char,
                 &mut i,
             );
             synth.min_note_length_ticks =
                 (i as f64 * synth.sample_rate / 1000.0f32 as f64) as u32;
             fluid_settings_register_num(
-                settings,
+                &mut settings,
                 b"synth.gain\x00" as *const u8 as *const libc::c_char,
                 0.2f32 as f64,
                 0.0f32 as f64,
@@ -243,7 +242,7 @@ impl Synth {
                 &mut synth as *mut Self as *mut libc::c_void,
             );
             fluid_settings_register_int(
-                settings,
+                &mut settings,
                 b"synth.polyphony\x00" as *const u8 as *const libc::c_char,
                 synth.polyphony,
                 16 as i32,
@@ -272,7 +271,7 @@ impl Synth {
                 let n: i32 = synth.midi_channels / 16 as i32;
                 synth.midi_channels = (n + 1 as i32) * 16 as i32;
                 fluid_settings_setint(
-                    settings,
+                    &mut settings,
                     b"synth.midi-channels\x00" as *const u8 as *const libc::c_char,
                     synth.midi_channels,
                 );
@@ -505,7 +504,7 @@ impl Synth {
                                                     synth.sample_rate as f32,
                                                 );
                                                 if fluid_settings_str_equal(
-                                                    settings,
+                                                    &settings,
                                                     b"synth.drums-channel.active\x00"
                                                         as *const u8
                                                         as *const libc::c_char,
@@ -521,6 +520,7 @@ impl Synth {
                                                             as u32,
                                                     );
                                                 }
+                                                synth.settings = settings;
                                                 return Ok(synth);
                                             }
                                         }
@@ -696,7 +696,7 @@ pub static mut DEFAULT_PITCH_BEND_MOD: Mod = Mod {
     next: 0 as *const Mod as *mut Mod,
 };
 
-pub unsafe fn fluid_synth_settings(settings: *mut Settings) {
+pub unsafe fn fluid_synth_settings(settings: &mut Settings) {
     fluid_settings_register_str(
         settings,
         b"synth.verbose\x00" as *const u8 as *const libc::c_char,
@@ -1623,7 +1623,7 @@ pub unsafe fn fluid_synth_program_change(
     }
     if (*channel).channum == 9 as i32
         && fluid_settings_str_equal(
-            (*synth).settings,
+            &(*synth).settings,
             b"synth.drums-channel.active\x00" as *const u8 as *const libc::c_char,
             b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
         ) != 0
@@ -2980,10 +2980,6 @@ pub unsafe fn fluid_synth_tuning_dump(
         );
     }
     return FLUID_OK as i32;
-}
-
-pub unsafe fn fluid_synth_get_settings(synth: *mut Synth) -> *mut Settings {
-    return (*synth).settings;
 }
 
 pub unsafe fn fluid_synth_set_gen(

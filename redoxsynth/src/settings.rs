@@ -1,9 +1,9 @@
-use crate::{ll, result_from_ptr, Result};
+use crate::{ll, Result};
 use bitflags::bitflags;
 use std::{
     ffi::{CStr, CString},
     marker::PhantomData,
-    mem::{transmute, MaybeUninit},
+    mem::{MaybeUninit},
     ops::{Bound, RangeBounds},
     os::raw,
 };
@@ -13,7 +13,7 @@ The generic settings object
  */
 #[repr(transparent)]
 pub struct Settings {
-    handle: *mut ll::settings::Settings,
+    pub(crate) handle: ll::settings::Settings,
 }
 
 unsafe impl Send for Settings {}
@@ -23,27 +23,13 @@ The settings reference
 */
 #[repr(transparent)]
 pub struct SettingsRef<'a> {
-    handle: *mut ll::settings::Settings,
+    pub(crate) handle: *mut ll::settings::Settings,
     phantom: PhantomData<&'a ()>,
-}
-
-impl Drop for Settings {
-    fn drop(&mut self) {
-        unsafe { ll::settings::delete_fluid_settings(self.handle) }
-    }
 }
 
 impl Settings {
     pub fn new() -> Result<Self> {
-        result_from_ptr(unsafe { ll::settings::new_fluid_settings() }).map(|handle| Self { handle })
-    }
-
-    pub(crate) fn into_ptr(self) -> *mut ll::settings::Settings {
-        unsafe { transmute(self) }
-    }
-
-    pub(crate) fn from_ptr(handle: *mut ll::settings::Settings) -> Self {
-        Self { handle }
+        return Ok(Self { handle: unsafe { ll::settings::new_fluid_settings() } });
     }
 }
 
@@ -60,20 +46,20 @@ impl<'a> SettingsRef<'a> {
 The settings interface
  */
 pub trait IsSettings {
-    fn pick<S, T>(&self, name: S) -> Option<Setting<'_, T>>
+    fn pick<S, T>(&mut self, name: S) -> Option<Setting<'_, T>>
     where
         S: Into<Vec<u8>>,
         T: IsSetting + ?Sized;
 
-    fn str_<S>(&self, name: S) -> Option<Setting<'_, str>>
+    fn str_<S>(&mut self, name: S) -> Option<Setting<'_, str>>
     where
         S: Into<Vec<u8>>;
 
-    fn num<S>(&self, name: S) -> Option<Setting<'_, f64>>
+    fn num<S>(&mut self, name: S) -> Option<Setting<'_, f64>>
     where
         S: Into<Vec<u8>>;
 
-    fn int<S>(&self, name: S) -> Option<Setting<'_, i32>>
+    fn int<S>(&mut self, name: S) -> Option<Setting<'_, i32>>
     where
         S: Into<Vec<u8>>;
 }
@@ -86,15 +72,15 @@ mod private {
     where
         X: HasHandle<Handle = ll::settings::Settings>,
     {
-        fn pick<S, T>(&self, name: S) -> Option<Setting<'_, T>>
+        fn pick<S, T>(&mut self, name: S) -> Option<Setting<'_, T>>
         where
             S: Into<Vec<u8>>,
             T: IsSetting + ?Sized,
         {
-            let handle = self.get_handle();
+            let handle = self.get_mut_handle();
             let name = CString::new(name).ok()?;
 
-            if T::TYPE == unsafe { ll::settings::fluid_settings_get_type(handle, name.as_ptr() as *const _) }
+            if T::TYPE == unsafe { ll::settings::fluid_settings_get_type(handle.as_ref().unwrap(), name.as_ptr() as *const _) }
             {
                 Some(Setting {
                     handle,
@@ -106,21 +92,21 @@ mod private {
             }
         }
 
-        fn str_<S>(&self, name: S) -> Option<Setting<'_, str>>
+        fn str_<S>(&mut self, name: S) -> Option<Setting<'_, str>>
         where
             S: Into<Vec<u8>>,
         {
             self.pick(name)
         }
 
-        fn num<S>(&self, name: S) -> Option<Setting<'_, f64>>
+        fn num<S>(&mut self, name: S) -> Option<Setting<'_, f64>>
         where
             S: Into<Vec<u8>>,
         {
             self.pick(name)
         }
 
-        fn int<S>(&self, name: S) -> Option<Setting<'_, i32>>
+        fn int<S>(&mut self, name: S) -> Option<Setting<'_, i32>>
         where
             S: Into<Vec<u8>>,
         {
@@ -131,15 +117,23 @@ mod private {
     impl HasHandle for Settings {
         type Handle = ll::settings::Settings;
 
-        fn get_handle(&self) -> *mut Self::Handle {
-            self.handle
+        fn get_handle(&self) -> *const Self::Handle {
+            &self.handle as *const Self::Handle
+        }
+
+        fn get_mut_handle(&mut self) -> *mut Self::Handle {
+            &mut self.handle as *mut Self::Handle
         }
     }
 
     impl<'a> HasHandle for SettingsRef<'a> {
         type Handle = ll::settings::Settings;
 
-        fn get_handle(&self) -> *mut Self::Handle {
+        fn get_handle(&self) -> *const Self::Handle {
+            self.handle
+        }
+
+        fn get_mut_handle(&mut self) -> *mut Self::Handle {
             self.handle
         }
     }
@@ -256,14 +250,14 @@ where
 
     pub fn hints(&self) -> Hints {
         Hints::from_bits_truncate(unsafe {
-            ll::settings::fluid_settings_get_hints(self.handle, self.name_ptr())
+            ll::settings::fluid_settings_get_hints(&*self.handle, self.name_ptr())
         })
     }
 
     /** Returns whether the setting is changeable in real-time
      */
     pub fn is_realtime(&self) -> bool {
-        0 < unsafe { ll::settings::fluid_settings_is_realtime(self.handle, self.name_ptr()) }
+        0 < unsafe { ll::settings::fluid_settings_is_realtime(&*self.handle, self.name_ptr()) }
     }
 }
 
@@ -277,7 +271,7 @@ impl<'a> Setting<'a, str> {
         let mut value = value.into();
         value.push('\0');
         0 < unsafe {
-            ll::settings::fluid_settings_setstr(self.handle, self.name_ptr(), value.as_ptr() as *const _)
+            ll::settings::fluid_settings_setstr(&mut *self.handle, self.name_ptr(), value.as_ptr() as *const _)
         }
     }
 
@@ -290,7 +284,7 @@ impl<'a> Setting<'a, str> {
         let mut value = MaybeUninit::uninit();
 
         if 0 < unsafe {
-            ll::settings::fluid_settings_getstr(self.handle, self.name_ptr(), value.as_mut_ptr())
+            ll::settings::fluid_settings_getstr(&*self.handle, self.name_ptr(), value.as_mut_ptr())
         } {
             let value = unsafe { value.assume_init() };
             let value = unsafe { CStr::from_ptr(value) };
@@ -304,7 +298,7 @@ impl<'a> Setting<'a, str> {
     Get the default value of a string setting
      */
     pub fn default(&self) -> &str {
-        let value = unsafe { ll::settings::fluid_settings_getstr_default(self.handle, self.name_ptr()) };
+        let value = unsafe { ll::settings::fluid_settings_getstr_default(&*self.handle, self.name_ptr()) };
         let value = unsafe { CStr::from_ptr(value) };
         value.to_str().unwrap()
     }
@@ -317,7 +311,7 @@ where
     fn eq(&self, other: &S) -> bool {
         let mut other = String::from(other.as_ref());
         other.push('\0');
-        0 < ll::settings::fluid_settings_str_equal(self.handle, self.name_ptr(), other.as_ptr() as *mut _)
+        0 < ll::settings::fluid_settings_str_equal(unsafe { &mut *self.handle }, self.name_ptr(), other.as_ptr() as *mut _)
     }
 }
 
@@ -378,7 +372,7 @@ impl<'a> Setting<'a, f64> {
     Returns `true` if the value has been set, `false` otherwise
      */
     pub fn set(&self, value: f64) -> bool {
-        0 < unsafe { ll::settings::fluid_settings_setnum(self.handle, self.name_ptr(), value) }
+        0 < unsafe { ll::settings::fluid_settings_setnum(&mut *self.handle, self.name_ptr(), value) }
     }
 
     /**
@@ -389,7 +383,7 @@ impl<'a> Setting<'a, f64> {
     pub fn get(&self) -> Option<f64> {
         let mut value = MaybeUninit::uninit();
 
-        if 0 < ll::settings::fluid_settings_getnum(self.handle, self.name_ptr(), value.as_mut_ptr()) {
+        if 0 < ll::settings::fluid_settings_getnum(unsafe { &*self.handle }, self.name_ptr(), value.as_mut_ptr()) {
             let value = unsafe { value.assume_init() };
             Some(value)
         } else {
@@ -401,7 +395,7 @@ impl<'a> Setting<'a, f64> {
     Get the default value of a numeric setting
      */
     pub fn default(&self) -> f64 {
-        unsafe { ll::settings::fluid_settings_getnum_default(self.handle, self.name_ptr()) }
+        unsafe { ll::settings::fluid_settings_getnum_default(&*self.handle, self.name_ptr()) }
     }
 
     /**
@@ -413,7 +407,7 @@ impl<'a> Setting<'a, f64> {
 
         unsafe {
             ll::settings::fluid_settings_getnum_range(
-                self.handle,
+                &*self.handle,
                 self.name_ptr(),
                 min.as_mut_ptr(),
                 max.as_mut_ptr(),
@@ -432,7 +426,7 @@ impl<'a> Setting<'a, i32> {
     Returns `true` if the value has been set, `false` otherwise
      */
     pub fn set(&self, value: i32) -> bool {
-        0 < ll::settings::fluid_settings_setint(self.handle, self.name_ptr(), value)
+        0 < ll::settings::fluid_settings_setint(unsafe { &mut *self.handle }, self.name_ptr(), value)
     }
 
     /**
@@ -443,7 +437,7 @@ impl<'a> Setting<'a, i32> {
     pub fn get(&self) -> Option<i32> {
         let mut value = MaybeUninit::uninit();
 
-        if 0 < ll::settings::fluid_settings_getint(self.handle, self.name_ptr(), value.as_mut_ptr()) {
+        if 0 < ll::settings::fluid_settings_getint(unsafe { &*self.handle }, self.name_ptr(), value.as_mut_ptr()) {
             let value = unsafe { value.assume_init() };
             Some(value)
         } else {
@@ -455,7 +449,7 @@ impl<'a> Setting<'a, i32> {
     Get the default value of a integer setting
      */
     pub fn default(&self) -> i32 {
-        unsafe { ll::settings::fluid_settings_getint_default(self.handle, self.name_ptr()) }
+        unsafe { ll::settings::fluid_settings_getint_default(&*self.handle, self.name_ptr()) }
     }
 
     /**
@@ -467,7 +461,7 @@ impl<'a> Setting<'a, i32> {
 
         unsafe {
             ll::settings::fluid_settings_getint_range(
-                self.handle,
+                &*self.handle,
                 self.name_ptr(),
                 min.as_mut_ptr(),
                 max.as_mut_ptr(),
@@ -492,7 +486,7 @@ mod test {
 
     #[test]
     fn num_setting() {
-        let settings = Settings::new().unwrap();
+        let mut settings = Settings::new().unwrap();
         let gain = settings.num("synth.gain").unwrap();
 
         assert_eq!(gain.default(), 0.2f32 as f64);
@@ -506,7 +500,7 @@ mod test {
 
     #[test]
     fn int_setting() {
-        let settings = Settings::new().unwrap();
+        let mut settings = Settings::new().unwrap();
         let polyphony = settings.int("synth.polyphony").unwrap();
 
         assert_eq!(polyphony.default(), 256);
@@ -520,7 +514,7 @@ mod test {
 
     #[test]
     fn str_setting() {
-        let settings = Settings::new().unwrap();
+        let mut settings = Settings::new().unwrap();
         let active = settings.str_("synth.drums-channel.active").unwrap();
 
         assert_eq!(active.default(), "yes");
@@ -528,16 +522,5 @@ mod test {
         assert_eq!(active.get(), Some("yes"));
         assert!(active.set("no"));
         assert_eq!(active.get(), Some("no"));
-    }
-
-    #[test]
-    fn settings_ref() {
-        let settings = Settings::new().unwrap();
-
-        let settings_ref = SettingsRef::from_ptr(settings.into_ptr());
-
-        let gain = settings_ref.num("synth.gain").unwrap();
-
-        assert_eq!(gain.default(), 0.2f32 as f64);
     }
 }

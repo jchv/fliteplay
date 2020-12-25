@@ -96,7 +96,11 @@ mod private {
     impl<'a> HasHandle for FontRef<'a> {
         type Handle = ll::sfont::SoundFont;
 
-        fn get_handle(&self) -> *mut Self::Handle {
+        fn get_handle(&self) -> *const Self::Handle {
+            self.handle
+        }
+
+        fn get_mut_handle(&mut self) -> *mut Self::Handle {
             self.handle
         }
     }
@@ -142,7 +146,11 @@ mod private {
     impl<'a> HasHandle for PresetRef<'a> {
         type Handle = ll::sfont::Preset;
 
-        fn get_handle(&self) -> *mut Self::Handle {
+        fn get_handle(&self) -> *const Self::Handle {
+            self.handle
+        }
+
+        fn get_mut_handle(&mut self) -> *mut Self::Handle {
             self.handle
         }
     }

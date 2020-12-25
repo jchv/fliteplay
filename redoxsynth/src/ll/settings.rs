@@ -9,14 +9,13 @@ use super::list::List;
 use super::synth::fluid_synth_settings;
 use super::sys::fluid_strtok;
 use std::ffi::CStr;
-pub type Settings = HashTable;
 pub type SettingsType = i32;
 pub const FLUID_SET_TYPE: SettingsType = 3;
 pub const FLUID_STR_TYPE: SettingsType = 2;
 pub const FLUID_INT_TYPE: SettingsType = 1;
 pub const FLUID_NUM_TYPE: SettingsType = 0;
 pub const FLUID_NO_TYPE: SettingsType = -1;
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct StrSetting {
     value: *mut libc::c_char,
     def: *mut libc::c_char,
@@ -28,7 +27,7 @@ pub struct StrSetting {
 pub type StrUpdateFn = Option<
     unsafe fn(_: *mut libc::c_void, _: *const libc::c_char, _: *mut libc::c_char) -> i32,
 >;
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct IntSetting {
     value: i32,
     def: i32,
@@ -40,7 +39,7 @@ pub struct IntSetting {
 }
 pub type IntUpdateFn =
     Option<unsafe fn(_: *mut libc::c_void, _: *const libc::c_char, _: i32) -> i32>;
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct NumSetting {
     value: f64,
     def: f64,
@@ -155,20 +154,26 @@ unsafe fn delete_fluid_int_setting(setting: *mut IntSetting) {
     };
 }
 
-pub unsafe fn new_fluid_settings() -> *mut Settings {
-    let settings: *mut Settings = new_fluid_hashtable(Some(
+#[derive(Clone)]
+pub struct Settings {
+    table: *mut HashTable
+}
+
+pub unsafe fn new_fluid_settings() -> Settings {
+    let hashtable = new_fluid_hashtable(Some(
         fluid_settings_hash_delete as unsafe fn(_: *mut libc::c_void, _: i32) -> (),
     ));
-    if settings.is_null() {
-        return 0 as *mut Settings;
-    }
-    fluid_settings_init(settings);
+    let mut settings = Settings{ table: hashtable };
+    fluid_settings_init(&mut settings);
     return settings;
 }
 
-pub unsafe fn delete_fluid_settings(settings: *mut Settings) {
-    delete_fluid_hashtable(settings);
+impl Drop for Settings {
+    fn drop(&mut self) {
+        delete_fluid_hashtable(self.table);
+    }
 }
+
 unsafe fn fluid_settings_hash_delete(value: *mut libc::c_void, type_0: i32) {
     match type_0 {
         0 => {
@@ -186,7 +191,7 @@ unsafe fn fluid_settings_hash_delete(value: *mut libc::c_void, type_0: i32) {
         _ => {}
     };
 }
-unsafe fn fluid_settings_init(settings: *mut Settings) {
+unsafe fn fluid_settings_init(settings: &mut Settings) {
     fluid_synth_settings(settings);
 }
 unsafe fn fluid_settings_tokenize(
@@ -231,13 +236,13 @@ unsafe fn fluid_settings_tokenize(
     return n;
 }
 unsafe fn fluid_settings_get(
-    settings: *mut Settings,
+    settings: &Settings,
     name: *mut *mut libc::c_char,
     len: i32,
     value: *mut *mut libc::c_void,
     type_0: *mut i32,
 ) -> i32 {
-    let mut table: *mut HashTable = settings;
+    let mut table: *mut HashTable = settings.table;
     let mut t: i32 = 0;
     let mut v: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut n;
@@ -265,13 +270,13 @@ unsafe fn fluid_settings_get(
     return 1 as i32;
 }
 unsafe fn fluid_settings_set(
-    settings: *mut Settings,
+    settings: &mut Settings,
     name: *mut *mut libc::c_char,
     len: i32,
     value: *mut libc::c_void,
     type_0: i32,
 ) -> i32 {
-    let mut table: *mut HashTable = settings;
+    let mut table: *mut HashTable = settings.table;
     let mut t: i32 = 0;
     let mut v: *mut libc::c_void = 0 as *mut libc::c_void;
     let mut n;
@@ -309,7 +314,7 @@ unsafe fn fluid_settings_set(
 }
 
 pub unsafe fn fluid_settings_register_str(
-    settings: *mut Settings,
+    settings: &mut Settings,
     name: *const libc::c_char,
     def: *mut libc::c_char,
     hints: i32,
@@ -364,7 +369,7 @@ pub unsafe fn fluid_settings_register_str(
 }
 
 pub fn fluid_settings_register_num(
-    settings: *mut Settings,
+    settings: &mut Settings,
     name: *const libc::c_char,
     def: f64,
     min: f64,
@@ -418,7 +423,7 @@ pub fn fluid_settings_register_num(
 }
 
 pub fn fluid_settings_register_int(
-    settings: *mut Settings,
+    settings: &mut Settings,
     name: *const libc::c_char,
     def: i32,
     min: i32,
@@ -472,7 +477,7 @@ pub fn fluid_settings_register_int(
 }
 
 pub unsafe fn fluid_settings_get_type(
-    settings: *mut Settings,
+    settings: &Settings,
     name: *const libc::c_char,
 ) -> i32 {
     let mut type_0: i32 = 0;
@@ -496,7 +501,7 @@ pub unsafe fn fluid_settings_get_type(
 }
 
 pub unsafe fn fluid_settings_get_hints(
-    settings: *mut Settings,
+    settings: &Settings,
     name: *const libc::c_char,
 ) -> i32 {
     let mut type_0: i32 = 0;
@@ -528,7 +533,7 @@ pub unsafe fn fluid_settings_get_hints(
 }
 
 pub unsafe fn fluid_settings_is_realtime(
-    settings: *mut Settings,
+    settings: &Settings,
     name: *const libc::c_char,
 ) -> i32 {
     let mut type_0: i32 = 0;
@@ -560,7 +565,7 @@ pub unsafe fn fluid_settings_is_realtime(
 }
 
 pub unsafe fn fluid_settings_setstr(
-    settings: *mut Settings,
+    settings: &mut Settings,
     name: *const libc::c_char,
     str: *const libc::c_char,
 ) -> i32 {
@@ -621,7 +626,7 @@ pub unsafe fn fluid_settings_setstr(
 }
 
 pub unsafe fn fluid_settings_getstr(
-    settings: *mut Settings,
+    settings: &Settings,
     name: *const libc::c_char,
     str: *mut *mut libc::c_char,
 ) -> i32 {
@@ -649,7 +654,7 @@ pub unsafe fn fluid_settings_getstr(
 }
 
 pub fn fluid_settings_str_equal(
-    settings: *mut Settings,
+    settings: &Settings,
     name: *const libc::c_char,
     s: *mut libc::c_char,
 ) -> i32 {
@@ -677,7 +682,7 @@ pub fn fluid_settings_str_equal(
 }
 
 pub unsafe fn fluid_settings_getstr_default(
-    settings: *mut Settings,
+    settings: &Settings,
     name: *const libc::c_char,
 ) -> *mut libc::c_char {
     let mut type_0: i32 = 0;
@@ -703,7 +708,7 @@ pub unsafe fn fluid_settings_getstr_default(
 }
 
 pub unsafe fn fluid_settings_setnum(
-    settings: *mut Settings,
+    settings: &mut Settings,
     name: *const libc::c_char,
     mut val: f64,
 ) -> i32 {
@@ -759,7 +764,7 @@ pub unsafe fn fluid_settings_setnum(
 }
 
 pub fn fluid_settings_getnum(
-    settings: *mut Settings,
+    settings: &Settings,
     name: *const libc::c_char,
     val: *mut f64,
 ) -> i32 {
@@ -788,7 +793,7 @@ pub fn fluid_settings_getnum(
 }
 
 pub unsafe fn fluid_settings_getnum_range(
-    settings: *mut Settings,
+    settings: &Settings,
     name: *const libc::c_char,
     min: *mut f64,
     max: *mut f64,
@@ -815,7 +820,7 @@ pub unsafe fn fluid_settings_getnum_range(
 }
 
 pub unsafe fn fluid_settings_getnum_default(
-    settings: *mut Settings,
+    settings: &Settings,
     name: *const libc::c_char,
 ) -> f64 {
     let mut type_0: i32 = 0;
@@ -841,7 +846,7 @@ pub unsafe fn fluid_settings_getnum_default(
 }
 
 pub fn fluid_settings_setint(
-    settings: *mut Settings,
+    settings: &mut Settings,
     name: *const libc::c_char,
     mut val: i32,
 ) -> i32 {
@@ -899,7 +904,7 @@ pub fn fluid_settings_setint(
 }
 
 pub fn fluid_settings_getint(
-    settings: *mut Settings,
+    settings: &Settings,
     name: *const libc::c_char,
     val: *mut i32,
 ) -> i32 {
@@ -928,7 +933,7 @@ pub fn fluid_settings_getint(
 }
 
 pub unsafe fn fluid_settings_getint_range(
-    settings: *mut Settings,
+    settings: &Settings,
     name: *const libc::c_char,
     min: *mut i32,
     max: *mut i32,
@@ -955,7 +960,7 @@ pub unsafe fn fluid_settings_getint_range(
 }
 
 pub unsafe fn fluid_settings_getint_default(
-    settings: *mut Settings,
+    settings: &Settings,
     name: *const libc::c_char,
 ) -> i32 {
     let mut type_0: i32 = 0;
