@@ -1,4 +1,4 @@
-use super::channel::fluid_channel_get_interp_method;
+use super::{channel::fluid_channel_get_interp_method, synth::Synth};
 use super::channel::fluid_channel_get_num;
 use super::channel::Channel;
 use super::conv::fluid_act2hz;
@@ -319,6 +319,7 @@ pub unsafe fn fluid_voice_gen_incr(
 
 pub unsafe fn fluid_voice_write(
     mut voice: *mut Voice,
+    synth: &Synth,
     dsp_left_buf: *mut f32,
     dsp_right_buf: *mut f32,
     dsp_reverb_buf: *mut f32,
@@ -343,7 +344,7 @@ pub unsafe fn fluid_voice_write(
     if (*voice).noteoff_ticks != 0 as i32 as u32
         && (*voice).ticks >= (*voice).noteoff_ticks
     {
-        fluid_voice_noteoff(voice);
+        fluid_voice_noteoff(voice, synth);
     }
     fluid_voice_check_sample_sanity(voice);
     env_data = &mut *(*voice)
@@ -1484,9 +1485,9 @@ pub unsafe fn fluid_voice_modulate_all(mut voice: *mut Voice) -> i32 {
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_voice_noteoff(mut voice: *mut Voice) -> i32 {
+pub unsafe fn fluid_voice_noteoff(mut voice: *mut Voice, synth: &Synth) -> i32 {
     let at_tick;
-    at_tick = (*(*(*voice).channel).synth).min_note_length_ticks;
+    at_tick = synth.min_note_length_ticks;
     if at_tick > (*voice).ticks {
         (*voice).noteoff_ticks = at_tick;
         return FLUID_OK as i32;
