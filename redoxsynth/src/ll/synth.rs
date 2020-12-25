@@ -1,4 +1,4 @@
-use super::channel::fluid_channel_cc;
+use super::{channel::fluid_channel_cc, settings::Settings};
 use super::channel::fluid_channel_get_banknum;
 use super::channel::fluid_channel_get_num;
 use super::channel::fluid_channel_get_preset;
@@ -18,7 +18,6 @@ use super::channel::Channel;
 use super::chorus::Chorus;
 use super::defsfont::new_fluid_defsfloader;
 use super::dsp_float::fluid_dsp_float_config;
-use super::hash::HashTable;
 use super::list::delete_fluid_list;
 use super::list::fluid_list_insert_at;
 use super::list::fluid_list_nth;
@@ -72,7 +71,6 @@ use super::voice::new_fluid_voice;
 use super::voice::FluidVoiceAddMod;
 use std::ffi::CStr;
 
-pub type Settings = HashTable;
 #[derive(Clone)]
 pub struct Synth {
     pub(crate) settings: *mut Settings,
