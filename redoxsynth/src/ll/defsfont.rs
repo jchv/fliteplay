@@ -7,8 +7,6 @@ use super::list::fluid_list_nth;
 use super::list::fluid_list_prepend;
 use super::list::fluid_list_remove;
 use super::list::fluid_list_remove_link;
-use super::list::fluid_list_sort;
-use super::list::CompareFn;
 use super::list::List;
 use super::modulator::fluid_mod_delete;
 use super::modulator::fluid_mod_new;
@@ -28,7 +26,7 @@ use super::voice::fluid_voice_gen_set;
 use super::voice::fluid_voice_optimize_sample;
 use super::voice::Voice;
 use super::voice::FluidVoiceAddMod;
-use std::ffi::{CStr, CString};
+use std::{cmp::Ordering, ffi::{CStr, CString}};
 pub const FLUID_OK: i32 = 0;
 pub const FLUID_FAILED: i32 = -1;
 #[derive(Clone)]
@@ -86,7 +84,7 @@ pub struct InstrumentZone {
     gen: [Gen; 60],
     mod_0: *mut Mod,
 }
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct SFData {
     version: SFVersion,
@@ -96,7 +94,7 @@ pub struct SFData {
     fname: *mut libc::c_char,
     sffd: *mut libc::FILE,
     info: *mut List,
-    preset: *mut List,
+    preset: Vec<*mut SFPreset>,
     inst: *mut List,
     sample: *mut List,
 }
@@ -583,7 +581,6 @@ pub unsafe fn fluid_defsfont_load(
     let mut current_block: u64;
     let sfdata: *mut SFData;
     let mut p: *mut List;
-    let mut sfpreset: *mut SFPreset;
     let mut sfsample: *mut SFSample;
     let mut sample: *mut Sample;
     let mut preset: *mut DefPreset;
@@ -628,19 +625,13 @@ pub unsafe fn fluid_defsfont_load(
         match current_block {
             12140413667747225274 => {}
             _ => {
-                p = (*sfdata).preset;
-                loop {
-                    if p.is_null() {
-                        current_block = 14434620278749266018;
-                        break;
-                    }
-                    sfpreset = (*p).data as *mut SFPreset;
+                for sfpreset in (*sfdata).preset.iter() {
                     preset = new_fluid_defpreset(sfont);
                     if preset.is_null() {
                         current_block = 12140413667747225274;
                         break;
                     }
-                    if fluid_defpreset_import_sfont(preset, sfpreset, sfont)
+                    if fluid_defpreset_import_sfont(preset, *sfpreset, sfont)
                         != FLUID_OK as i32
                     {
                         current_block = 12140413667747225274;
@@ -653,11 +644,6 @@ pub unsafe fn fluid_defsfont_load(
                             (*preset).num,
                             (*preset).name.as_mut_ptr(),
                         );
-                    }
-                    p = if !p.is_null() {
-                        (*p).next
-                    } else {
-                        0 as *mut List
                     }
                 }
                 match current_block {
@@ -1887,7 +1873,7 @@ pub unsafe fn sfload_file(fname: *const libc::c_char, fapi: *mut FileApi) -> *mu
 }
 unsafe fn load_body(
     size: u32,
-    mut sf: *mut SFData,
+    sf: *mut SFData,
     fd: *mut libc::c_void,
     fapi: *mut FileApi,
 ) -> i32 {
@@ -1959,16 +1945,16 @@ unsafe fn load_body(
     if fixup_sample(sf) == 0 {
         return 0 as i32;
     }
-    (*sf).preset = fluid_list_sort(
-        (*sf).preset,
-        ::std::mem::transmute::<
-            Option<unsafe fn(_: *mut libc::c_void, _: *mut libc::c_void) -> i32>,
-            CompareFn,
-        >(Some(
-            sfont_preset_compare_func
-                as unsafe fn(_: *mut libc::c_void, _: *mut libc::c_void) -> i32,
-        )),
-    );
+    (*sf).preset.sort_by(|a, b| {
+        let cmp = sfont_preset_compare_func(*a as *mut libc::c_void, *b as *mut libc::c_void);
+        if cmp < 0 {
+            return Ordering::Less;
+        } else if cmp > 0 {
+            return Ordering::Greater;
+        } else {
+            return Ordering::Equal;
+        }
+    });
     return 1 as i32;
 }
 unsafe fn read_listchunk(
@@ -2372,7 +2358,7 @@ unsafe fn process_pdta(
 }
 unsafe fn load_phdr(
     size: i32,
-    mut sf: *mut SFData,
+    sf: *mut SFData,
     fd: *mut libc::c_void,
     fapi: *mut FileApi,
 ) -> i32 {
@@ -2400,7 +2386,7 @@ unsafe fn load_phdr(
     }
     while i > 0 as i32 {
         p = libc::malloc(::std::mem::size_of::<SFPreset>() as libc::size_t) as *mut SFPreset;
-        (*sf).preset = fluid_list_append((*sf).preset, p as *mut libc::c_void);
+        (*sf).preset.push(p);
         (*p).zone = 0 as *mut List;
         ({
             if (*fapi).fread.expect("non-null function pointer")(
@@ -2557,7 +2543,6 @@ unsafe fn load_pbag(
     fd: *mut libc::c_void,
     fapi: *mut FileApi,
 ) -> i32 {
-    let mut p: *mut List;
     let mut p2: *mut List;
     let mut z: *mut SFZone;
     let mut pz: *mut SFZone = 0 as *mut SFZone;
@@ -2569,9 +2554,8 @@ unsafe fn load_pbag(
     if size % 4 as i32 != 0 || size == 0 as i32 {
         return gerr!(ErrCorr, "Preset bag chunk size is invalid",);
     }
-    p = (*sf).preset;
-    while !p.is_null() {
-        p2 = (*((*p).data as *mut SFPreset)).zone;
+    for preset in (*sf).preset.iter() {
+        p2 = (**preset).zone;
         while !p2.is_null() {
             size -= 4 as i32;
             if size < 0 as i32 {
@@ -2640,11 +2624,6 @@ unsafe fn load_pbag(
             } else {
                 0 as *mut List
             }
-        }
-        p = if !p.is_null() {
-            (*p).next
-        } else {
-            0 as *mut List
         }
     }
     size -= 4 as i32;
@@ -2716,13 +2695,11 @@ unsafe fn load_pmod(
     fd: *mut libc::c_void,
     fapi: *mut FileApi,
 ) -> i32 {
-    let mut p: *mut List;
     let mut p2: *mut List;
     let mut p3: *mut List;
     let mut m: *mut SFMod;
-    p = (*sf).preset;
-    while !p.is_null() {
-        p2 = (*((*p).data as *mut SFPreset)).zone;
+    for preset in (*sf).preset.iter() {
+        p2 = (**preset).zone;
         while !p2.is_null() {
             p3 = (*((*p2).data as *mut SFZone)).mod_0;
             while !p3.is_null() {
@@ -2804,11 +2781,6 @@ unsafe fn load_pmod(
                 0 as *mut List
             }
         }
-        p = if !p.is_null() {
-            (*p).next
-        } else {
-            0 as *mut List
-        }
     }
     if size == 0 as i32 {
         return 1 as i32;
@@ -2833,7 +2805,6 @@ unsafe fn load_pgen(
     fd: *mut libc::c_void,
     fapi: *mut FileApi,
 ) -> i32 {
-    let mut p: *mut List;
     let mut p2: *mut List;
     let mut p3: *mut List;
     let mut dup: *mut List;
@@ -2847,11 +2818,10 @@ unsafe fn load_pgen(
     let mut drop_0: i32;
     let mut gzone: i32;
     let mut discarded: i32;
-    p = (*sf).preset;
-    while !p.is_null() {
+    for preset in (*sf).preset.iter() {
         gzone = 0 as i32;
         discarded = 0 as i32;
-        p2 = (*((*p).data as *mut SFPreset)).zone;
+        p2 = (**preset).zone;
         if !p2.is_null() {
             hz = &mut p2
         }
@@ -3022,7 +2992,7 @@ unsafe fn load_pgen(
                         FLUID_WARN,
                         "Preset \"{}\": Global zone is not first zone",
                         CStr::from_ptr(
-                            (*((*p).data as *const SFPreset)).name.as_ptr() as *const libc::c_char
+                            (**preset).name.as_ptr() as *const libc::c_char
                         )
                         .to_str()
                         .unwrap()
@@ -3045,7 +3015,7 @@ unsafe fn load_pgen(
                     FLUID_WARN,
                     "Preset \"{}\": Discarding invalid global zone",
                     CStr::from_ptr(
-                        (*((*p).data as *const SFPreset)).name.as_ptr() as *const libc::c_char
+                        (**preset).name.as_ptr() as *const libc::c_char
                     )
                     .to_str()
                     .unwrap()
@@ -3088,16 +3058,11 @@ unsafe fn load_pgen(
                 FLUID_WARN,
                 "Preset \"{}\": Some invalid generators were discarded",
                 CStr::from_ptr(
-                    (*((*p).data as *const SFPreset)).name.as_ptr() as *const libc::c_char
+                    (**preset).name.as_ptr() as *const libc::c_char
                 )
                 .to_str()
                 .unwrap()
             );
-        }
-        p = if !p.is_null() {
-            (*p).next
-        } else {
-            0 as *mut List
         }
     }
     if size == 0 as i32 {
@@ -3950,14 +3915,12 @@ unsafe fn load_shdr(
     return 1 as i32;
 }
 unsafe fn fixup_pgen(sf: *mut SFData) -> i32 {
-    let mut p: *mut List;
     let mut p2: *mut List;
     let mut p3: *mut List;
     let mut z: *mut SFZone;
     let mut i: i32;
-    p = (*sf).preset;
-    while !p.is_null() {
-        p2 = (*((*p).data as *mut SFPreset)).zone;
+    for preset in (*sf).preset.iter() {
+        p2 = (**preset).zone;
         while !p2.is_null() {
             z = (*p2).data as *mut SFZone;
             i = (*z).instsamp as i32;
@@ -3967,8 +3930,8 @@ unsafe fn fixup_pgen(sf: *mut SFData) -> i32 {
                     return gerr!(
                         ErrCorr,
                         "Preset {} {}: Invalid instrument reference",
-                        (*((*p).data as *mut SFPreset)).bank,
-                        (*((*p).data as *mut SFPreset)).prenum
+                        (**preset).bank,
+                        (**preset).prenum
                     );
                 }
                 (*z).instsamp = p3
@@ -3980,11 +3943,6 @@ unsafe fn fixup_pgen(sf: *mut SFData) -> i32 {
             } else {
                 0 as *mut List
             }
-        }
-        p = if !p.is_null() {
-            (*p).next
-        } else {
-            0 as *mut List
         }
     }
     return 1 as i32;
@@ -4125,9 +4083,9 @@ pub unsafe fn sfont_close(mut sf: *mut SFData, fapi: *mut FileApi) {
     }
     delete_fluid_list((*sf).info);
     (*sf).info = 0 as *mut List;
-    p = (*sf).preset;
-    while !p.is_null() {
-        p2 = (*((*p).data as *mut SFPreset)).zone;
+
+    for preset in (*sf).preset.iter() {
+        p2 = (**preset).zone;
         while !p2.is_null() {
             sfont_free_zone((*p2).data as *mut SFZone);
             p2 = if !p2.is_null() {
@@ -4136,16 +4094,9 @@ pub unsafe fn sfont_close(mut sf: *mut SFData, fapi: *mut FileApi) {
                 0 as *mut List
             }
         }
-        delete_fluid_list((*((*p).data as *mut SFPreset)).zone);
-        libc::free((*p).data);
-        p = if !p.is_null() {
-            (*p).next
-        } else {
-            0 as *mut List
-        }
+        delete_fluid_list((**preset).zone);
     }
-    delete_fluid_list((*sf).preset);
-    (*sf).preset = 0 as *mut List;
+
     p = (*sf).inst;
     while !p.is_null() {
         p2 = (*((*p).data as *mut SFInst)).zone;

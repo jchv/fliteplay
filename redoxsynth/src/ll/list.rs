@@ -3,7 +3,6 @@ pub struct List {
     pub(crate) data: *mut libc::c_void,
     pub(crate) next: *mut List,
 }
-pub type CompareFn = Option<unsafe fn(_: *mut libc::c_void, _: *mut libc::c_void) -> i32>;
 
 pub unsafe fn new_fluid_list() -> *mut List {
     let mut list: *mut List;
@@ -107,64 +106,6 @@ pub unsafe fn fluid_list_remove_link(mut list: *mut List, link: *mut List) -> *m
         }
     }
     return list;
-}
-unsafe fn fluid_list_sort_merge(
-    mut l1: *mut List,
-    mut l2: *mut List,
-    compare_func: CompareFn,
-) -> *mut List {
-    let mut list: List = List {
-        data: 0 as *mut libc::c_void,
-        next: 0 as *mut List,
-    };
-    let mut l: *mut List;
-    l = &mut list;
-    while !l1.is_null() && !l2.is_null() {
-        if compare_func.expect("non-null function pointer")((*l1).data, (*l2).data)
-            < 0 as i32
-        {
-            (*l).next = l1;
-            l = (*l).next;
-            l1 = (*l1).next
-        } else {
-            (*l).next = l2;
-            l = (*l).next;
-            l2 = (*l2).next
-        }
-    }
-    (*l).next = if !l1.is_null() { l1 } else { l2 };
-    return list.next;
-}
-
-pub unsafe fn fluid_list_sort(list: *mut List, compare_func: CompareFn) -> *mut List {
-    let mut l1: *mut List;
-    let mut l2: *mut List;
-    if list.is_null() {
-        return 0 as *mut List;
-    }
-    if (*list).next.is_null() {
-        return list;
-    }
-    l1 = list;
-    l2 = (*list).next;
-    loop {
-        l2 = (*l2).next;
-        if l2.is_null() {
-            break;
-        }
-        l2 = (*l2).next;
-        if l2.is_null() {
-            break;
-        }
-        l1 = (*l1).next
-    }
-    l2 = (*l1).next;
-    (*l1).next = 0 as *mut List;
-    return fluid_list_sort_merge(
-        fluid_list_sort(list, compare_func),
-        fluid_list_sort(l2, compare_func),
-        compare_func,
-    );
 }
 
 pub unsafe fn fluid_list_last(mut list: *mut List) -> *mut List {
