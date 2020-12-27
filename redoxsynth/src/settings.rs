@@ -3,7 +3,6 @@ use bitflags::bitflags;
 use std::{
     ffi::{CStr, CString},
     marker::PhantomData,
-    mem::{MaybeUninit},
     ops::{Bound, RangeBounds},
     os::raw,
 };
@@ -257,7 +256,7 @@ where
     /** Returns whether the setting is changeable in real-time
      */
     pub fn is_realtime(&self) -> bool {
-        0 < unsafe { ll::settings::fluid_settings_is_realtime(&*self.handle, self.name_ptr()) }
+        unsafe { ll::settings::fluid_settings_is_realtime(&*self.handle, self.name_ptr()) }
     }
 }
 
@@ -281,16 +280,8 @@ impl<'a> Setting<'a, str> {
     Returns `Some("value")` if the value exists, `None` otherwise
      */
     pub fn get(&self) -> Option<&str> {
-        let mut value = MaybeUninit::uninit();
-
-        if 0 < unsafe {
-            ll::settings::fluid_settings_getstr(&*self.handle, self.name_ptr(), value.as_mut_ptr())
-        } {
-            let value = unsafe { value.assume_init() };
-            let value = unsafe { CStr::from_ptr(value) };
-            value.to_str().ok()
-        } else {
-            None
+        unsafe {
+            return ll::settings::fluid_settings_getstr(&*self.handle, self.name_ptr()).and_then(|value| CStr::from_ptr(value).to_str().ok());
         }
     }
 
@@ -311,7 +302,7 @@ where
     fn eq(&self, other: &S) -> bool {
         let mut other = String::from(other.as_ref());
         other.push('\0');
-        0 < ll::settings::fluid_settings_str_equal(unsafe { &mut *self.handle }, self.name_ptr(), other.as_ptr() as *mut _)
+        ll::settings::fluid_settings_str_equal(unsafe { &mut *self.handle }, self.name_ptr(), other.as_ptr() as *mut _)
     }
 }
 
@@ -329,21 +320,6 @@ pub struct Range<T> {
 impl<T> Range<T> {
     pub fn new(min: Option<T>, max: Option<T>) -> Self {
         Self { min, max }
-    }
-
-    fn new_unsafe(min: MaybeUninit<T>, max: MaybeUninit<T>, hints: Hints) -> Self {
-        Self::new(
-            if hints.contains(Hints::BOUNDED_BELOW) {
-                Some(unsafe { min.assume_init() })
-            } else {
-                None
-            },
-            if hints.contains(Hints::BOUNDED_ABOVE) {
-                Some(unsafe { max.assume_init() })
-            } else {
-                None
-            },
-        )
     }
 }
 
@@ -381,14 +357,7 @@ impl<'a> Setting<'a, f64> {
     Returns `Some(value)` if the value exists, `None` otherwise
      */
     pub fn get(&self) -> Option<f64> {
-        let mut value = MaybeUninit::uninit();
-
-        if 0 < ll::settings::fluid_settings_getnum(unsafe { &*self.handle }, self.name_ptr(), value.as_mut_ptr()) {
-            let value = unsafe { value.assume_init() };
-            Some(value)
-        } else {
-            None
-        }
+        return ll::settings::fluid_settings_getnum(unsafe { &*self.handle }, self.name_ptr())
     }
 
     /**
@@ -402,20 +371,29 @@ impl<'a> Setting<'a, f64> {
     Get the range of values of a numeric setting
      */
     pub fn range(&self) -> Range<f64> {
-        let mut min = MaybeUninit::uninit();
-        let mut max = MaybeUninit::uninit();
-
         unsafe {
-            ll::settings::fluid_settings_getnum_range(
+            let hints = self.hints();
+            return match ll::settings::fluid_settings_getnum_range(
                 &*self.handle,
-                self.name_ptr(),
-                min.as_mut_ptr(),
-                max.as_mut_ptr(),
-            );
+                self.name_ptr()
+            ) {
+                Some(range) => {
+                    Range::new(
+                        if hints.contains(Hints::BOUNDED_BELOW) {
+                            Some(range.min)
+                        } else {
+                            None
+                        },
+                        if hints.contains(Hints::BOUNDED_ABOVE) {
+                            Some(range.max)
+                        } else {
+                            None
+                        },
+                    )
+                },
+                None => Range::new(None, None)
+            };
         }
-
-        let hints = self.hints();
-        Range::new_unsafe(min, max, hints)
     }
 }
 
@@ -435,14 +413,7 @@ impl<'a> Setting<'a, i32> {
     Returns `Some(value)` if the value exists, `None` otherwise
      */
     pub fn get(&self) -> Option<i32> {
-        let mut value = MaybeUninit::uninit();
-
-        if 0 < ll::settings::fluid_settings_getint(unsafe { &*self.handle }, self.name_ptr(), value.as_mut_ptr()) {
-            let value = unsafe { value.assume_init() };
-            Some(value)
-        } else {
-            None
-        }
+        return ll::settings::fluid_settings_getint(unsafe { &*self.handle }, self.name_ptr())
     }
 
     /**
@@ -456,20 +427,29 @@ impl<'a> Setting<'a, i32> {
     Get the range of values of a integer setting
      */
     pub fn range(&self) -> Range<i32> {
-        let mut min = MaybeUninit::uninit();
-        let mut max = MaybeUninit::uninit();
-
         unsafe {
-            ll::settings::fluid_settings_getint_range(
+            let hints = self.hints();
+            return match ll::settings::fluid_settings_getint_range(
                 &*self.handle,
-                self.name_ptr(),
-                min.as_mut_ptr(),
-                max.as_mut_ptr(),
-            );
+                self.name_ptr()
+            ) {
+                Some(range) => {
+                    Range::new(
+                        if hints.contains(Hints::BOUNDED_BELOW) {
+                            Some(range.min)
+                        } else {
+                            None
+                        },
+                        if hints.contains(Hints::BOUNDED_ABOVE) {
+                            Some(range.max)
+                        } else {
+                            None
+                        },
+                    )
+                },
+                None => Range::new(None, None)
+            };
         }
-
-        let hints = self.hints();
-        Range::new_unsafe(min, max, hints)
     }
 }
 

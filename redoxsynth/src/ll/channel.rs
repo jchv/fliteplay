@@ -260,7 +260,7 @@ pub fn fluid_channel_cc(
                         &synth.settings,
                         b"synth.drums-channel.active\x00" as *const u8 as *const libc::c_char,
                         b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
-                    ) != 0
+                    ) != false
                 {
                     return FLUID_OK as i32;
                 }
@@ -273,7 +273,7 @@ pub fn fluid_channel_cc(
                         &synth.settings,
                         b"synth.drums-channel.active\x00" as *const u8 as *const libc::c_char,
                         b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
-                    ) != 0
+                    ) != false
                 {
                     return FLUID_OK as i32;
                 }

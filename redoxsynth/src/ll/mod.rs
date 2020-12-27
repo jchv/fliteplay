@@ -42,7 +42,6 @@ pub(crate) mod conv;
 pub(crate) mod defsfont;
 pub(crate) mod dsp_float;
 pub(crate) mod gen;
-pub(crate) mod hash;
 pub(crate) mod modulator;
 pub(crate) mod reverb;
 pub(crate) mod settings;

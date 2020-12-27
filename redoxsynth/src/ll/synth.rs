@@ -104,7 +104,7 @@ pub struct Synth {
 impl Synth {
     pub fn new(mut settings: Settings) -> Result<Self, &'static str> {
         unsafe {
-            let mut i: i32 = 0;
+            let i: i32;
             let loader;
         
             if FLUID_SYNTH_INITIALIZED == 0 as i32 {
@@ -169,46 +169,38 @@ impl Synth {
                 b"synth.dump\x00" as *const u8 as *const libc::c_char,
                 b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
             ) as libc::c_char;
-            fluid_settings_getint(
+            synth.polyphony = fluid_settings_getint(
                 &settings,
-                b"synth.polyphony\x00" as *const u8 as *const libc::c_char,
-                &mut synth.polyphony,
-            );
-            fluid_settings_getnum(
+                b"synth.polyphony\x00" as *const u8 as *const libc::c_char
+            ).unwrap();
+            synth.sample_rate = fluid_settings_getnum(
                 &settings,
-                b"synth.sample-rate\x00" as *const u8 as *const libc::c_char,
-                &mut synth.sample_rate,
-            );
-            fluid_settings_getint(
+                b"synth.sample-rate\x00" as *const u8 as *const libc::c_char
+            ).unwrap();
+            synth.midi_channels = fluid_settings_getint(
                 &settings,
-                b"synth.midi-channels\x00" as *const u8 as *const libc::c_char,
-                &mut synth.midi_channels,
-            );
-            fluid_settings_getint(
+                b"synth.midi-channels\x00" as *const u8 as *const libc::c_char
+            ).unwrap();
+            synth.audio_channels = fluid_settings_getint(
                 &settings,
-                b"synth.audio-channels\x00" as *const u8 as *const libc::c_char,
-                &mut synth.audio_channels,
-            );
-            fluid_settings_getint(
+                b"synth.audio-channels\x00" as *const u8 as *const libc::c_char
+            ).unwrap();
+            synth.audio_groups = fluid_settings_getint(
                 &settings,
-                b"synth.audio-groups\x00" as *const u8 as *const libc::c_char,
-                &mut synth.audio_groups,
-            );
-            fluid_settings_getint(
+                b"synth.audio-groups\x00" as *const u8 as *const libc::c_char
+            ).unwrap();
+            synth.effects_channels = fluid_settings_getint(
                 &settings,
-                b"synth.effects-channels\x00" as *const u8 as *const libc::c_char,
-                &mut synth.effects_channels,
-            );
-            fluid_settings_getnum(
+                b"synth.effects-channels\x00" as *const u8 as *const libc::c_char
+            ).unwrap();
+            synth.gain = fluid_settings_getnum(
                 &settings,
-                b"synth.gain\x00" as *const u8 as *const libc::c_char,
-                &mut synth.gain,
-            );
-            fluid_settings_getint(
+                b"synth.gain\x00" as *const u8 as *const libc::c_char
+            ).unwrap();
+            i = fluid_settings_getint(
                 &settings,
-                b"synth.min-note-length\x00" as *const u8 as *const libc::c_char,
-                &mut i,
-            );
+                b"synth.min-note-length\x00" as *const u8 as *const libc::c_char
+            ).unwrap();
             synth.min_note_length_ticks =
                 (i as f64 * synth.sample_rate / 1000.0f32 as f64) as u32;
             fluid_settings_register_num(
@@ -347,7 +339,7 @@ impl Synth {
                 b"yes\x00" as *const u8
                     as *const libc::c_char
                     as *mut libc::c_char,
-            ) != 0
+            ) != false
             {
                 fluid_synth_bank_select(
                     &mut synth,
@@ -1339,7 +1331,7 @@ pub unsafe fn fluid_synth_program_change(
             &(*synth).settings,
             b"synth.drums-channel.active\x00" as *const u8 as *const libc::c_char,
             b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
-        ) != 0
+        ) != false
     {
         preset = fluid_synth_find_preset(
             synth,
