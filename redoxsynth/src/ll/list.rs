@@ -49,18 +49,6 @@ pub unsafe fn fluid_list_prepend(list: *mut List, data: *mut libc::c_void) -> *m
     return new_list;
 }
 
-pub unsafe fn fluid_list_nth(mut list: *mut List, mut n: i32) -> *mut List {
-    loop {
-        let fresh0 = n;
-        n = n - 1;
-        if !(fresh0 > 0 as i32 && !list.is_null()) {
-            break;
-        }
-        list = (*list).next
-    }
-    return list;
-}
-
 pub unsafe fn fluid_list_remove(mut list: *mut List, data: *mut libc::c_void) -> *mut List {
     let mut tmp: *mut List;
     let mut prev: *mut List;

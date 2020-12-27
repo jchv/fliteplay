@@ -3,7 +3,6 @@ use super::gen::Gen;
 use super::list::delete1_fluid_list;
 use super::list::delete_fluid_list;
 use super::list::fluid_list_append;
-use super::list::fluid_list_nth;
 use super::list::fluid_list_prepend;
 use super::list::fluid_list_remove;
 use super::list::fluid_list_remove_link;
@@ -96,7 +95,7 @@ pub struct SFData {
     info: *mut List,
     preset: Vec<*mut SFPreset>,
     inst: Vec<*mut SFInst>,
-    sample: *mut List,
+    sample: Vec<*mut SFSample>,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -113,7 +112,8 @@ pub struct SFInst {
 
 #[derive(Copy, Clone)]
 enum InstSamp {
-    InstPtr(*mut SFInst),
+    Inst(*mut SFInst),
+    Sample(*mut SFSample),
     Int(i32),
     None,
 }
@@ -126,9 +126,16 @@ impl InstSamp {
         }
     }
 
-    pub fn unwrap_ptr(&self) -> *mut SFInst {
+    pub fn unwrap_sample(&self) -> *mut SFSample {
         match self {
-            InstSamp::InstPtr(ptr) => *ptr,
+            InstSamp::Sample(ptr) => *ptr,
+            _ => panic!("mismatch")
+        }
+    }
+
+    pub fn unwrap_inst(&self) -> *mut SFInst {
+        match self {
+            InstSamp::Inst(ptr) => *ptr,
             _ => panic!("mismatch")
         }
     }
@@ -609,86 +616,62 @@ pub unsafe fn fluid_defsfont_load(
     file: *const libc::c_char,
     fapi: *mut FileApi,
 ) -> i32 {
-    let mut current_block: u64;
     let sfdata: *mut SFData;
-    let mut p: *mut List;
-    let mut sfsample: *mut SFSample;
     let mut sample: *mut Sample;
     let mut preset: *mut DefPreset;
     (*sfont).filename = libc::malloc(libc::strlen(file) + 1) as *mut libc::c_char;
     if (*sfont).filename.is_null() {
         fluid_log!(FLUID_ERR, "Out of memory",);
-        return FLUID_FAILED as i32;
+        return FLUID_FAILED;
     }
     libc::strcpy((*sfont).filename, file);
     sfdata = sfload_file(file, fapi);
     if sfdata.is_null() {
         fluid_log!(FLUID_ERR, "Couldn't load soundfont file",);
-        return FLUID_FAILED as i32;
+        return FLUID_FAILED;
     }
     (*sfont).samplepos = (*sfdata).samplepos;
     (*sfont).samplesize = (*sfdata).samplesize;
-    if !(fluid_defsfont_load_sampledata(sfont, fapi) != FLUID_OK as i32) {
-        p = (*sfdata).sample;
-        loop {
-            if p.is_null() {
-                current_block = 11194104282611034094;
-                break;
-            }
-            sfsample = (*p).data as *mut SFSample;
-            sample = new_fluid_sample();
-            if sample.is_null() {
-                current_block = 12140413667747225274;
-                break;
-            }
-            if fluid_sample_import_sfont(sample, sfsample, sfont) != FLUID_OK as i32 {
-                current_block = 12140413667747225274;
-                break;
-            }
-            fluid_defsfont_add_sample(sfont, sample);
-            fluid_voice_optimize_sample(sample);
-            p = if !p.is_null() {
-                (*p).next
-            } else {
-                0 as *mut List
-            }
+    if fluid_defsfont_load_sampledata(sfont, fapi) != FLUID_OK {
+        sfont_close(sfdata, fapi);
+        return FLUID_FAILED;
+    }
+    for sfsample in (*sfdata).sample.iter() {
+        sample = new_fluid_sample();
+        if sample.is_null() {
+            sfont_close(sfdata, fapi);
+            return FLUID_FAILED;
         }
-        match current_block {
-            12140413667747225274 => {}
-            _ => {
-                for sfpreset in (*sfdata).preset.iter() {
-                    preset = new_fluid_defpreset(sfont);
-                    if preset.is_null() {
-                        current_block = 12140413667747225274;
-                        break;
-                    }
-                    if fluid_defpreset_import_sfont(preset, *sfpreset, sfont)
-                        != FLUID_OK as i32
-                    {
-                        current_block = 12140413667747225274;
-                        break;
-                    }
-                    fluid_defsfont_add_preset(sfont, preset);
-                    if PRESET_CALLBACK.is_some() {
-                        PRESET_CALLBACK.expect("non-null function pointer")(
-                            (*preset).bank,
-                            (*preset).num,
-                            (*preset).name.as_mut_ptr(),
-                        );
-                    }
-                }
-                match current_block {
-                    12140413667747225274 => {}
-                    _ => {
-                        sfont_close(sfdata, fapi);
-                        return FLUID_OK as i32;
-                    }
-                }
-            }
+        if fluid_sample_import_sfont(sample, *sfsample, sfont) != FLUID_OK {
+            sfont_close(sfdata, fapi);
+            return FLUID_FAILED;
+        }
+        fluid_defsfont_add_sample(sfont, sample);
+        fluid_voice_optimize_sample(sample);
+    }
+    for sfpreset in (*sfdata).preset.iter() {
+        preset = new_fluid_defpreset(sfont);
+        if preset.is_null() {
+            sfont_close(sfdata, fapi);
+            return FLUID_FAILED;
+        }
+        if fluid_defpreset_import_sfont(preset, *sfpreset, sfont)
+            != FLUID_OK
+        {
+            sfont_close(sfdata, fapi);
+            return FLUID_FAILED;
+        }
+        fluid_defsfont_add_preset(sfont, preset);
+        if PRESET_CALLBACK.is_some() {
+            PRESET_CALLBACK.expect("non-null function pointer")(
+                (*preset).bank,
+                (*preset).num,
+                (*preset).name.as_mut_ptr(),
+            );
         }
     }
     sfont_close(sfdata, fapi);
-    return FLUID_FAILED as i32;
+    return FLUID_OK;
 }
 
 pub unsafe fn fluid_defsfont_add_sample(
@@ -1246,7 +1229,7 @@ pub unsafe fn fluid_preset_zone_import_sfont(
         };
         count += 1
     }
-    if !(*sfzone).instsamp.is_none() && !(*sfzone).instsamp.unwrap_ptr().is_null() {
+    if !(*sfzone).instsamp.is_none() && !(*sfzone).instsamp.unwrap_inst().is_null() {
         (*zone).inst = new_fluid_inst();
         if (*zone).inst.is_null() {
             fluid_log!(FLUID_ERR, "Out of memory",);
@@ -1254,7 +1237,7 @@ pub unsafe fn fluid_preset_zone_import_sfont(
         }
         if fluid_inst_import_sfont(
             (*zone).inst,
-            (*sfzone).instsamp.unwrap_ptr() as *mut SFInst,
+            (*sfzone).instsamp.unwrap_inst() as *mut SFInst,
             sfont,
         ) != FLUID_OK as i32
         {
@@ -1600,10 +1583,10 @@ pub unsafe fn fluid_inst_zone_import_sfont(
         };
         count += 1
     }
-    if !(*sfzone).instsamp.is_none() && !(*sfzone).instsamp.unwrap_ptr().is_null() {
+    if !(*sfzone).instsamp.is_none() && !(*sfzone).instsamp.unwrap_sample().is_null() {
         (*zone).sample = fluid_defsfont_get_sample(
             sfont,
-            (*((*sfzone).instsamp.unwrap_ptr() as *mut SFSample))
+            (*((*sfzone).instsamp.unwrap_sample() as *mut SFSample))
                 .name
                 .as_mut_ptr(),
         );
@@ -3772,7 +3755,7 @@ unsafe fn load_igen(
 }
 unsafe fn load_shdr(
     mut size: u32,
-    mut sf: *mut SFData,
+    sf: *mut SFData,
     fd: *mut libc::c_void,
     fapi: *mut FileApi,
 ) -> i32 {
@@ -3801,7 +3784,7 @@ unsafe fn load_shdr(
     i = 0 as i32 as u32;
     while i < size {
         p = libc::malloc(::std::mem::size_of::<SFSample>() as libc::size_t) as *mut SFSample;
-        (*sf).sample = fluid_list_append((*sf).sample, p as *mut libc::c_void);
+        (*sf).sample.push(p);
         ({
             if (*fapi).fread.expect("non-null function pointer")(
                 &mut (*p).name as *mut [libc::c_char; 21] as *mut libc::c_void,
@@ -3942,7 +3925,7 @@ unsafe fn fixup_pgen(sf: *mut SFData) -> i32 {
                         (**preset).prenum
                     );
                 }
-                (*z).instsamp = InstSamp::InstPtr(*p3.unwrap())
+                (*z).instsamp = InstSamp::Inst(*p3.unwrap())
             } else {
                 (*z).instsamp = InstSamp::None
             }
@@ -3957,7 +3940,7 @@ unsafe fn fixup_pgen(sf: *mut SFData) -> i32 {
 }
 unsafe fn fixup_igen(sf: *mut SFData) -> i32 {
     let mut p2: *mut List;
-    let mut p3: *mut List;
+    let mut p3;
     let mut z: *mut SFZone;
     let mut i: i32;
     for inst in (*sf).inst.iter() {
@@ -3966,8 +3949,8 @@ unsafe fn fixup_igen(sf: *mut SFData) -> i32 {
             z = (*p2).data as *mut SFZone;
             if !(*z).instsamp.is_none() {
                 i = (*z).instsamp.unwrap_int();
-                p3 = fluid_list_nth((*sf).sample, i - 1 as i32);
-                if p3.is_null() {
+                p3 = (*sf).sample.get(i as usize - 1);
+                if p3.is_none() {
                     return gerr!(
                         ErrCorr,
                         "Instrument \"{}\": Invalid sample reference",
@@ -3976,7 +3959,7 @@ unsafe fn fixup_igen(sf: *mut SFData) -> i32 {
                             .unwrap()
                     );
                 }
-                (*z).instsamp = InstSamp::InstPtr((*p3).data as *mut SFInst)
+                (*z).instsamp = InstSamp::Sample(*p3.unwrap())
             }
             p2 = if !p2.is_null() {
                 (*p2).next
@@ -3988,50 +3971,41 @@ unsafe fn fixup_igen(sf: *mut SFData) -> i32 {
     return 1 as i32;
 }
 unsafe fn fixup_sample(sf: *mut SFData) -> i32 {
-    let mut p: *mut List;
-    let mut sam: *mut SFSample;
-    p = (*sf).sample;
-    while !p.is_null() {
-        sam = (*p).data as *mut SFSample;
-        if (*sam).sampletype as i32 & 0x8000 as i32 == 0
-            && (*sam).end > SDTACHUNK_SIZE
-            || (*sam).start > (*sam).end.wrapping_sub(4 as i32 as u32)
+    for sam in (*sf).sample.iter() {
+        if (**sam).sampletype as i32 & 0x8000 as i32 == 0
+            && (**sam).end > SDTACHUNK_SIZE
+            || (**sam).start > (**sam).end.wrapping_sub(4 as i32 as u32)
         {
             fluid_log!(FLUID_WARN,
-                      "Sample \'{}\' start/end file positions are invalid, disabling and will not be saved", CStr::from_ptr((*sam).name.as_ptr()).to_str().unwrap());
-            (*sam).loopend = 0 as i32 as u32;
-            (*sam).loopstart = (*sam).loopend;
-            (*sam).end = (*sam).loopstart;
-            (*sam).start = (*sam).end;
+                      "Sample \'{}\' start/end file positions are invalid, disabling and will not be saved", CStr::from_ptr((**sam).name.as_ptr()).to_str().unwrap());
+            (**sam).loopend = 0 as i32 as u32;
+            (**sam).loopstart = (**sam).loopend;
+            (**sam).end = (**sam).loopstart;
+            (**sam).start = (**sam).end;
             return 1 as i32;
         } else {
-            if !((*sam).sampletype as i32 & 0x10 as i32 != 0) {
-                if (*sam).loopend > (*sam).end
-                    || (*sam).loopstart >= (*sam).loopend
-                    || (*sam).loopstart <= (*sam).start
+            if !((**sam).sampletype as i32 & 0x10 as i32 != 0) {
+                if (**sam).loopend > (**sam).end
+                    || (**sam).loopstart >= (**sam).loopend
+                    || (**sam).loopstart <= (**sam).start
                 {
-                    if (*sam).end.wrapping_sub((*sam).start) >= 20 as i32 as u32 {
-                        (*sam).loopstart =
-                            (*sam).start.wrapping_add(8 as i32 as u32);
-                        (*sam).loopend = (*sam).end.wrapping_sub(8 as i32 as u32)
+                    if (**sam).end.wrapping_sub((**sam).start) >= 20 as i32 as u32 {
+                        (**sam).loopstart =
+                            (**sam).start.wrapping_add(8 as i32 as u32);
+                        (**sam).loopend = (**sam).end.wrapping_sub(8 as i32 as u32)
                     } else {
-                        (*sam).loopstart =
-                            (*sam).start.wrapping_add(1 as i32 as u32);
-                        (*sam).loopend = (*sam).end.wrapping_sub(1 as i32 as u32)
+                        (**sam).loopstart =
+                            (**sam).start.wrapping_add(1 as i32 as u32);
+                        (**sam).loopend = (**sam).end.wrapping_sub(1 as i32 as u32)
                     }
                 }
             }
         }
-        (*sam).end = (*sam)
+        (**sam).end = (**sam)
             .end
-            .wrapping_sub((*sam).start.wrapping_add(1 as i32 as u32));
-        (*sam).loopstart = (*sam).loopstart.wrapping_sub((*sam).start);
-        (*sam).loopend = (*sam).loopend.wrapping_sub((*sam).start);
-        p = if !p.is_null() {
-            (*p).next
-        } else {
-            0 as *mut List
-        }
+            .wrapping_sub((**sam).start.wrapping_add(1 as i32 as u32));
+        (**sam).loopstart = (**sam).loopstart.wrapping_sub((**sam).start);
+        (**sam).loopend = (**sam).loopend.wrapping_sub((**sam).start);
     }
     return 1 as i32;
 }
@@ -4110,19 +4084,12 @@ pub unsafe fn sfont_close(mut sf: *mut SFData, fapi: *mut FileApi) {
         }
         delete_fluid_list((**inst).zone);
     }
+    (*sf).inst.clear();
 
-    p = (*sf).sample;
-    while !p.is_null() {
-        libc::free((*p).data);
-        p = if !p.is_null() {
-            (*p).next
-        } else {
-            0 as *mut List
-        }
+    for sample in (*sf).sample.iter() {
+        libc::free(*sample as *mut libc::c_void);
     }
-    delete_fluid_list((*sf).sample);
-    (*sf).sample = 0 as *mut List;
-    libc::free(sf as *mut libc::c_void);
+    (*sf).sample.clear();
 }
 
 pub unsafe fn sfont_free_zone(zone: *mut SFZone) {
