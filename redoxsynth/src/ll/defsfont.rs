@@ -3,7 +3,6 @@ use super::gen::Gen;
 use super::list::delete1_fluid_list;
 use super::list::delete_fluid_list;
 use super::list::fluid_list_prepend;
-use super::list::fluid_list_remove;
 use super::list::fluid_list_remove_link;
 use super::list::List;
 use super::modulator::fluid_mod_delete;
@@ -154,7 +153,7 @@ pub struct SFZone {
     gen: *mut List,
     mod_0: *mut List,
 }
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct SFPreset {
     name: [libc::c_char; 21],
@@ -163,7 +162,7 @@ pub struct SFPreset {
     libr: u32,
     genre: u32,
     morph: u32,
-    zone: *mut List,
+    zone: Vec<*mut SFZone>,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -1061,8 +1060,6 @@ pub unsafe fn fluid_defpreset_import_sfont(
     sfpreset: *mut SFPreset,
     sfont: *mut DefSFont,
 ) -> i32 {
-    let mut p: *mut List;
-    let mut sfzone: *mut SFZone;
     let mut zone: *mut PresetZone;
     let mut count: i32;
     let mut zone_name: [libc::c_char; 256] = [0; 256];
@@ -1083,10 +1080,8 @@ pub unsafe fn fluid_defpreset_import_sfont(
     }
     (*preset).bank = (*sfpreset).bank as u32;
     (*preset).num = (*sfpreset).prenum as u32;
-    p = (*sfpreset).zone;
     count = 0 as i32;
-    while !p.is_null() {
-        sfzone = (*p).data as *mut SFZone;
+    for sfzone in (*sfpreset).zone.iter() {
         libc::strcpy(
             zone_name.as_mut_ptr(),
             CString::new(format!(
@@ -1102,7 +1097,7 @@ pub unsafe fn fluid_defpreset_import_sfont(
         if zone.is_null() {
             return FLUID_FAILED as i32;
         }
-        if fluid_preset_zone_import_sfont(zone, sfzone, sfont) != FLUID_OK as i32 {
+        if fluid_preset_zone_import_sfont(zone, *sfzone, sfont) != FLUID_OK as i32 {
             return FLUID_FAILED as i32;
         }
         if count == 0 as i32 && fluid_preset_zone_get_inst(zone).is_null() {
@@ -1110,11 +1105,6 @@ pub unsafe fn fluid_defpreset_import_sfont(
         } else if fluid_defpreset_add_zone(preset, zone) != FLUID_OK as i32 {
             return FLUID_FAILED as i32;
         }
-        p = if !p.is_null() {
-            (*p).next
-        } else {
-            0 as *mut List
-        };
         count += 1
     }
     return FLUID_OK as i32;
@@ -2390,8 +2380,8 @@ unsafe fn load_phdr(
     }
     while i > 0 as i32 {
         p = libc::malloc(::std::mem::size_of::<SFPreset>() as libc::size_t) as *mut SFPreset;
+        libc::memset(p as _, 0, std::mem::size_of::<SFPreset>() as libc::size_t);
         (*sf).preset.push(p);
-        (*p).zone = 0 as *mut List;
         ({
             if (*fapi).fread.expect("non-null function pointer")(
                 &mut (*p).name as *mut [libc::c_char; 21] as *mut libc::c_void,
@@ -2486,7 +2476,7 @@ unsafe fn load_phdr(
                 if !(fresh6 != 0) {
                     break;
                 }
-                (*pr).zone = fluid_list_prepend((*pr).zone, 0 as *mut libc::c_void)
+                (*pr).zone.insert(0, 0 as _);
             }
         } else if zndx as i32 > 0 as i32 {
             fluid_log!(
@@ -2537,7 +2527,7 @@ unsafe fn load_phdr(
         if !(fresh7 != 0) {
             break;
         }
-        (*pr).zone = fluid_list_prepend((*pr).zone, 0 as *mut libc::c_void)
+        (*pr).zone.insert(0, 0 as _);
     }
     return 1 as i32;
 }
@@ -2547,8 +2537,6 @@ unsafe fn load_pbag(
     fd: *mut libc::c_void,
     fapi: *mut FileApi,
 ) -> i32 {
-    let mut p2: *mut List;
-    let mut z: *mut SFZone;
     let mut pz: *mut SFZone = 0 as *mut SFZone;
     let mut genndx: u16;
     let mut modndx: u16;
@@ -2559,16 +2547,14 @@ unsafe fn load_pbag(
         return gerr!(ErrCorr, "Preset bag chunk size is invalid",);
     }
     for preset in (*sf).preset.iter() {
-        p2 = (**preset).zone;
-        while !p2.is_null() {
+        for z in (**preset).zone.iter_mut() {
             size -= 4 as i32;
             if size < 0 as i32 {
                 return gerr!(ErrCorr, "Preset bag chunk size mismatch",);
             }
-            z = libc::malloc(::std::mem::size_of::<SFZone>() as libc::size_t) as *mut SFZone;
-            (*p2).data = z as *mut libc::c_void;
-            (*z).gen = 0 as *mut List;
-            (*z).mod_0 = 0 as *mut List;
+            *z = libc::malloc(::std::mem::size_of::<SFZone>() as libc::size_t) as *mut SFZone;
+            (**z).gen = 0 as *mut List;
+            (**z).mod_0 = 0 as *mut List;
             ({
                 let mut _temp: u16 = 0;
                 if (*fapi).fread.expect("non-null function pointer")(
@@ -2593,7 +2579,7 @@ unsafe fn load_pbag(
                 }
                 modndx = _temp as i16 as u16;
             });
-            (*z).instsamp = InstSamp::None;
+            (**z).instsamp = InstSamp::None;
             if !pz.is_null() {
                 if (genndx as i32) < pgenndx as i32 {
                     return gerr!(ErrCorr, "Preset bag generator indices not monotonic",);
@@ -2620,14 +2606,9 @@ unsafe fn load_pbag(
                     (*pz).mod_0 = fluid_list_prepend((*pz).mod_0, 0 as *mut libc::c_void)
                 }
             }
-            pz = z;
+            pz = *z;
             pgenndx = genndx;
             pmodndx = modndx;
-            p2 = if !p2.is_null() {
-                (*p2).next
-            } else {
-                0 as *mut List
-            }
         }
     }
     size -= 4 as i32;
@@ -2699,13 +2680,11 @@ unsafe fn load_pmod(
     fd: *mut libc::c_void,
     fapi: *mut FileApi,
 ) -> i32 {
-    let mut p2: *mut List;
     let mut p3: *mut List;
     let mut m: *mut SFMod;
     for preset in (*sf).preset.iter() {
-        p2 = (**preset).zone;
-        while !p2.is_null() {
-            p3 = (*((*p2).data as *mut SFZone)).mod_0;
+        for z in (**preset).zone.iter() {
+            p3 = (**z).mod_0;
             while !p3.is_null() {
                 size -= 10 as i32;
                 if size < 0 as i32 {
@@ -2779,11 +2758,6 @@ unsafe fn load_pmod(
                     0 as *mut List
                 }
             }
-            p2 = if !p2.is_null() {
-                (*p2).next
-            } else {
-                0 as *mut List
-            }
         }
     }
     if size == 0 as i32 {
@@ -2809,11 +2783,9 @@ unsafe fn load_pgen(
     fd: *mut libc::c_void,
     fapi: *mut FileApi,
 ) -> i32 {
-    let mut p2: *mut List;
     let mut p3: *mut List;
     let mut dup: *mut List;
-    let mut hz: *mut *mut List = 0 as *mut *mut List;
-    let mut z: *mut SFZone;
+    let hz: usize = 0;
     let mut g: *mut SFGen;
     let mut genval: SFGenAmount = SFGenAmount { sword: 0 };
     let mut genid: u16;
@@ -2825,14 +2797,9 @@ unsafe fn load_pgen(
     for preset in (*sf).preset.iter() {
         gzone = 0 as i32;
         discarded = 0 as i32;
-        p2 = (**preset).zone;
-        if !p2.is_null() {
-            hz = &mut p2
-        }
-        while !p2.is_null() {
+        for (i, z) in (**preset).zone.iter_mut().enumerate() {
             level = 0 as i32;
-            z = (*p2).data as *mut SFZone;
-            p3 = (*z).gen;
+            p3 = (**z).gen;
             while !p3.is_null() {
                 dup = 0 as *mut List;
                 skip = 0 as i32;
@@ -2911,7 +2878,7 @@ unsafe fn load_pgen(
                         }
                         genval.uword = _temp as i16 as u16;
                     });
-                    let ref mut fresh12 = (*((*p2).data as *mut SFZone)).instsamp;
+                    let ref mut fresh12 = (**z).instsamp;
                     *fresh12 = InstSamp::Int(genval.uword as i32 + 1 as i32);
                     break;
                 } else {
@@ -2929,7 +2896,7 @@ unsafe fn load_pgen(
                             }
                             genval.sword = _temp as i16;
                         });
-                        dup = gen_inlist(genid as i32, (*z).gen)
+                        dup = gen_inlist(genid as i32, (**z).gen)
                     } else {
                         skip = (0 as i32 == 0) as i32
                     }
@@ -2971,7 +2938,7 @@ unsafe fn load_pgen(
                         } else {
                             0 as *mut List
                         };
-                        (*z).gen = fluid_list_remove_link((*z).gen, _temp);
+                        (**z).gen = fluid_list_remove_link((**z).gen, _temp);
                         delete1_fluid_list(_temp);
                     }
                 }
@@ -2984,33 +2951,13 @@ unsafe fn load_pgen(
                     } else {
                         0 as *mut List
                     };
-                    (*z).gen = fluid_list_remove_link((*z).gen, _temp);
+                    (**z).gen = fluid_list_remove_link((**z).gen, _temp);
                     delete1_fluid_list(_temp);
                 }
             } else if gzone == 0 {
                 gzone = (0 as i32 == 0) as i32;
-                if *hz != p2 {
-                    let save: *mut libc::c_void = (*p2).data;
-                    fluid_log!(
-                        FLUID_WARN,
-                        "Preset \"{}\": Global zone is not first zone",
-                        CStr::from_ptr(
-                            (**preset).name.as_ptr() as *const libc::c_char
-                        )
-                        .to_str()
-                        .unwrap()
-                    );
-                    ({
-                        let mut _temp: *mut List = p2;
-                        p2 = if !p2.is_null() {
-                            (*p2).next
-                        } else {
-                            0 as *mut List
-                        };
-                        *hz = fluid_list_remove_link(*hz, _temp);
-                        delete1_fluid_list(_temp);
-                    });
-                    *hz = fluid_list_prepend(*hz, save);
+                if hz != i {
+                    (**preset).zone[hz] = *z;
                     continue;
                 }
             } else {
@@ -3023,7 +2970,8 @@ unsafe fn load_pgen(
                     .to_str()
                     .unwrap()
                 );
-                sfont_zone_delete(sf, hz, (*p2).data as *mut SFZone);
+                sfont_free_zone(*z);
+                *z = 0 as _;
             }
             while !p3.is_null() {
                 discarded = (0 as i32 == 0) as i32;
@@ -3046,14 +2994,9 @@ unsafe fn load_pgen(
                     } else {
                         0 as *mut List
                     };
-                    (*z).gen = fluid_list_remove_link((*z).gen, _temp);
+                    (**z).gen = fluid_list_remove_link((**z).gen, _temp);
                     delete1_fluid_list(_temp);
                 }
-            }
-            p2 = if !p2.is_null() {
-                (*p2).next
-            } else {
-                0 as *mut List
             }
         }
         if discarded != 0 {
@@ -3862,16 +3805,12 @@ unsafe fn load_shdr(
     return 1 as i32;
 }
 unsafe fn fixup_pgen(sf: *mut SFData) -> i32 {
-    let mut p2: *mut List;
     let mut p3;
-    let mut z: *mut SFZone;
     let mut i: i32;
     for preset in (*sf).preset.iter() {
-        p2 = (**preset).zone;
-        while !p2.is_null() {
-            z = (*p2).data as *mut SFZone;
-            if !(*z).instsamp.is_none() {
-                i = (*z).instsamp.unwrap_int();
+        for z in (**preset).zone.iter() {
+            if !(**z).instsamp.is_none() {
+                i = (**z).instsamp.unwrap_int();
                 p3 = (*sf).inst.get(i as usize - 1);
                 if p3.is_none() {
                     return gerr!(
@@ -3881,14 +3820,9 @@ unsafe fn fixup_pgen(sf: *mut SFData) -> i32 {
                         (**preset).prenum
                     );
                 }
-                (*z).instsamp = InstSamp::Inst(*p3.unwrap())
+                (**z).instsamp = InstSamp::Inst(*p3.unwrap())
             } else {
-                (*z).instsamp = InstSamp::None
-            }
-            p2 = if !p2.is_null() {
-                (*p2).next
-            } else {
-                0 as *mut List
+                (**z).instsamp = InstSamp::None
             }
         }
     }
@@ -3986,7 +3920,6 @@ pub static mut BADPGEN: [u16; 14] = [
 ];
 
 pub unsafe fn sfont_close(sf: *mut SFData, fapi: *mut FileApi) {
-    let mut p2: *mut List;
     if !(*sf).sffd.is_null() {
         (*fapi).fclose.expect("non-null function pointer")((*sf).sffd as *mut libc::c_void);
     }
@@ -3998,16 +3931,10 @@ pub unsafe fn sfont_close(sf: *mut SFData, fapi: *mut FileApi) {
     }
 
     for preset in (*sf).preset.iter() {
-        p2 = (**preset).zone;
-        while !p2.is_null() {
-            sfont_free_zone((*p2).data as *mut SFZone);
-            p2 = if !p2.is_null() {
-                (*p2).next
-            } else {
-                0 as *mut List
-            }
+        for z in (**preset).zone.iter() {
+            sfont_free_zone(*z);
         }
-        delete_fluid_list((**preset).zone);
+        (**preset).zone.clear();
     }
 
     for inst in (*sf).inst.iter() {
@@ -4064,11 +3991,6 @@ pub unsafe fn sfont_preset_compare_func(a: *mut libc::c_void, b: *mut libc::c_vo
     bval = ((*(b as *mut SFPreset)).bank as i32) << 16 as i32
         | (*(b as *mut SFPreset)).prenum as i32;
     return aval - bval;
-}
-
-pub unsafe fn sfont_zone_delete(_sf: *mut SFData, zlist: *mut *mut List, zone: *mut SFZone) {
-    *zlist = fluid_list_remove(*zlist, zone as *mut libc::c_void);
-    sfont_free_zone(zone);
 }
 
 pub unsafe fn gen_inlist(gen: i32, genlist: *mut List) -> *mut List {
