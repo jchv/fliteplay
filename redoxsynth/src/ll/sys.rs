@@ -23,60 +23,6 @@ pub unsafe fn fluid_set_log_function(
     return old;
 }
 
-pub unsafe fn fluid_strtok(
-    str: *mut *mut libc::c_char,
-    delim: *mut libc::c_char,
-) -> *mut libc::c_char {
-    let mut s;
-    let mut d;
-    let token;
-    let mut c;
-    if str.is_null() || delim.is_null() || *delim == 0 {
-        fluid_log!(FLUID_ERR, "Null pointer",);
-        return 0 as *mut libc::c_char;
-    }
-    s = *str;
-    if s.is_null() {
-        return 0 as *mut libc::c_char;
-    }
-    loop {
-        c = *s;
-        if c == 0 {
-            *str = 0 as *mut libc::c_char;
-            return 0 as *mut libc::c_char;
-        }
-        d = delim;
-        while *d != 0 {
-            if c as i32 == *d as i32 {
-                s = s.offset(1);
-                break;
-            } else {
-                d = d.offset(1)
-            }
-        }
-        if !(*d != 0) {
-            break;
-        }
-    }
-    token = s;
-    s = s.offset(1 as i32 as isize);
-    while *s != 0 {
-        c = *s;
-        d = delim;
-        while *d != 0 {
-            if c as i32 == *d as i32 {
-                *s = '\u{0}' as i32 as libc::c_char;
-                *str = s.offset(1 as i32 as isize);
-                return token;
-            }
-            d = d.offset(1)
-        }
-        s = s.offset(1)
-    }
-    *str = 0 as *mut libc::c_char;
-    return token;
-}
-
 pub unsafe fn fluid_error() -> *mut libc::c_char {
     return FLUID_ERRBUF.as_mut_ptr();
 }

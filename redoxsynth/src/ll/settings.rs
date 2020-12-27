@@ -1,6 +1,5 @@
 use super::synth::fluid_synth_settings;
-use super::sys::fluid_strtok;
-use std::{collections::HashMap, ffi::CStr};
+use std::{collections::HashMap};
 pub type SettingsType = i32;
 pub const FLUID_SET_TYPE: SettingsType = 3;
 pub const FLUID_STR_TYPE: SettingsType = 2;
@@ -24,7 +23,7 @@ pub struct StrSetting {
     data: *mut libc::c_void,
 }
 pub type StrUpdateFn = Option<
-    unsafe fn(_: *mut libc::c_void, _: *const libc::c_char, _: *mut libc::c_char) -> i32,
+    unsafe fn(_: *mut libc::c_void, _: &str, _: *mut libc::c_char) -> i32,
 >;
 #[derive(Clone)]
 pub struct IntSetting {
@@ -37,7 +36,7 @@ pub struct IntSetting {
     data: *mut libc::c_void,
 }
 pub type IntUpdateFn =
-    Option<unsafe fn(_: *mut libc::c_void, _: *const libc::c_char, _: i32) -> i32>;
+    Option<unsafe fn(_: *mut libc::c_void, _: &str, _: i32) -> i32>;
 #[derive(Clone)]
 pub struct NumSetting {
     value: f64,
@@ -50,7 +49,7 @@ pub struct NumSetting {
 }
 
 pub type NumUpdateFn =
-    Option<unsafe fn(_: *mut libc::c_void, _: *const libc::c_char, _: f64) -> i32>;
+    Option<unsafe fn(_: *mut libc::c_void, _: &str, _: f64) -> i32>;
 
 unsafe fn new_fluid_str_setting(
     value: *const libc::c_char,
@@ -146,123 +145,67 @@ pub unsafe fn new_fluid_settings() -> Settings {
 unsafe fn fluid_settings_init(settings: &mut Settings) {
     fluid_synth_settings(settings);
 }
-unsafe fn fluid_settings_tokenize(
-    s: *const libc::c_char,
-    buf: *mut libc::c_char,
-    ptr: *mut *mut libc::c_char,
-) -> i32 {
-    let mut tokstr;
-    let mut tok;
-    let mut n: i32 = 0 as i32;
-    if libc::strlen(s) > 256 {
-        fluid_log!(
-            FLUID_ERR,
-            "Setting variable name exceeded max length of {} chars",
-            256
-        );
-        return 0 as i32;
-    }
-    libc::strcpy(buf, s);
-    tokstr = buf;
-    loop {
-        tok = fluid_strtok(
-            &mut tokstr,
-            b".\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
-        );
-        if tok.is_null() {
-            break;
-        }
-        if n > 8 as i32 {
-            fluid_log!(
-                FLUID_ERR,
-                "Setting variable name exceeded max token count of {}",
-                8
-            );
-            return 0 as i32;
-        }
-        let fresh0 = n;
-        n = n + 1;
-        let ref mut fresh1 = *ptr.offset(fresh0 as isize);
-        *fresh1 = tok
-    }
-    return n;
-}
 
-unsafe fn fluid_settings_get(
-    settings: &Settings,
-    name: *mut *mut libc::c_char,
-    len: i32,
-) -> Option<&Setting> {
+unsafe fn fluid_settings_get<'a>(
+    settings: &'a Settings,
+    name: &[String]
+) -> Option<&'a Setting> {
     let mut table = &settings.table;
-    for n in 0..len - 1 {
-        match table.get(CStr::from_ptr(*name.offset(n as isize)).to_str().unwrap()) {
+    for n in 0..name.len() - 1 {
+        match table.get(&name[n]) {
             Some(Setting::Set(t)) => table = t,
             _ => return None
         }
     }
-    return table.get(CStr::from_ptr(*name.offset(len as isize - 1)).to_str().unwrap());
+    return table.get(&name[name.len() - 1]);
 }
 
-unsafe fn fluid_settings_get_mut(
-    settings: &mut Settings,
-    name: *mut *mut libc::c_char,
-    len: i32,
-) -> Option<&mut Setting> {
+unsafe fn fluid_settings_get_mut<'a>(
+    settings: &'a mut Settings,
+    name: &[String]
+) -> Option<&'a mut Setting> {
     let mut table = &mut settings.table;
-    for n in 0..len - 1 {
-        match table.get_mut(CStr::from_ptr(*name.offset(n as isize)).to_str().unwrap()) {
+    for n in 0..name.len() - 1 {
+        match table.get_mut(&name[n]) {
             Some(Setting::Set(t)) => table = t,
             _ => return None
         }
     }
-    return table.get_mut(CStr::from_ptr(*name.offset(len as isize - 1)).to_str().unwrap());
+    return table.get_mut(&name[name.len() - 1]);
 }
 
 unsafe fn fluid_settings_set(
     settings: &mut Settings,
-    name: *mut *mut libc::c_char,
-    len: i32,
+    name: &[String],
     value: Setting,
 ) -> i32 {
     let mut table = &mut settings.table;
-    for n in 0..len - 1 {
-        let key = CStr::from_ptr(*name.offset(n as isize)).to_str().unwrap();
-        if table.get(key).is_none() {
+    for n in 0..name.len() - 1 {
+        if table.get(&name[n]).is_none() {
             let t = HashMap::new();
-            table.insert(key.to_string(), Setting::Set(t));
+            table.insert(name[n].to_string(), Setting::Set(t));
         }
-        table = match table.get_mut(&key.to_string()) {
+        table = match table.get_mut(&name[n].to_string()) {
             Some(Setting::Set(t)) => t,
             _ => return 0
         };
     }
-    table.insert(CStr::from_ptr(*name.offset(len as isize - 1)).to_str().unwrap().to_string(), value);
+    table.insert(name[name.len() - 1].to_string(), value);
     return 1;
 }
 
 pub unsafe fn fluid_settings_register_str(
     settings: &mut Settings,
-    name: *const libc::c_char,
+    name: &str,
     def: *mut libc::c_char,
     hints: i32,
     fun: StrUpdateFn,
     data: *mut libc::c_void,
 ) -> i32 {
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    match fluid_settings_get_mut(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens
-    ) {
+    let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+    match fluid_settings_get_mut(settings, &tokens) {
         None => {
-            return fluid_settings_set(
-                settings,
-                tokens.as_mut_ptr(),
-                ntokens,
-                Setting::Str(new_fluid_str_setting(def, def, hints, fun, data)),
-            );
+            return fluid_settings_set(settings, &tokens, Setting::Str(new_fluid_str_setting(def, def, hints, fun, data)));
         },
         Some(Setting::Str(setting)) => {
             setting.update = fun;
@@ -282,7 +225,7 @@ pub unsafe fn fluid_settings_register_str(
             fluid_log!(
                 FLUID_WARN,
                 "Type mismatch on setting \'{}\'",
-                CStr::from_ptr(name).to_str().unwrap()
+                name
             );
             return 1 as i32;
         }
@@ -291,7 +234,7 @@ pub unsafe fn fluid_settings_register_str(
 
 pub fn fluid_settings_register_num(
     settings: &mut Settings,
-    name: *const libc::c_char,
+    name: &str,
     def: f64,
     min: f64,
     max: f64,
@@ -300,19 +243,12 @@ pub fn fluid_settings_register_num(
     data: *mut libc::c_void,
 ) -> i32 {
     unsafe {
-        let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-        let mut buf: [libc::c_char; 257] = [0; 257];
-        let ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-        match fluid_settings_get_mut(
-            settings,
-            tokens.as_mut_ptr(),
-            ntokens,
-        ) {
+        let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+        match fluid_settings_get_mut(settings, &tokens) {
             None => {
                 return fluid_settings_set(
                     settings,
-                    tokens.as_mut_ptr(),
-                    ntokens,
+                    &tokens,
                     Setting::Num(new_fluid_num_setting(min, max, def, hints, fun, data))
                 );
             },
@@ -329,7 +265,7 @@ pub fn fluid_settings_register_num(
                 fluid_log!(
                     FLUID_WARN,
                     "Type mismatch on setting \'{}\'",
-                    CStr::from_ptr(name).to_str().unwrap()
+                    name
                 );
                 return 0 as i32;
             }
@@ -339,7 +275,7 @@ pub fn fluid_settings_register_num(
 
 pub fn fluid_settings_register_int(
     settings: &mut Settings,
-    name: *const libc::c_char,
+    name: &str,
     def: i32,
     min: i32,
     max: i32,
@@ -348,14 +284,8 @@ pub fn fluid_settings_register_int(
     data: *mut libc::c_void,
 ) -> i32 {
     unsafe {
-        let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-        let mut buf: [libc::c_char; 257] = [0; 257];
-        let ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-        match fluid_settings_get_mut(
-            settings,
-            tokens.as_mut_ptr(),
-            ntokens,
-        ) {
+        let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+        match fluid_settings_get_mut(settings, &tokens) {
             Some(Setting::Int(setting)) => {
                 setting.update = fun;
                 setting.data = data;
@@ -368,8 +298,7 @@ pub fn fluid_settings_register_int(
             None => {
                 return fluid_settings_set(
                     settings,
-                    tokens.as_mut_ptr(),
-                    ntokens,
+                    &tokens,
                     Setting::Int(new_fluid_int_setting(min, max, def, hints, fun, data))
                 );
             },
@@ -380,55 +309,27 @@ pub fn fluid_settings_register_int(
     }
 }
 
-pub unsafe fn fluid_settings_get_hints(
-    settings: &Settings,
-    name: *const libc::c_char,
-) -> i32 {
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    return match fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens
-    ) {
+pub unsafe fn fluid_settings_get_hints(settings: &Settings, name: &str) -> i32 {
+    let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+    return match fluid_settings_get(settings, &tokens) {
         Some(Setting::Num(s)) => s.hints,
         Some(Setting::Str(s)) => s.hints,
         _ => 0
     }
 }
 
-pub unsafe fn fluid_settings_is_realtime(
-    settings: &Settings,
-    name: *const libc::c_char,
-) -> bool {
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    return match fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-    ) {
+pub unsafe fn fluid_settings_is_realtime(settings: &Settings, name: &str) -> bool {
+    let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+    return match fluid_settings_get(settings, &tokens) {
         Some(Setting::Num(s)) => s.update.is_some(),
         Some(Setting::Str(s)) => s.update.is_some(),
         _ => false
     }
 }
 
-pub unsafe fn fluid_settings_setstr(
-    settings: &mut Settings,
-    name: *const libc::c_char,
-    str: *const libc::c_char,
-) -> i32 {
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    match fluid_settings_get_mut(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens
-    ) {
+pub unsafe fn fluid_settings_setstr(settings: &mut Settings, name: &str, str: *const libc::c_char) -> i32 {
+    let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+    match fluid_settings_get_mut(settings, &tokens) {
         Some(Setting::Str(setting)) => {
             if !setting.value.is_null() {
                 libc::free(setting.value as *mut libc::c_void);
@@ -460,8 +361,7 @@ pub unsafe fn fluid_settings_setstr(
             );
             return fluid_settings_set(
                 settings,
-                tokens.as_mut_ptr(),
-                ntokens,
+                &tokens,
                 Setting::Str(setting_0)
             );
         },
@@ -469,77 +369,36 @@ pub unsafe fn fluid_settings_setstr(
     }
 }
 
-pub unsafe fn fluid_settings_getstr(
-    settings: &Settings,
-    name: *const libc::c_char,
-) -> Option<*mut libc::c_char> {
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    
-    return match fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-    ) {
+pub unsafe fn fluid_settings_getstr(settings: &Settings, name: &str) -> Option<*mut libc::c_char> {
+    let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+    return match fluid_settings_get(settings, &tokens) {
         Some(Setting::Str(s)) => Some(s.value),
         _ => None,
     }
 }
 
-pub fn fluid_settings_str_equal(
-    settings: &Settings,
-    name: *const libc::c_char,
-    s: *mut libc::c_char,
+pub fn fluid_settings_str_equal(settings: &Settings, name: &str, s: *mut libc::c_char,
 ) -> bool {
     unsafe {
-        let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-        let mut buf: [libc::c_char; 257] = [0; 257];
-        let ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-        return match fluid_settings_get(
-            settings,
-            tokens.as_mut_ptr(),
-            ntokens,
-        ) {
+        let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+        return match fluid_settings_get(settings, &tokens) {
             Some(Setting::Str(setting)) => libc::strcmp(setting.value, s) == 0,
             _ => false,
         };
     }
 }
 
-pub unsafe fn fluid_settings_getstr_default(
-    settings: &Settings,
-    name: *const libc::c_char,
-) -> *mut libc::c_char {
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    
-    return match fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-    ) {
+pub unsafe fn fluid_settings_getstr_default(settings: &Settings, name: &str) -> *mut libc::c_char {
+    let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+    return match fluid_settings_get(settings, &tokens) {
         Some(Setting::Str(s)) => s.def,
         _ => 0 as _,
     }
 }
 
-pub unsafe fn fluid_settings_setnum(
-    settings: &mut Settings,
-    name: *const libc::c_char,
-    mut val: f64,
-) -> i32 {
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    match fluid_settings_get_mut(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens
-    ) {
+pub unsafe fn fluid_settings_setnum(settings: &mut Settings, name: &str, mut val: f64) -> i32 {
+    let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+    match fluid_settings_get_mut(settings, &tokens) {
         Some(Setting::Num(setting)) => {
             if val < setting.min {
                 val = setting.min
@@ -554,8 +413,8 @@ pub unsafe fn fluid_settings_setnum(
             return 1;
         },
         None => {
-            let mut setting_0;
-            setting_0 = new_fluid_num_setting(
+            let mut setting;
+            setting = new_fluid_num_setting(
                 -1e10f64,
                 1e10f64,
                 0.0f32 as f64,
@@ -563,33 +422,21 @@ pub unsafe fn fluid_settings_setnum(
                 None,
                 0 as *mut libc::c_void,
             );
-            setting_0.value = val;
+            setting.value = val;
             return fluid_settings_set(
                 settings,
-                tokens.as_mut_ptr(),
-                ntokens,
-                Setting::Num(setting_0),
+                &tokens,
+                Setting::Num(setting),
             );
         },
         _ => return 0
     }
 }
 
-pub fn fluid_settings_getnum(
-    settings: &Settings,
-    name: *const libc::c_char
-) -> Option<f64> {
+pub fn fluid_settings_getnum(settings: &Settings, name: &str) -> Option<f64> {
     unsafe {
-        let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-        let mut buf: [libc::c_char; 257] = [0; 257];
-        let ntokens;
-        ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-        
-        return match fluid_settings_get(
-            settings,
-            tokens.as_mut_ptr(),
-            ntokens,
-        ) {
+        let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+        return match fluid_settings_get(settings, &tokens) {
             Some(Setting::Num(s)) => Some(s.value),
             _ => None,
         }
@@ -601,58 +448,26 @@ pub struct Range<T> {
     pub max: T,
 }
 
-pub unsafe fn fluid_settings_getnum_range(
-    settings: &Settings,
-    name: *const libc::c_char
-) -> Option<Range<f64>> {
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    
-    return match fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-    ) {
+pub unsafe fn fluid_settings_getnum_range(settings: &Settings, name: &str) -> Option<Range<f64>> {
+    let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+    return match fluid_settings_get(settings, &tokens) {
         Some(Setting::Num(s)) => Some(Range{min: s.min, max: s.max}),
         _ => None,
     }
 }
 
-pub unsafe fn fluid_settings_getnum_default(
-    settings: &Settings,
-    name: *const libc::c_char,
-) -> f64 {
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    
-    return match fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-    ) {
+pub unsafe fn fluid_settings_getnum_default(settings: &Settings, name: &str) -> f64 {
+    let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+    return match fluid_settings_get(settings, &tokens) {
         Some(Setting::Num(s)) => s.def,
         _ => 0f64,
     }
 }
 
-pub fn fluid_settings_setint(
-    settings: &mut Settings,
-    name: *const libc::c_char,
-    mut val: i32,
-) -> i32 {
+pub fn fluid_settings_setint(settings: &mut Settings, name: &str, mut val: i32) -> i32 {
     unsafe {
-        let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-        let mut buf: [libc::c_char; 257] = [0; 257];
-        let ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-        match fluid_settings_get_mut(
-            settings,
-            tokens.as_mut_ptr(),
-            ntokens,
-        ) {
+        let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+        match fluid_settings_get_mut(settings, &tokens) {
             Some(Setting::Int(setting)) => {
                 if val < (*setting).min {
                     val = (*setting).min
@@ -667,8 +482,8 @@ pub fn fluid_settings_setint(
                 return 1;
             },
             None => {
-                let mut setting_0;
-                setting_0 = new_fluid_int_setting(
+                let mut setting;
+                setting = new_fluid_int_setting(
                     -(2147483647 as i32) - 1 as i32,
                     2147483647 as i32,
                     0 as i32,
@@ -676,12 +491,11 @@ pub fn fluid_settings_setint(
                     None,
                     0 as *mut libc::c_void,
                 );
-                setting_0.value = val;
+                setting.value = val;
                 return fluid_settings_set(
                     settings,
-                    tokens.as_mut_ptr(),
-                    ntokens,
-                    Setting::Int(setting_0)
+                    &tokens,
+                    Setting::Int(setting)
                 );
             }
             _ => {
@@ -691,75 +505,36 @@ pub fn fluid_settings_setint(
     }
 }
 
-pub fn fluid_settings_getint(
-    settings: &Settings,
-    name: *const libc::c_char,
-) -> Option<i32> {
+pub fn fluid_settings_getint(settings: &Settings, name: &str) -> Option<i32> {
     unsafe {
-        let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-        let mut buf: [libc::c_char; 257] = [0; 257];
-        let ntokens;
-        ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-        
-        return match fluid_settings_get(
-            settings,
-            tokens.as_mut_ptr(),
-            ntokens,
-        ) {
+        let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+        return match fluid_settings_get(settings, &tokens) {
             Some(Setting::Int(s)) => Some(s.value),
             _ => None,
         };
     }
 }
 
-pub unsafe fn fluid_settings_getint_range(
-    settings: &Settings,
-    name: *const libc::c_char,
-) -> Option<Range<i32>> {
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    
-    return match fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-    ) {
+pub unsafe fn fluid_settings_getint_range(settings: &Settings, name: &str) -> Option<Range<i32>> {
+    let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+    return match fluid_settings_get(settings, &tokens) {
         Some(Setting::Int(s)) => Some(Range{min: s.min, max: s.max}),
         _ => None,
     }
 }
 
-pub unsafe fn fluid_settings_getint_default(
-    settings: &Settings,
-    name: *const libc::c_char,
-) -> i32 {
-    let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-    let mut buf: [libc::c_char; 257] = [0; 257];
-    let ntokens;
-    ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-    
-    return match fluid_settings_get(
-        settings,
-        tokens.as_mut_ptr(),
-        ntokens,
-    ) {
+pub unsafe fn fluid_settings_getint_default(settings: &Settings, name: &str) -> i32 {
+    let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+    return match fluid_settings_get(settings, &tokens) {
         Some(Setting::Int(s)) => s.def,
         _ => 0,
     }
 }
 
-pub fn fluid_settings_get_type(settings: &Settings, name: *const libc::c_char) -> SettingsType  {
+pub fn fluid_settings_get_type(settings: &Settings, name: &str) -> SettingsType  {
     unsafe {
-        let mut tokens: [*mut libc::c_char; 8] = [0 as *mut libc::c_char; 8];
-        let mut buf: [libc::c_char; 257] = [0; 257];
-        let ntokens = fluid_settings_tokenize(name, buf.as_mut_ptr(), tokens.as_mut_ptr());
-        return match fluid_settings_get(
-            settings,
-            tokens.as_mut_ptr(),
-            ntokens,
-        ) {
+        let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
+        return match fluid_settings_get(settings, &tokens) {
             Some(Setting::Num(_)) => FLUID_SET_TYPE,
             Some(Setting::Str(_)) => FLUID_STR_TYPE,
             Some(Setting::Int(_)) => FLUID_INT_TYPE,

@@ -258,7 +258,7 @@ pub fn fluid_channel_cc(
                 if chan.channum == 9 as i32
                     && fluid_settings_str_equal(
                         &synth.settings,
-                        b"synth.drums-channel.active\x00" as *const u8 as *const libc::c_char,
+                        "synth.drums-channel.active",
                         b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
                     ) != false
                 {
@@ -271,7 +271,7 @@ pub fn fluid_channel_cc(
                 if chan.channum == 9 as i32
                     && fluid_settings_str_equal(
                         &synth.settings,
-                        b"synth.drums-channel.active\x00" as *const u8 as *const libc::c_char,
+                        "synth.drums-channel.active",
                         b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
                     ) != false
                 {
