@@ -1,10 +1,5 @@
 use super::gen::fluid_gen_set_default_values;
 use super::gen::Gen;
-use super::list::delete1_fluid_list;
-use super::list::delete_fluid_list;
-use super::list::fluid_list_prepend;
-use super::list::fluid_list_remove_link;
-use super::list::List;
 use super::modulator::fluid_mod_delete;
 use super::modulator::fluid_mod_new;
 use super::modulator::Mod;
@@ -146,12 +141,12 @@ impl InstSamp {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct SFZone {
     instsamp: InstSamp,
-    gen: *mut List,
-    mod_0: *mut List,
+    gen: Vec<*mut SFGen>,
+    mod_0: Vec<*mut SFMod>,
 }
 #[derive(Clone)]
 #[repr(C)]
@@ -1190,32 +1185,23 @@ pub unsafe fn fluid_preset_zone_import_sfont(
     sfzone: *mut SFZone,
     sfont: *mut DefSFont,
 ) -> i32 {
-    let mut r: *mut List;
-    let mut sfgen: *mut SFGen;
     let mut count: i32;
     count = 0 as i32;
-    r = (*sfzone).gen;
-    while !r.is_null() {
-        sfgen = (*r).data as *mut SFGen;
-        match (*sfgen).id as i32 {
+    for sfgen in (*sfzone).gen.iter() {
+        match (**sfgen).id as i32 {
             43 => {
-                (*zone).keylo = (*sfgen).amount.range.lo as i32;
-                (*zone).keyhi = (*sfgen).amount.range.hi as i32
+                (*zone).keylo = (**sfgen).amount.range.lo as i32;
+                (*zone).keyhi = (**sfgen).amount.range.hi as i32
             }
             44 => {
-                (*zone).vello = (*sfgen).amount.range.lo as i32;
-                (*zone).velhi = (*sfgen).amount.range.hi as i32
+                (*zone).vello = (**sfgen).amount.range.lo as i32;
+                (*zone).velhi = (**sfgen).amount.range.hi as i32
             }
             _ => {
-                (*zone).gen[(*sfgen).id as usize].val = (*sfgen).amount.sword as f32 as f64;
-                (*zone).gen[(*sfgen).id as usize].flags = GEN_SET as i32 as libc::c_uchar
+                (*zone).gen[(**sfgen).id as usize].val = (**sfgen).amount.sword as f32 as f64;
+                (*zone).gen[(**sfgen).id as usize].flags = GEN_SET as i32 as libc::c_uchar
             }
         }
-        r = if !r.is_null() {
-            (*r).next
-        } else {
-            0 as *mut List
-        };
         count += 1
     }
     if !(*sfzone).instsamp.is_none() && !(*sfzone).instsamp.unwrap_inst().is_null() {
@@ -1234,26 +1220,24 @@ pub unsafe fn fluid_preset_zone_import_sfont(
         }
     }
     count = 0 as i32;
-    r = (*sfzone).mod_0;
-    while !r.is_null() {
-        let mod_src: *mut SFMod = (*r).data as *mut SFMod;
+    for mod_src in (*sfzone).mod_0.iter() {
         let mut mod_dest: *mut Mod = fluid_mod_new();
         let mut type_0: i32;
         if mod_dest.is_null() {
             return FLUID_FAILED as i32;
         }
         (*mod_dest).next = 0 as *mut Mod;
-        (*mod_dest).amount = (*mod_src).amount as f64;
-        (*mod_dest).src1 = ((*mod_src).src as i32 & 127 as i32) as libc::c_uchar;
+        (*mod_dest).amount = (**mod_src).amount as f64;
+        (*mod_dest).src1 = ((**mod_src).src as i32 & 127 as i32) as libc::c_uchar;
         (*mod_dest).flags1 = 0 as i32 as libc::c_uchar;
-        if (*mod_src).src as i32 & (1 as i32) << 7 as i32 != 0 {
+        if (**mod_src).src as i32 & (1 as i32) << 7 as i32 != 0 {
             (*mod_dest).flags1 =
                 ((*mod_dest).flags1 as i32 | FLUID_MOD_CC as i32) as libc::c_uchar
         } else {
             (*mod_dest).flags1 =
                 ((*mod_dest).flags1 as i32 | FLUID_MOD_GC as i32) as libc::c_uchar
         }
-        if (*mod_src).src as i32 & (1 as i32) << 8 as i32 != 0 {
+        if (**mod_src).src as i32 & (1 as i32) << 8 as i32 != 0 {
             (*mod_dest).flags1 = ((*mod_dest).flags1 as i32
                 | FLUID_MOD_NEGATIVE as i32)
                 as libc::c_uchar
@@ -1262,7 +1246,7 @@ pub unsafe fn fluid_preset_zone_import_sfont(
                 | FLUID_MOD_POSITIVE as i32)
                 as libc::c_uchar
         }
-        if (*mod_src).src as i32 & (1 as i32) << 9 as i32 != 0 {
+        if (**mod_src).src as i32 & (1 as i32) << 9 as i32 != 0 {
             (*mod_dest).flags1 = ((*mod_dest).flags1 as i32
                 | FLUID_MOD_BIPOLAR as i32)
                 as libc::c_uchar
@@ -1271,7 +1255,7 @@ pub unsafe fn fluid_preset_zone_import_sfont(
                 | FLUID_MOD_UNIPOLAR as i32)
                 as libc::c_uchar
         }
-        type_0 = (*mod_src).src as i32 >> 10 as i32;
+        type_0 = (**mod_src).src as i32 >> 10 as i32;
         type_0 &= 63 as i32;
         if type_0 == 0 as i32 {
             (*mod_dest).flags1 = ((*mod_dest).flags1 as i32
@@ -1289,17 +1273,17 @@ pub unsafe fn fluid_preset_zone_import_sfont(
         } else {
             (*mod_dest).amount = 0 as i32 as f64
         }
-        (*mod_dest).dest = (*mod_src).dest as libc::c_uchar;
-        (*mod_dest).src2 = ((*mod_src).amtsrc as i32 & 127 as i32) as libc::c_uchar;
+        (*mod_dest).dest = (**mod_src).dest as libc::c_uchar;
+        (*mod_dest).src2 = ((**mod_src).amtsrc as i32 & 127 as i32) as libc::c_uchar;
         (*mod_dest).flags2 = 0 as i32 as libc::c_uchar;
-        if (*mod_src).amtsrc as i32 & (1 as i32) << 7 as i32 != 0 {
+        if (**mod_src).amtsrc as i32 & (1 as i32) << 7 as i32 != 0 {
             (*mod_dest).flags2 =
                 ((*mod_dest).flags2 as i32 | FLUID_MOD_CC as i32) as libc::c_uchar
         } else {
             (*mod_dest).flags2 =
                 ((*mod_dest).flags2 as i32 | FLUID_MOD_GC as i32) as libc::c_uchar
         }
-        if (*mod_src).amtsrc as i32 & (1 as i32) << 8 as i32 != 0 {
+        if (**mod_src).amtsrc as i32 & (1 as i32) << 8 as i32 != 0 {
             (*mod_dest).flags2 = ((*mod_dest).flags2 as i32
                 | FLUID_MOD_NEGATIVE as i32)
                 as libc::c_uchar
@@ -1308,7 +1292,7 @@ pub unsafe fn fluid_preset_zone_import_sfont(
                 | FLUID_MOD_POSITIVE as i32)
                 as libc::c_uchar
         }
-        if (*mod_src).amtsrc as i32 & (1 as i32) << 9 as i32 != 0 {
+        if (**mod_src).amtsrc as i32 & (1 as i32) << 9 as i32 != 0 {
             (*mod_dest).flags2 = ((*mod_dest).flags2 as i32
                 | FLUID_MOD_BIPOLAR as i32)
                 as libc::c_uchar
@@ -1317,7 +1301,7 @@ pub unsafe fn fluid_preset_zone_import_sfont(
                 | FLUID_MOD_UNIPOLAR as i32)
                 as libc::c_uchar
         }
-        type_0 = (*mod_src).amtsrc as i32 >> 10 as i32;
+        type_0 = (**mod_src).amtsrc as i32 >> 10 as i32;
         type_0 &= 63 as i32;
         if type_0 == 0 as i32 {
             (*mod_dest).flags2 = ((*mod_dest).flags2 as i32
@@ -1335,7 +1319,7 @@ pub unsafe fn fluid_preset_zone_import_sfont(
         } else {
             (*mod_dest).amount = 0 as i32 as f64
         }
-        if (*mod_src).trans as i32 != 0 as i32 {
+        if (**mod_src).trans as i32 != 0 as i32 {
             (*mod_dest).amount = 0 as i32 as f64
         }
         if count == 0 as i32 {
@@ -1347,11 +1331,6 @@ pub unsafe fn fluid_preset_zone_import_sfont(
             }
             (*last_mod).next = mod_dest
         }
-        r = if !r.is_null() {
-            (*r).next
-        } else {
-            0 as *mut List
-        };
         count += 1
     }
     return FLUID_OK as i32;
@@ -1535,32 +1514,23 @@ pub unsafe fn fluid_inst_zone_import_sfont(
     sfzone: *mut SFZone,
     sfont: *mut DefSFont,
 ) -> i32 {
-    let mut r: *mut List;
-    let mut sfgen: *mut SFGen;
     let mut count: i32;
     count = 0 as i32;
-    r = (*sfzone).gen;
-    while !r.is_null() {
-        sfgen = (*r).data as *mut SFGen;
-        match (*sfgen).id as i32 {
+    for sfgen in (*sfzone).gen.iter() {
+        match (**sfgen).id as i32 {
             43 => {
-                (*zone).keylo = (*sfgen).amount.range.lo as i32;
-                (*zone).keyhi = (*sfgen).amount.range.hi as i32
+                (*zone).keylo = (**sfgen).amount.range.lo as i32;
+                (*zone).keyhi = (**sfgen).amount.range.hi as i32
             }
             44 => {
-                (*zone).vello = (*sfgen).amount.range.lo as i32;
-                (*zone).velhi = (*sfgen).amount.range.hi as i32
+                (*zone).vello = (**sfgen).amount.range.lo as i32;
+                (*zone).velhi = (**sfgen).amount.range.hi as i32
             }
             _ => {
-                (*zone).gen[(*sfgen).id as usize].val = (*sfgen).amount.sword as f32 as f64;
-                (*zone).gen[(*sfgen).id as usize].flags = GEN_SET as i32 as libc::c_uchar
+                (*zone).gen[(**sfgen).id as usize].val = (**sfgen).amount.sword as f32 as f64;
+                (*zone).gen[(**sfgen).id as usize].flags = GEN_SET as i32 as libc::c_uchar
             }
         }
-        r = if !r.is_null() {
-            (*r).next
-        } else {
-            0 as *mut List
-        };
         count += 1
     }
     if !(*sfzone).instsamp.is_none() && !(*sfzone).instsamp.unwrap_sample().is_null() {
@@ -1576,9 +1546,7 @@ pub unsafe fn fluid_inst_zone_import_sfont(
         }
     }
     count = 0 as i32;
-    r = (*sfzone).mod_0;
-    while !r.is_null() {
-        let mod_src: *mut SFMod = (*r).data as *mut SFMod;
+    for mod_src in (*sfzone).mod_0.iter() {
         let mut type_0: i32;
         let mut mod_dest: *mut Mod;
         mod_dest = fluid_mod_new();
@@ -1586,17 +1554,17 @@ pub unsafe fn fluid_inst_zone_import_sfont(
             return FLUID_FAILED as i32;
         }
         (*mod_dest).next = 0 as *mut Mod;
-        (*mod_dest).amount = (*mod_src).amount as f64;
-        (*mod_dest).src1 = ((*mod_src).src as i32 & 127 as i32) as libc::c_uchar;
+        (*mod_dest).amount = (**mod_src).amount as f64;
+        (*mod_dest).src1 = ((**mod_src).src as i32 & 127 as i32) as libc::c_uchar;
         (*mod_dest).flags1 = 0 as i32 as libc::c_uchar;
-        if (*mod_src).src as i32 & (1 as i32) << 7 as i32 != 0 {
+        if (**mod_src).src as i32 & (1 as i32) << 7 as i32 != 0 {
             (*mod_dest).flags1 =
                 ((*mod_dest).flags1 as i32 | FLUID_MOD_CC as i32) as libc::c_uchar
         } else {
             (*mod_dest).flags1 =
                 ((*mod_dest).flags1 as i32 | FLUID_MOD_GC as i32) as libc::c_uchar
         }
-        if (*mod_src).src as i32 & (1 as i32) << 8 as i32 != 0 {
+        if (**mod_src).src as i32 & (1 as i32) << 8 as i32 != 0 {
             (*mod_dest).flags1 = ((*mod_dest).flags1 as i32
                 | FLUID_MOD_NEGATIVE as i32)
                 as libc::c_uchar
@@ -1605,7 +1573,7 @@ pub unsafe fn fluid_inst_zone_import_sfont(
                 | FLUID_MOD_POSITIVE as i32)
                 as libc::c_uchar
         }
-        if (*mod_src).src as i32 & (1 as i32) << 9 as i32 != 0 {
+        if (**mod_src).src as i32 & (1 as i32) << 9 as i32 != 0 {
             (*mod_dest).flags1 = ((*mod_dest).flags1 as i32
                 | FLUID_MOD_BIPOLAR as i32)
                 as libc::c_uchar
@@ -1614,7 +1582,7 @@ pub unsafe fn fluid_inst_zone_import_sfont(
                 | FLUID_MOD_UNIPOLAR as i32)
                 as libc::c_uchar
         }
-        type_0 = (*mod_src).src as i32 >> 10 as i32;
+        type_0 = (**mod_src).src as i32 >> 10 as i32;
         type_0 &= 63 as i32;
         if type_0 == 0 as i32 {
             (*mod_dest).flags1 = ((*mod_dest).flags1 as i32
@@ -1632,17 +1600,17 @@ pub unsafe fn fluid_inst_zone_import_sfont(
         } else {
             (*mod_dest).amount = 0 as i32 as f64
         }
-        (*mod_dest).dest = (*mod_src).dest as libc::c_uchar;
-        (*mod_dest).src2 = ((*mod_src).amtsrc as i32 & 127 as i32) as libc::c_uchar;
+        (*mod_dest).dest = (**mod_src).dest as libc::c_uchar;
+        (*mod_dest).src2 = ((**mod_src).amtsrc as i32 & 127 as i32) as libc::c_uchar;
         (*mod_dest).flags2 = 0 as i32 as libc::c_uchar;
-        if (*mod_src).amtsrc as i32 & (1 as i32) << 7 as i32 != 0 {
+        if (**mod_src).amtsrc as i32 & (1 as i32) << 7 as i32 != 0 {
             (*mod_dest).flags2 =
                 ((*mod_dest).flags2 as i32 | FLUID_MOD_CC as i32) as libc::c_uchar
         } else {
             (*mod_dest).flags2 =
                 ((*mod_dest).flags2 as i32 | FLUID_MOD_GC as i32) as libc::c_uchar
         }
-        if (*mod_src).amtsrc as i32 & (1 as i32) << 8 as i32 != 0 {
+        if (**mod_src).amtsrc as i32 & (1 as i32) << 8 as i32 != 0 {
             (*mod_dest).flags2 = ((*mod_dest).flags2 as i32
                 | FLUID_MOD_NEGATIVE as i32)
                 as libc::c_uchar
@@ -1651,7 +1619,7 @@ pub unsafe fn fluid_inst_zone_import_sfont(
                 | FLUID_MOD_POSITIVE as i32)
                 as libc::c_uchar
         }
-        if (*mod_src).amtsrc as i32 & (1 as i32) << 9 as i32 != 0 {
+        if (**mod_src).amtsrc as i32 & (1 as i32) << 9 as i32 != 0 {
             (*mod_dest).flags2 = ((*mod_dest).flags2 as i32
                 | FLUID_MOD_BIPOLAR as i32)
                 as libc::c_uchar
@@ -1660,7 +1628,7 @@ pub unsafe fn fluid_inst_zone_import_sfont(
                 | FLUID_MOD_UNIPOLAR as i32)
                 as libc::c_uchar
         }
-        type_0 = (*mod_src).amtsrc as i32 >> 10 as i32;
+        type_0 = (**mod_src).amtsrc as i32 >> 10 as i32;
         type_0 &= 63 as i32;
         if type_0 == 0 as i32 {
             (*mod_dest).flags2 = ((*mod_dest).flags2 as i32
@@ -1678,7 +1646,7 @@ pub unsafe fn fluid_inst_zone_import_sfont(
         } else {
             (*mod_dest).amount = 0 as i32 as f64
         }
-        if (*mod_src).trans as i32 != 0 as i32 {
+        if (**mod_src).trans as i32 != 0 as i32 {
             (*mod_dest).amount = 0 as i32 as f64
         }
         if count == 0 as i32 {
@@ -1690,11 +1658,6 @@ pub unsafe fn fluid_inst_zone_import_sfont(
             }
             (*last_mod).next = mod_dest
         }
-        r = if !r.is_null() {
-            (*r).next
-        } else {
-            0 as *mut List
-        };
         count += 1
     }
     return FLUID_OK as i32;
@@ -2553,8 +2516,7 @@ unsafe fn load_pbag(
                 return gerr!(ErrCorr, "Preset bag chunk size mismatch",);
             }
             *z = libc::malloc(::std::mem::size_of::<SFZone>() as libc::size_t) as *mut SFZone;
-            (**z).gen = 0 as *mut List;
-            (**z).mod_0 = 0 as *mut List;
+            libc::memset(*z as _, 0, ::std::mem::size_of::<SFZone>() as _);
             ({
                 let mut _temp: u16 = 0;
                 if (*fapi).fread.expect("non-null function pointer")(
@@ -2594,7 +2556,7 @@ unsafe fn load_pbag(
                     if !(fresh8 != 0) {
                         break;
                     }
-                    (*pz).gen = fluid_list_prepend((*pz).gen, 0 as *mut libc::c_void)
+                    (*pz).gen.insert(0, 0 as _);
                 }
                 i = (modndx as i32 - pmodndx as i32) as u16;
                 loop {
@@ -2603,7 +2565,7 @@ unsafe fn load_pbag(
                     if !(fresh9 != 0) {
                         break;
                     }
-                    (*pz).mod_0 = fluid_list_prepend((*pz).mod_0, 0 as *mut libc::c_void)
+                    (*pz).mod_0.insert(0, 0 as _);
                 }
             }
             pz = *z;
@@ -2661,7 +2623,7 @@ unsafe fn load_pbag(
         if !(fresh10 != 0) {
             break;
         }
-        (*pz).gen = fluid_list_prepend((*pz).gen, 0 as *mut libc::c_void)
+        (*pz).gen.insert(0, 0 as _);
     }
     i = (modndx as i32 - pmodndx as i32) as u16;
     loop {
@@ -2670,7 +2632,7 @@ unsafe fn load_pbag(
         if !(fresh11 != 0) {
             break;
         }
-        (*pz).mod_0 = fluid_list_prepend((*pz).mod_0, 0 as *mut libc::c_void)
+        (*pz).mod_0.insert(0, 0 as _);
     }
     return 1 as i32;
 }
@@ -2680,18 +2642,14 @@ unsafe fn load_pmod(
     fd: *mut libc::c_void,
     fapi: *mut FileApi,
 ) -> i32 {
-    let mut p3: *mut List;
-    let mut m: *mut SFMod;
     for preset in (*sf).preset.iter() {
         for z in (**preset).zone.iter() {
-            p3 = (**z).mod_0;
-            while !p3.is_null() {
+            for m in (**z).mod_0.iter_mut() {
                 size -= 10 as i32;
                 if size < 0 as i32 {
                     return gerr!(ErrCorr, "Preset modulator chunk size mismatch",);
                 }
-                m = libc::malloc(::std::mem::size_of::<SFMod>() as libc::size_t) as *mut SFMod;
-                (*p3).data = m as *mut libc::c_void;
+                *m = libc::malloc(::std::mem::size_of::<SFMod>() as libc::size_t) as *mut SFMod;
                 ({
                     let mut _temp: u16 = 0;
                     if (*fapi).fread.expect("non-null function pointer")(
@@ -2702,7 +2660,7 @@ unsafe fn load_pmod(
                     {
                         return 0 as i32;
                     }
-                    (*m).src = _temp as i16 as u16;
+                    (**m).src = _temp as i16 as u16;
                 });
                 ({
                     let mut _temp: u16 = 0;
@@ -2714,7 +2672,7 @@ unsafe fn load_pmod(
                     {
                         return 0 as i32;
                     }
-                    (*m).dest = _temp as i16 as u16;
+                    (**m).dest = _temp as i16 as u16;
                 });
                 ({
                     let mut _temp: u16 = 0;
@@ -2726,7 +2684,7 @@ unsafe fn load_pmod(
                     {
                         return 0 as i32;
                     }
-                    (*m).amount = _temp as i16;
+                    (**m).amount = _temp as i16;
                 });
                 ({
                     let mut _temp: u16 = 0;
@@ -2738,7 +2696,7 @@ unsafe fn load_pmod(
                     {
                         return 0 as i32;
                     }
-                    (*m).amtsrc = _temp as i16 as u16;
+                    (**m).amtsrc = _temp as i16 as u16;
                 });
                 ({
                     let mut _temp: u16 = 0;
@@ -2750,13 +2708,8 @@ unsafe fn load_pmod(
                     {
                         return 0 as i32;
                     }
-                    (*m).trans = _temp as i16 as u16;
+                    (**m).trans = _temp as i16 as u16;
                 });
-                p3 = if !p3.is_null() {
-                    (*p3).next
-                } else {
-                    0 as *mut List
-                }
             }
         }
     }
@@ -2783,8 +2736,8 @@ unsafe fn load_pgen(
     fd: *mut libc::c_void,
     fapi: *mut FileApi,
 ) -> i32 {
-    let mut p3: *mut List;
-    let mut dup: *mut List;
+    let mut p3;
+    let mut dup;
     let hz: usize = 0;
     let mut g: *mut SFGen;
     let mut genval: SFGenAmount = SFGenAmount { sword: 0 };
@@ -2799,9 +2752,9 @@ unsafe fn load_pgen(
         discarded = 0 as i32;
         for (i, z) in (**preset).zone.iter_mut().enumerate() {
             level = 0 as i32;
-            p3 = (**z).gen;
-            while !p3.is_null() {
-                dup = 0 as *mut List;
+            p3 = 0;
+            while p3 < (**z).gen.len() {
+                dup = None;
                 skip = 0 as i32;
                 drop_0 = 0 as i32;
                 size -= 4 as i32;
@@ -2896,19 +2849,19 @@ unsafe fn load_pgen(
                             }
                             genval.sword = _temp as i16;
                         });
-                        dup = gen_inlist(genid as i32, (**z).gen)
+                        dup = (**z).gen.iter().position(|x| !(*x).is_null() && (**x).id == genid);
                     } else {
                         skip = (0 as i32 == 0) as i32
                     }
                 }
                 if skip == 0 {
-                    if dup.is_null() {
+                    if dup.is_none() {
                         g = libc::malloc(::std::mem::size_of::<SFGen>() as libc::size_t)
                             as *mut SFGen;
-                        (*p3).data = g as *mut libc::c_void;
+                        (**z).gen[p3] = g;
                         (*g).id = genid
                     } else {
-                        g = (*dup).data as *mut SFGen;
+                        g = (**z).gen[dup.unwrap()];
                         drop_0 = (0 as i32 == 0) as i32
                     }
                     (*g).amount = genval
@@ -2925,35 +2878,13 @@ unsafe fn load_pgen(
                     }
                 }
                 if drop_0 == 0 {
-                    p3 = if !p3.is_null() {
-                        (*p3).next
-                    } else {
-                        0 as *mut List
-                    }
+                    p3 += 1;
                 } else {
-                    {
-                        let mut _temp: *mut List = p3;
-                        p3 = if !p3.is_null() {
-                            (*p3).next
-                        } else {
-                            0 as *mut List
-                        };
-                        (**z).gen = fluid_list_remove_link((**z).gen, _temp);
-                        delete1_fluid_list(_temp);
-                    }
+                    (**z).gen.remove(p3);
                 }
             }
             if level == 3 as i32 {
-                {
-                    let mut _temp: *mut List = p3;
-                    p3 = if !p3.is_null() {
-                        (*p3).next
-                    } else {
-                        0 as *mut List
-                    };
-                    (**z).gen = fluid_list_remove_link((**z).gen, _temp);
-                    delete1_fluid_list(_temp);
-                }
+                (**z).gen.remove(p3);
             } else if gzone == 0 {
                 gzone = (0 as i32 == 0) as i32;
                 if hz != i {
@@ -2973,7 +2904,7 @@ unsafe fn load_pgen(
                 sfont_free_zone(*z);
                 *z = 0 as _;
             }
-            while !p3.is_null() {
+            while p3 < (**z).gen.len() {
                 discarded = (0 as i32 == 0) as i32;
                 size -= 4 as i32;
                 if size < 0 as i32 {
@@ -2988,14 +2919,7 @@ unsafe fn load_pgen(
                     return 0 as i32;
                 }
                 {
-                    let mut _temp: *mut List = p3;
-                    p3 = if !p3.is_null() {
-                        (*p3).next
-                    } else {
-                        0 as *mut List
-                    };
-                    (**z).gen = fluid_list_remove_link((**z).gen, _temp);
-                    delete1_fluid_list(_temp);
+                    (**z).gen.remove(p3);
                 }
             }
         }
@@ -3148,7 +3072,6 @@ unsafe fn load_ibag(
     fd: *mut libc::c_void,
     fapi: *mut FileApi,
 ) -> i32 {
-    let mut z: *mut SFZone;
     let mut pz: *mut SFZone = 0 as *mut SFZone;
     let mut genndx;
     let mut modndx;
@@ -3159,15 +3082,13 @@ unsafe fn load_ibag(
         return gerr!(ErrCorr, "Instrument bag chunk size is invalid",);
     }
     for inst in (*sf).inst.iter() {
-        for zone in (**inst).zone.iter_mut() {
+        for z in (**inst).zone.iter_mut() {
             size -= 4 as i32;
             if size < 0 as i32 {
                 return gerr!(ErrCorr, "Instrument bag chunk size mismatch",);
             }
-            z = libc::malloc(::std::mem::size_of::<SFZone>() as libc::size_t) as *mut SFZone;
-            *zone = z;
-            (*z).gen = 0 as *mut List;
-            (*z).mod_0 = 0 as *mut List;
+            *z = libc::malloc(::std::mem::size_of::<SFZone>() as libc::size_t) as *mut SFZone;
+            libc::memset(*z as _, 0, std::mem::size_of::<SFZone>() as _);
             ({
                 let mut _temp: u16 = 0;
                 if (*fapi).fread.expect("non-null function pointer")(
@@ -3192,7 +3113,7 @@ unsafe fn load_ibag(
                 }
                 modndx = _temp as i16 as u16;
             });
-            (*z).instsamp = InstSamp::None;
+            (**z).instsamp = InstSamp::None;
             if !pz.is_null() {
                 if (genndx as i32) < pgenndx as i32 {
                     return gerr!(ErrCorr, "Instrument generator indices not monotonic",);
@@ -3207,7 +3128,7 @@ unsafe fn load_ibag(
                     if !(fresh15 != 0) {
                         break;
                     }
-                    (*pz).gen = fluid_list_prepend((*pz).gen, 0 as *mut libc::c_void)
+                    (*pz).gen.insert(0, 0 as _);
                 }
                 i = modndx as i32 - pmodndx as i32;
                 loop {
@@ -3216,10 +3137,10 @@ unsafe fn load_ibag(
                     if !(fresh16 != 0) {
                         break;
                     }
-                    (*pz).mod_0 = fluid_list_prepend((*pz).mod_0, 0 as *mut libc::c_void)
+                    (*pz).mod_0.insert(0, 0 as _);
                 }
             }
-            pz = z;
+            pz = *z;
             pgenndx = genndx;
             pmodndx = modndx;
         }
@@ -3280,7 +3201,7 @@ unsafe fn load_ibag(
         if !(fresh17 != 0) {
             break;
         }
-        (*pz).gen = fluid_list_prepend((*pz).gen, 0 as *mut libc::c_void)
+        (*pz).gen.insert(0, 0 as _);
     }
     i = modndx as i32 - pmodndx as i32;
     loop {
@@ -3289,7 +3210,7 @@ unsafe fn load_ibag(
         if !(fresh18 != 0) {
             break;
         }
-        (*pz).mod_0 = fluid_list_prepend((*pz).mod_0, 0 as *mut libc::c_void)
+        (*pz).mod_0.insert(0, 0 as _);
     }
     return 1 as i32;
 }
@@ -3299,18 +3220,14 @@ unsafe fn load_imod(
     fd: *mut libc::c_void,
     fapi: *mut FileApi,
 ) -> i32 {
-    let mut p3: *mut List;
-    let mut m: *mut SFMod;
     for inst in (*sf).inst.iter() {
         for zone in (**inst).zone.iter() {
-            p3 = (**zone).mod_0;
-            while !p3.is_null() {
+            for m in (**zone).mod_0.iter_mut() {
                 size -= 10 as i32;
                 if size < 0 as i32 {
                     return gerr!(ErrCorr, "Instrument modulator chunk size mismatch",);
                 }
-                m = libc::malloc(::std::mem::size_of::<SFMod>() as libc::size_t) as *mut SFMod;
-                (*p3).data = m as *mut libc::c_void;
+                *m = libc::malloc(::std::mem::size_of::<SFMod>() as libc::size_t) as *mut SFMod;
                 ({
                     let mut _temp: u16 = 0;
                     if (*fapi).fread.expect("non-null function pointer")(
@@ -3321,7 +3238,7 @@ unsafe fn load_imod(
                     {
                         return 0 as i32;
                     }
-                    (*m).src = _temp as i16 as u16;
+                    (**m).src = _temp as i16 as u16;
                 });
                 ({
                     let mut _temp: u16 = 0;
@@ -3333,7 +3250,7 @@ unsafe fn load_imod(
                     {
                         return 0 as i32;
                     }
-                    (*m).dest = _temp as i16 as u16;
+                    (**m).dest = _temp as i16 as u16;
                 });
                 ({
                     let mut _temp: u16 = 0;
@@ -3345,7 +3262,7 @@ unsafe fn load_imod(
                     {
                         return 0 as i32;
                     }
-                    (*m).amount = _temp as i16;
+                    (**m).amount = _temp as i16;
                 });
                 ({
                     let mut _temp: u16 = 0;
@@ -3357,7 +3274,7 @@ unsafe fn load_imod(
                     {
                         return 0 as i32;
                     }
-                    (*m).amtsrc = _temp as i16 as u16;
+                    (**m).amtsrc = _temp as i16 as u16;
                 });
                 ({
                     let mut _temp: u16 = 0;
@@ -3369,13 +3286,8 @@ unsafe fn load_imod(
                     {
                         return 0 as i32;
                     }
-                    (*m).trans = _temp as i16 as u16;
+                    (**m).trans = _temp as i16 as u16;
                 });
-                p3 = if !p3.is_null() {
-                    (*p3).next
-                } else {
-                    0 as *mut List
-                }
             }
         }
     }
@@ -3402,8 +3314,8 @@ unsafe fn load_igen(
     fd: *mut libc::c_void,
     fapi: *mut FileApi,
 ) -> i32 {
-    let mut p3: *mut List;
-    let mut dup: *mut List;
+    let mut p3;
+    let mut dup;
     let mut hz: usize;
     let mut g: *mut SFGen;
     let mut genval: SFGenAmount = SFGenAmount { sword: 0 };
@@ -3419,9 +3331,9 @@ unsafe fn load_igen(
         hz = 0;
         for (i, z) in (**inst).zone.iter().enumerate() {
             level = 0 as i32;
-            p3 = (**z).gen;
-            while !p3.is_null() {
-                dup = 0 as *mut List;
+            p3 = 0;
+            while p3 < (**z).gen.len() {
+                dup = None;
                 skip = 0 as i32;
                 drop_0 = 0 as i32;
                 size -= 4 as i32;
@@ -3516,19 +3428,19 @@ unsafe fn load_igen(
                             }
                             genval.sword = _temp as i16;
                         });
-                        dup = gen_inlist(genid as i32, (**z).gen)
+                        dup = (**z).gen.iter().position(|x| !(*x).is_null() && (**x).id == genid);
                     } else {
                         skip = (0 as i32 == 0) as i32
                     }
                 }
                 if skip == 0 {
-                    if dup.is_null() {
+                    if dup.is_none() {
                         g = libc::malloc(::std::mem::size_of::<SFGen>() as libc::size_t)
                             as *mut SFGen;
-                        (*p3).data = g as *mut libc::c_void;
+                        (**z).gen[p3] = g;
                         (*g).id = genid
                     } else {
-                        g = (*dup).data as *mut SFGen;
+                        g = (**z).gen[dup.unwrap()];
                         drop_0 = (0 as i32 == 0) as i32
                     }
                     (*g).amount = genval
@@ -3545,34 +3457,14 @@ unsafe fn load_igen(
                     }
                 }
                 if drop_0 == 0 {
-                    p3 = if !p3.is_null() {
-                        (*p3).next
-                    } else {
-                        0 as *mut List
-                    }
+                    p3 += 1;
                 } else {
-                    {
-                        let mut _temp: *mut List = p3;
-                        p3 = if !p3.is_null() {
-                            (*p3).next
-                        } else {
-                            0 as *mut List
-                        };
-                        (**z).gen = fluid_list_remove_link((**z).gen, _temp);
-                        delete1_fluid_list(_temp);
-                    }
+                    (**z).gen.remove(p3);
                 }
             }
             if level == 3 as i32 {
                 {
-                    let mut _temp: *mut List = p3;
-                    p3 = if !p3.is_null() {
-                        (*p3).next
-                    } else {
-                        0 as *mut List
-                    };
-                    (**z).gen = fluid_list_remove_link((**z).gen, _temp);
-                    delete1_fluid_list(_temp);
+                    (**z).gen.remove(p3);
                 }
             } else if gzone == 0 {
                 gzone = (0 as i32 == 0) as i32;
@@ -3599,7 +3491,7 @@ unsafe fn load_igen(
                 sfont_free_zone((**inst).zone[hz]);
                 (**inst).zone[hz] = 0 as _;
             }
-            while !p3.is_null() {
+            while p3 < (**z).gen.len() {
                 discarded = (0 as i32 == 0) as i32;
                 size -= 4 as i32;
                 if size < 0 as i32 {
@@ -3614,14 +3506,7 @@ unsafe fn load_igen(
                     return 0 as i32;
                 }
                 {
-                    let mut _temp: *mut List = p3;
-                    p3 = if !p3.is_null() {
-                        (*p3).next
-                    } else {
-                        0 as *mut List
-                    };
-                    (**z).gen = fluid_list_remove_link((**z).gen, _temp);
-                    delete1_fluid_list(_temp);
+                    (**z).gen.remove(p3);
                 }
             }
         }
@@ -3952,34 +3837,19 @@ pub unsafe fn sfont_close(sf: *mut SFData, fapi: *mut FileApi) {
 }
 
 pub unsafe fn sfont_free_zone(zone: *mut SFZone) {
-    let mut p: *mut List;
     if zone.is_null() {
         return;
     }
-    p = (*zone).gen;
-    while !p.is_null() {
-        if !(*p).data.is_null() {
-            libc::free((*p).data);
-        }
-        p = if !p.is_null() {
-            (*p).next
-        } else {
-            0 as *mut List
-        }
+    for gen in (*zone).gen.iter() {
+        libc::free(*gen as _);
     }
-    delete_fluid_list((*zone).gen);
-    p = (*zone).mod_0;
-    while !p.is_null() {
-        if !(*p).data.is_null() {
-            libc::free((*p).data);
-        }
-        p = if !p.is_null() {
-            (*p).next
-        } else {
-            0 as *mut List
-        }
+    (*zone).gen.clear();
+
+    for m in (*zone).mod_0.iter() {
+        libc::free(*m as _);
     }
-    delete_fluid_list((*zone).mod_0);
+    (*zone).mod_0.clear();
+
     libc::free(zone as *mut libc::c_void);
 }
 
@@ -3991,25 +3861,6 @@ pub unsafe fn sfont_preset_compare_func(a: *mut libc::c_void, b: *mut libc::c_vo
     bval = ((*(b as *mut SFPreset)).bank as i32) << 16 as i32
         | (*(b as *mut SFPreset)).prenum as i32;
     return aval - bval;
-}
-
-pub unsafe fn gen_inlist(gen: i32, genlist: *mut List) -> *mut List {
-    let mut p: *mut List;
-    p = genlist;
-    while !p.is_null() {
-        if (*p).data.is_null() {
-            return 0 as *mut List;
-        }
-        if gen == (*((*p).data as *mut SFGen)).id as i32 {
-            break;
-        }
-        p = if !p.is_null() {
-            (*p).next
-        } else {
-            0 as *mut List
-        }
-    }
-    return p;
 }
 
 pub unsafe fn gen_valid(gen: i32) -> i32 {
