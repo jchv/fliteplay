@@ -2,7 +2,6 @@ use super::gen::fluid_gen_set_default_values;
 use super::gen::Gen;
 use super::list::delete1_fluid_list;
 use super::list::delete_fluid_list;
-use super::list::fluid_list_append;
 use super::list::fluid_list_prepend;
 use super::list::fluid_list_remove;
 use super::list::fluid_list_remove_link;
@@ -92,7 +91,7 @@ pub struct SFData {
     samplesize: u32,
     fname: *mut libc::c_char,
     sffd: *mut libc::FILE,
-    info: *mut List,
+    info: Vec<*mut libc::c_char>,
     preset: Vec<*mut SFPreset>,
     inst: Vec<*mut SFInst>,
     sample: Vec<*mut SFSample>,
@@ -2119,7 +2118,7 @@ unsafe fn process_info(
                 fluid_log!(FLUID_ERR, "Out of memory",);
                 return 0 as i32;
             }
-            (*sf).info = fluid_list_append((*sf).info, item as *mut libc::c_void);
+            (*sf).info.push(item);
             *(item as *mut libc::c_uchar) = id;
             if (*fapi).fread.expect("non-null function pointer")(
                 &mut *item.offset(1 as i32 as isize) as *mut libc::c_char
@@ -4038,8 +4037,7 @@ pub static mut BADPGEN: [u16; 14] = [
     0 as i32 as u16,
 ];
 
-pub unsafe fn sfont_close(mut sf: *mut SFData, fapi: *mut FileApi) {
-    let mut p: *mut List;
+pub unsafe fn sfont_close(sf: *mut SFData, fapi: *mut FileApi) {
     let mut p2: *mut List;
     if !(*sf).sffd.is_null() {
         (*fapi).fclose.expect("non-null function pointer")((*sf).sffd as *mut libc::c_void);
@@ -4047,17 +4045,9 @@ pub unsafe fn sfont_close(mut sf: *mut SFData, fapi: *mut FileApi) {
     if !(*sf).fname.is_null() {
         libc::free((*sf).fname as *mut libc::c_void);
     }
-    p = (*sf).info;
-    while !p.is_null() {
-        libc::free((*p).data);
-        p = if !p.is_null() {
-            (*p).next
-        } else {
-            0 as *mut List
-        }
+    for info in (*sf).info.iter() {
+        libc::free(*info as *mut libc::c_void);
     }
-    delete_fluid_list((*sf).info);
-    (*sf).info = 0 as *mut List;
 
     for preset in (*sf).preset.iter() {
         p2 = (**preset).zone;

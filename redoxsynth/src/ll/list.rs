@@ -27,20 +27,6 @@ pub unsafe fn delete1_fluid_list(list: *mut List) {
     };
 }
 
-pub unsafe fn fluid_list_append(list: *mut List, data: *mut libc::c_void) -> *mut List {
-    let mut new_list: *mut List;
-    let mut last: *mut List;
-    new_list = new_fluid_list();
-    (*new_list).data = data;
-    if !list.is_null() {
-        last = fluid_list_last(list);
-        (*last).next = new_list;
-        return list;
-    } else {
-        return new_list;
-    };
-}
-
 pub unsafe fn fluid_list_prepend(list: *mut List, data: *mut libc::c_void) -> *mut List {
     let mut new_list: *mut List;
     new_list = new_fluid_list();
@@ -91,15 +77,6 @@ pub unsafe fn fluid_list_remove_link(mut list: *mut List, link: *mut List) -> *m
         } else {
             prev = tmp;
             tmp = (*tmp).next
-        }
-    }
-    return list;
-}
-
-pub unsafe fn fluid_list_last(mut list: *mut List) -> *mut List {
-    if !list.is_null() {
-        while !(*list).next.is_null() {
-            list = (*list).next
         }
     }
     return list;
