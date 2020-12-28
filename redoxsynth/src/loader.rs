@@ -3,7 +3,7 @@ use std::{
     ffi::CStr,
     io::SeekFrom,
     mem::{transmute, MaybeUninit},
-    os::raw::{c_char, c_int, c_void},
+    os::raw::{c_int, c_void},
     path::Path,
     ptr::null_mut,
     slice::from_raw_parts_mut,
@@ -116,12 +116,12 @@ fn free_wrapper<F: FileApi>(fapi_c: *mut ll::sfont::FileApi) -> c_int {
 
 fn open_wrapper<F: FileApi>(
     fapi_c: *mut ll::sfont::FileApi,
-    filename: *const c_char,
+    filename: &[u8],
 ) -> *mut c_void {
     let fapi = unsafe { &mut *fapi_c };
     let fapi_rs = unsafe { &mut *(fapi.data as *mut F) };
 
-    let filename = if let Ok(filename) = unsafe { CStr::from_ptr(filename) }.to_str() {
+    let filename = if let Ok(filename) = unsafe { CStr::from_ptr(filename.as_ptr() as _) }.to_str() {
         filename
     } else {
         return null_mut();

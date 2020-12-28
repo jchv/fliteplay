@@ -5,11 +5,11 @@ use super::conv::fluid_convex;
 use super::voice::Voice;
 #[derive(Copy, Clone)]
 pub struct Mod {
-    pub(crate) dest: libc::c_uchar,
-    pub(crate) src1: libc::c_uchar,
-    pub(crate) flags1: libc::c_uchar,
-    pub(crate) src2: libc::c_uchar,
-    pub(crate) flags2: libc::c_uchar,
+    pub(crate) dest: u8,
+    pub(crate) src1: u8,
+    pub(crate) flags1: u8,
+    pub(crate) src2: u8,
+    pub(crate) flags2: u8,
     pub(crate) amount: f64,
     pub(crate) next: *mut Mod,
 }
@@ -40,8 +40,8 @@ pub unsafe fn fluid_mod_set_source1(
     src: i32,
     flags: i32,
 ) {
-    (*mod_0).src1 = src as libc::c_uchar;
-    (*mod_0).flags1 = flags as libc::c_uchar;
+    (*mod_0).src1 = src as u8;
+    (*mod_0).flags1 = flags as u8;
 }
 
 pub unsafe fn fluid_mod_set_source2(
@@ -49,12 +49,12 @@ pub unsafe fn fluid_mod_set_source2(
     src: i32,
     flags: i32,
 ) {
-    (*mod_0).src2 = src as libc::c_uchar;
-    (*mod_0).flags2 = flags as libc::c_uchar;
+    (*mod_0).src2 = src as u8;
+    (*mod_0).flags2 = flags as u8;
 }
 
 pub unsafe fn fluid_mod_set_dest(mut mod_0: &mut Mod, dest: i32) {
-    (*mod_0).dest = dest as libc::c_uchar;
+    (*mod_0).dest = dest as u8;
 }
 
 pub unsafe fn fluid_mod_set_amount(mut mod_0: &mut Mod, amount: f64) {

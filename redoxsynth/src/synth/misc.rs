@@ -7,7 +7,7 @@ impl Synth {
      */
     pub(super) fn error() -> String {
         let error = unsafe { ll::synth::fluid_synth_error() };
-        let error = unsafe { CStr::from_ptr(error) };
+        let error = unsafe { CStr::from_ptr(error as _) };
         error.to_str().unwrap().into()
     }
 

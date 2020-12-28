@@ -29,7 +29,7 @@ impl Synth {
                 &mut self.handle,
                 tuning_bank as _,
                 tuning_prog as _,
-                name.as_ptr(),
+                name.as_bytes_with_nul(),
                 pitch.as_ptr() as _,
             )
         })
@@ -55,7 +55,7 @@ impl Synth {
                 &mut self.handle,
                 tuning_bank as _,
                 tuning_prog as _,
-                name.as_ptr(),
+                name.as_bytes_with_nul(),
                 pitch.as_ptr(),
             )
         })
@@ -75,7 +75,7 @@ impl Synth {
                 &mut self.handle,
                 bank as _,
                 prog as _,
-                name.as_ptr(),
+                name.as_bytes_with_nul(),
                 pitch.as_ptr(),
                 apply as _,
             )

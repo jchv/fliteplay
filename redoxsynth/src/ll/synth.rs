@@ -1,3 +1,5 @@
+use std::ffi::CStr;
+
 use super::{channel::fluid_channel_cc, settings::{Settings, new_fluid_settings}};
 use super::channel::fluid_channel_get_banknum;
 use super::channel::fluid_channel_get_num;
@@ -61,15 +63,14 @@ use super::voice::Voice;
 use super::voice::fluid_voice_write;
 use super::voice::new_fluid_voice;
 use super::voice::FluidVoiceAddMod;
-use std::ffi::CStr;
 
 pub struct Synth {
     pub settings: Settings,
     polyphony: i32,
-    with_reverb: libc::c_char,
-    with_chorus: libc::c_char,
-    verbose: libc::c_char,
-    dump: libc::c_char,
+    with_reverb: i8,
+    with_chorus: i8,
+    verbose: i8,
+    dump: i8,
     sample_rate: f64,
     midi_channels: i32,
     audio_channels: i32,
@@ -152,23 +153,23 @@ impl Synth {
             synth.with_reverb = fluid_settings_str_equal(
                 &settings,
                 "synth.reverb.active",
-                b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
-            ) as libc::c_char;
+                "yes",
+            ) as i8;
             synth.with_chorus = fluid_settings_str_equal(
                 &settings,
                 "synth.chorus.active",
-                b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
-            ) as libc::c_char;
+                "yes",
+            ) as i8;
             synth.verbose = fluid_settings_str_equal(
                 &settings,
                 "synth.verbose",
-                b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
-            ) as libc::c_char;
+                "yes",
+            ) as i8;
             synth.dump = fluid_settings_str_equal(
                 &settings,
                 "synth.dump",
-                b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
-            ) as libc::c_char;
+                "yes",
+            ) as i8;
             synth.polyphony = fluid_settings_getint(
                 &settings,
                 "synth.polyphony",
@@ -334,9 +335,7 @@ impl Synth {
             if fluid_settings_str_equal(
                 &settings,
                 "synth.drums-channel.active",
-                b"yes\x00" as *const u8
-                    as *const libc::c_char
-                    as *mut libc::c_char,
+                "yes",
             ) != false
             {
                 fluid_synth_bank_select(
@@ -401,7 +400,7 @@ pub type GenType = u32;
 pub type C2RustUnnamed = i32;
 #[derive(Copy, Clone)]
 pub struct ReverbModelPreset {
-    pub name: *mut libc::c_char,
+    pub name: *mut i8,
     pub roomsize: f32,
     pub damp: f32,
     pub width: f32,
@@ -516,7 +515,7 @@ pub unsafe fn fluid_synth_settings(settings: &mut Settings) {
     fluid_settings_register_str(
         settings,
         "synth.verbose",
-        b"no\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
+        "no",
         0 as i32,
         None,
         0 as *mut libc::c_void,
@@ -524,7 +523,7 @@ pub unsafe fn fluid_synth_settings(settings: &mut Settings) {
     fluid_settings_register_str(
         settings,
         "synth.dump",
-        b"no\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
+        "no",
         0 as i32,
         None,
         0 as *mut libc::c_void,
@@ -532,7 +531,7 @@ pub unsafe fn fluid_synth_settings(settings: &mut Settings) {
     fluid_settings_register_str(
         settings,
         "synth.reverb.active",
-        b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
+        "yes",
         0 as i32,
         None,
         0 as *mut libc::c_void,
@@ -540,7 +539,7 @@ pub unsafe fn fluid_synth_settings(settings: &mut Settings) {
     fluid_settings_register_str(
         settings,
         "synth.chorus.active",
-        b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
+        "yes",
         0 as i32,
         None,
         0 as *mut libc::c_void,
@@ -548,7 +547,7 @@ pub unsafe fn fluid_synth_settings(settings: &mut Settings) {
     fluid_settings_register_str(
         settings,
         "synth.ladspa.active",
-        b"no\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
+        "no",
         0 as i32,
         None,
         0 as *mut libc::c_void,
@@ -556,7 +555,7 @@ pub unsafe fn fluid_synth_settings(settings: &mut Settings) {
     fluid_settings_register_str(
         settings,
         "midi.portname",
-        b"\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
+        "",
         0 as i32,
         None,
         0 as *mut libc::c_void,
@@ -564,7 +563,7 @@ pub unsafe fn fluid_synth_settings(settings: &mut Settings) {
     fluid_settings_register_str(
         settings,
         "synth.drums-channel.active",
-        b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
+        "yes",
         0 as i32,
         None,
         0 as *mut libc::c_void,
@@ -878,7 +877,7 @@ impl Drop for Synth {
     }
 }
 
-pub unsafe fn fluid_synth_error() -> *mut libc::c_char {
+pub unsafe fn fluid_synth_error() -> *mut u8 {
     return fluid_error();
 }
 
@@ -1169,7 +1168,7 @@ pub unsafe fn fluid_synth_key_pressure(
     if (*synth).verbose != 0 {
         fluid_log!(FLUID_INFO, "keypressure\t{}\t{}\t{}", chan, key, val);
     }
-    (*synth).channel[chan as usize].key_pressure[key as usize] = val as libc::c_char;
+    (*synth).channel[chan as usize].key_pressure[key as usize] = val as i8;
     let mut voice;
     let mut i;
     i = 0 as i32;
@@ -1328,7 +1327,7 @@ pub unsafe fn fluid_synth_program_change(
         && fluid_settings_str_equal(
             &(*synth).settings,
             "synth.drums-channel.active",
-            b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
+            "yes",
         ) != false
     {
         preset = fluid_synth_find_preset(
@@ -2064,13 +2063,9 @@ pub fn fluid_synth_add_sfloader(
 
 pub unsafe fn fluid_synth_sfload(
     synth: *mut Synth,
-    filename: *const libc::c_char,
+    filename: &[u8],
     reset_presets: i32,
 ) -> i32 {
-    if filename.is_null() {
-        fluid_log!(FLUID_ERR, "Invalid filename",);
-        return FLUID_FAILED as i32;
-    }
     for loader in (*synth).loaders.iter() {
         let sfont = Some((*(*loader)).load.expect("non-null function pointer"))
             .expect("non-null function pointer")(*loader, filename);
@@ -2092,7 +2087,11 @@ pub unsafe fn fluid_synth_sfload(
     fluid_log!(
         FLUID_ERR,
         "Failed to load SoundFont \"{}\"",
-        CStr::from_ptr(filename).to_str().unwrap()
+        CStr::from_ptr(
+            filename.as_ptr() as *const i8
+        )
+        .to_str()
+        .unwrap()
     );
     return -(1 as i32);
 }
@@ -2135,22 +2134,17 @@ pub unsafe fn fluid_synth_sfunload(
 }
 
 pub unsafe fn fluid_synth_sfreload(synth: *mut Synth, id: u32) -> i32 {
-    let mut filename: [libc::c_char; 1024] = [0; 1024];
     let sfont;
     let index;
     index = (*synth).sfont.iter().position(|x| x.id == id).expect("Soundfont with ID");
     sfont = &(*synth).sfont[index];
-    libc::strcpy(
-        filename.as_mut_ptr(),
-        Some(sfont.get_name.expect("non-null function pointer"))
-            .expect("non-null function pointer")(sfont),
-    );
+    let filename = sfont.get_name.expect("non-null function pointer")(sfont);
     if fluid_synth_sfunload(synth, id, 0 as i32) != FLUID_OK as i32 {
         return FLUID_FAILED as i32;
     }
     for loader in (*synth).loaders.iter() {
         match Some((*(*loader)).load.expect("non-null function pointer"))
-            .expect("non-null function pointer")(*loader, filename.as_mut_ptr()) {
+            .expect("non-null function pointer")(*loader, &filename.clone().expect("filename")) {
             Some(mut sfont) => {
                 sfont.id = id;
                 (*synth).sfont.insert(index, sfont);
@@ -2163,7 +2157,11 @@ pub unsafe fn fluid_synth_sfreload(synth: *mut Synth, id: u32) -> i32 {
     fluid_log!(
         FLUID_ERR,
         "Failed to load SoundFont \"{}\"",
-        CStr::from_ptr(filename.as_ptr()).to_str().unwrap()
+        CStr::from_ptr(
+            filename.unwrap_or(b"(null)\x00".to_vec()).as_ptr() as *const i8
+        )
+        .to_str()
+        .unwrap()
     );
     return -(1 as i32);
 }
@@ -2210,11 +2208,11 @@ pub unsafe fn fluid_synth_get_channel_preset(
 }
 
 pub unsafe fn fluid_synth_set_reverb_on(synth: *mut Synth, on: i32) {
-    (*synth).with_reverb = on as libc::c_char;
+    (*synth).with_reverb = on as i8;
 }
 
 pub unsafe fn fluid_synth_set_chorus_on(synth: *mut Synth, on: i32) {
-    (*synth).with_chorus = on as libc::c_char;
+    (*synth).with_chorus = on as i8;
 }
 
 pub unsafe fn fluid_synth_get_chorus_nr(synth: *const Synth) -> i32 {
@@ -2334,7 +2332,7 @@ unsafe fn fluid_synth_create_tuning(
     synth: *mut Synth,
     bank: i32,
     prog: i32,
-    name: *const libc::c_char,
+    name: &[u8],
 ) -> *mut Tuning {
     if bank < 0 as i32 || bank >= 128 as i32 {
         fluid_log!(FLUID_WARN, "Bank number out of range",);
@@ -2384,11 +2382,9 @@ unsafe fn fluid_synth_create_tuning(
             return 0 as *mut Tuning;
         }
     }
-    if fluid_tuning_get_name((*(*(*synth).tuning.offset(bank as isize)).offset(prog as isize)).as_ref().unwrap())
-        .is_null()
-        || libc::strcmp(
-            fluid_tuning_get_name((*(*(*synth).tuning.offset(bank as isize)).offset(prog as isize)).as_ref().unwrap()),
-            name,
+    if libc::strcmp(
+            fluid_tuning_get_name((*(*(*synth).tuning.offset(bank as isize)).offset(prog as isize)).as_ref().unwrap()).as_ptr() as _,
+            name.as_ptr() as _,
         ) != 0 as i32
     {
         fluid_tuning_set_name(
@@ -2403,7 +2399,7 @@ pub unsafe fn fluid_synth_create_key_tuning(
     synth: *mut Synth,
     bank: i32,
     prog: i32,
-    name: *const libc::c_char,
+    name: &[u8],
     pitch: *mut f64,
 ) -> i32 {
     let tuning: *mut Tuning = fluid_synth_create_tuning(synth, bank, prog, name);
@@ -2420,7 +2416,7 @@ pub unsafe fn fluid_synth_create_octave_tuning(
     synth: *mut Synth,
     bank: i32,
     prog: i32,
-    name: *const libc::c_char,
+    name: &[u8],
     pitch: *const f64,
 ) -> i32 {
     let tuning;
@@ -2431,9 +2427,6 @@ pub unsafe fn fluid_synth_create_octave_tuning(
         return FLUID_FAILED as i32;
     }
     if !(prog >= 0 as i32 && prog < 128 as i32) {
-        return FLUID_FAILED as i32;
-    }
-    if name.is_null() {
         return FLUID_FAILED as i32;
     }
     if pitch.is_null() {
@@ -2451,7 +2444,7 @@ pub unsafe fn fluid_synth_activate_octave_tuning(
     synth: *mut Synth,
     bank: i32,
     prog: i32,
-    name: *const libc::c_char,
+    name: &[u8],
     pitch: *const f64,
     _apply: i32,
 ) -> i32 {
@@ -2490,7 +2483,7 @@ pub unsafe fn fluid_synth_tune_notes(
     tuning = fluid_synth_get_tuning(synth, bank, prog);
     if tuning.is_null() {
         tuning = new_fluid_tuning(
-            b"Unnamed\x00" as *const u8 as *const libc::c_char,
+            b"Unnamed\x00",
             bank,
             prog,
         )
@@ -2602,7 +2595,7 @@ pub unsafe fn fluid_synth_tuning_dump(
     synth: *const Synth,
     bank: i32,
     prog: i32,
-    name: *mut libc::c_char,
+    name: *mut i8,
     len: i32,
     pitch: *mut f64,
 ) -> i32 {
@@ -2613,10 +2606,10 @@ pub unsafe fn fluid_synth_tuning_dump(
     if !name.is_null() {
         libc::strncpy(
             name,
-            fluid_tuning_get_name(tuning.as_ref().unwrap()),
+            fluid_tuning_get_name(tuning.as_ref().unwrap()).as_ptr() as _,
             (len - 1 as i32) as libc::size_t,
         );
-        *name.offset((len - 1 as i32) as isize) = 0 as i32 as libc::c_char
+        *name.offset((len - 1 as i32) as isize) = 0 as i32 as i8
     }
     if !pitch.is_null() {
         libc::memcpy(
@@ -2650,7 +2643,7 @@ pub unsafe fn fluid_synth_set_gen(
     }
     (*synth).channel[chan as usize].gen[param as usize] = value;
     (*synth).channel[chan as usize].gen_abs[param as usize] =
-        0 as i32 as libc::c_char;
+        0 as i32 as i8;
     i = 0 as i32;
     while i < (*synth).polyphony {
         voice = (*synth).voice[i as usize];

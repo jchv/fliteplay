@@ -5,14 +5,14 @@ use super::synth::Synth;
 pub struct SoundfontLoader {
     pub data: *mut libc::c_void,
     pub free: Option<unsafe fn(_: *mut SoundfontLoader) -> i32>,
-    pub load: Option<unsafe fn(_: *mut SoundfontLoader, _: *const libc::c_char) -> Option<SoundFont>>,
+    pub load: Option<unsafe fn(_: *mut SoundfontLoader, _: &[u8]) -> Option<SoundFont>>,
     pub fileapi: *mut FileApi,
 }
 #[derive(Copy, Clone)]
 pub struct FileApi {
     pub data: *mut libc::c_void,
     pub free: Option<unsafe fn(_: *mut FileApi) -> i32>,
-    pub fopen: Option<unsafe fn(_: *mut FileApi, _: *const libc::c_char) -> *mut libc::c_void>,
+    pub fopen: Option<unsafe fn(_: *mut FileApi, _: &[u8]) -> *mut libc::c_void>,
     pub fread: Option<
         unsafe fn(_: *mut libc::c_void, _: i32, _: *mut libc::c_void) -> i32,
     >,
@@ -26,7 +26,7 @@ pub struct Preset {
     pub data: *mut libc::c_void,
     pub sfont: *const SoundFont,
     pub free: Option<unsafe fn(_: *mut Preset) -> i32>,
-    pub get_name: Option<unsafe fn(_: *const Preset) -> *mut libc::c_char>,
+    pub get_name: Option<unsafe fn(_: *const Preset) -> Vec<u8>>,
     pub get_banknum: Option<unsafe fn(_: *const Preset) -> i32>,
     pub get_num: Option<unsafe fn(_: *const Preset) -> i32>,
     pub noteon: Option<
@@ -45,7 +45,7 @@ pub struct SoundFont {
     pub data: Box<dyn Any>,
     pub id: u32,
     pub free: Option<unsafe fn(_: *mut SoundFont) -> i32>,
-    pub get_name: Option<unsafe fn(_: *const SoundFont) -> *mut libc::c_char>,
+    pub get_name: Option<unsafe fn(_: *const SoundFont) -> Option<Vec<u8>>>,
     pub get_preset:
         Option<unsafe fn(_: *const SoundFont, _: u32, _: u32) -> *mut Preset>,
     pub iteration_start: Option<unsafe fn(_: *mut SoundFont) -> ()>,
@@ -53,7 +53,7 @@ pub struct SoundFont {
 }
 #[derive(Copy, Clone)]
 pub struct Sample {
-    pub name: [libc::c_char; 21],
+    pub name: [u8; 21],
     pub start: u32,
     pub end: u32,
     pub loopstart: u32,

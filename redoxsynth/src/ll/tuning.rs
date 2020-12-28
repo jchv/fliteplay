@@ -1,13 +1,13 @@
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Tuning {
-    name: *mut libc::c_char,
+    name: Vec<u8>,
     pub(crate) bank: i32,
     pub(crate) prog: i32,
     pub(crate) pitch: [f64; 128],
 }
 
 pub unsafe fn new_fluid_tuning(
-    name: *const libc::c_char,
+    name: &[u8],
     bank: i32,
     prog: i32,
 ) -> *mut Tuning {
@@ -18,13 +18,8 @@ pub unsafe fn new_fluid_tuning(
         fluid_log!(FLUID_PANIC as i32, "Out of memory",);
         return 0 as *mut Tuning;
     }
-    (*tuning).name = 0 as *mut libc::c_char;
-    if !name.is_null() {
-        (*tuning).name = libc::strcpy(
-            libc::malloc(libc::strlen(name) + 1) as *mut libc::c_char,
-            name,
-        )
-    }
+    libc::memset(tuning as _, 0, std::mem::size_of::<Tuning>() as _);
+    (*tuning).name = name.to_vec();
     (*tuning).bank = bank;
     (*tuning).prog = prog;
     i = 0 as i32;
@@ -35,21 +30,12 @@ pub unsafe fn new_fluid_tuning(
     return tuning;
 }
 
-pub unsafe fn fluid_tuning_set_name(tuning: &mut Tuning, name: *const libc::c_char) {
-    if !tuning.name.is_null() {
-        libc::free((*tuning).name as *mut libc::c_void);
-        tuning.name = 0 as *mut libc::c_char
-    }
-    if !name.is_null() {
-        tuning.name = libc::strcpy(
-            libc::malloc(libc::strlen(name) + 1) as *mut libc::c_char,
-            name,
-        )
-    };
+pub unsafe fn fluid_tuning_set_name(tuning: &mut Tuning, name: &[u8]) {
+    tuning.name = name.to_vec();
 }
 
-pub unsafe fn fluid_tuning_get_name(tuning: &Tuning) -> *mut libc::c_char {
-    return tuning.name;
+pub unsafe fn fluid_tuning_get_name(tuning: &Tuning) -> &[u8] {
+    return &tuning.name;
 }
 
 pub unsafe fn fluid_tuning_set_octave(tuning: &mut Tuning, pitch_deriv: *const f64) {

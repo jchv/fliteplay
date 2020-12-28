@@ -6,7 +6,7 @@ The SoundFont interface
  */
 pub trait IsFont {
     fn get_id(&self) -> FontId;
-    fn get_name(&self) -> Option<&str>;
+    fn get_name(&self) -> Option<String>;
     fn get_preset(&self, bank: Bank, num: PresetId) -> Option<PresetRef<'_>>;
 }
 
@@ -14,7 +14,7 @@ pub trait IsFont {
 The SoundFont preset interface
  */
 pub trait IsPreset {
-    fn get_name(&self) -> Option<&str>;
+    fn get_name(&self) -> Option<String>;
     fn get_banknum(&self) -> Option<Bank>;
     fn get_num(&self) -> Option<PresetId>;
 }
@@ -64,7 +64,6 @@ mod private {
         ll, option_from_ptr, private::HasHandle, Bank, FontId, FontRef, IsFont, IsPreset,
         PresetId, PresetRef,
     };
-    use std::ffi::CStr;
 
     impl<X> IsFont for X
     where
@@ -76,13 +75,12 @@ mod private {
             font_c.id
         }
 
-        fn get_name(&self) -> Option<&str> {
+        fn get_name(&self) -> Option<String> {
             let handle = self.get_handle();
             let font_c = unsafe { &*handle };
             let get_name = font_c.get_name?;
             let name = unsafe { (get_name)(handle) };
-            let name = unsafe { CStr::from_ptr(name) };
-            name.to_str().ok()
+            name.and_then(|x| String::from_utf8(x).ok())
         }
 
         fn get_preset(&self, bank: Bank, num: PresetId) -> Option<PresetRef<'_>> {
@@ -109,13 +107,12 @@ mod private {
     where
         X: HasHandle<Handle = ll::sfont::Preset>,
     {
-        fn get_name(&self) -> Option<&str> {
+        fn get_name(&self) -> Option<String> {
             let handle = self.get_handle();
             let font_c = unsafe { &*handle };
             let get_name = font_c.get_name?;
             let name = unsafe { (get_name)(handle) };
-            let name = unsafe { CStr::from_ptr(name) };
-            name.to_str().ok()
+            String::from_utf8(name).ok()
         }
 
         fn get_banknum(&self) -> Option<Bank> {

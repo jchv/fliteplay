@@ -17,7 +17,7 @@ impl Synth {
         let filename = CString::new(filename).map_err(|_| Error::Path)?;
 
         Synth::neg_err(unsafe {
-            ll::synth::fluid_synth_sfload(&mut self.handle, filename.as_ptr(), reset_presets as _)
+            ll::synth::fluid_synth_sfload(&mut self.handle, CString::from(filename).as_bytes_with_nul(), reset_presets as _)
         })
         .map(|id| id as _)
     }

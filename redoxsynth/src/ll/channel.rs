@@ -17,18 +17,18 @@ pub struct Channel {
     banknum: u32,
     prognum: u32,
     pub(crate) preset: *mut Preset,
-    pub(crate) key_pressure: [libc::c_char; 128],
+    pub(crate) key_pressure: [i8; 128],
     pub(crate) channel_pressure: i16,
     pub(crate) pitch_bend: i16,
     pub(crate) pitch_wheel_sensitivity: i16,
     pub(crate) cc: [i16; 128],
-    bank_msb: libc::c_uchar,
+    bank_msb: u8,
     interp_method: i32,
     pub(crate) tuning: *mut Tuning,
     nrpn_select: i16,
     nrpn_active: i16,
     pub(crate) gen: [f32; 60],
-    pub(crate) gen_abs: [libc::c_char; 60],
+    pub(crate) gen_abs: [i8; 60],
 }
 pub type InterpolationType = u32;
 pub const INTERPOLATION_DEFAULT: InterpolationType = 4;
@@ -113,7 +113,7 @@ pub fn fluid_channel_init_ctrl(chan: &mut Channel, is_all_ctrl_off: i32) {
     let mut i = 0 as i32;
     while i < GEN_LAST as i32 {
         chan.gen[i as usize] = 0.0f32;
-        chan.gen_abs[i as usize] = 0 as i32 as libc::c_char;
+        chan.gen_abs[i as usize] = 0 as i32 as i8;
         i += 1
     }
     if is_all_ctrl_off != 0 {
@@ -143,7 +143,7 @@ pub fn fluid_channel_init_ctrl(chan: &mut Channel, is_all_ctrl_off: i32) {
     }
     i = 0 as i32;
     while i < 128 as i32 {
-        chan.key_pressure[i as usize] = 0 as i32 as libc::c_char;
+        chan.key_pressure[i as usize] = 0 as i32 as i8;
         i += 1
     }
     chan.cc[RPN_LSB as i32 as usize] = 127 as i32 as i16;
@@ -259,12 +259,12 @@ pub fn fluid_channel_cc(
                     && fluid_settings_str_equal(
                         &synth.settings,
                         "synth.drums-channel.active",
-                        b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
+                        "yes",
                     ) != false
                 {
                     return FLUID_OK as i32;
                 }
-                chan.bank_msb = (value & 0x7f as i32) as libc::c_uchar;
+                chan.bank_msb = (value & 0x7f as i32) as u8;
                 fluid_channel_set_banknum(chan, (value & 0x7f as i32) as u32);
             }
             32 => {
@@ -272,7 +272,7 @@ pub fn fluid_channel_cc(
                     && fluid_settings_str_equal(
                         &synth.settings,
                         "synth.drums-channel.active",
-                        b"yes\x00" as *const u8 as *const libc::c_char as *mut libc::c_char,
+                        "yes",
                     ) != false
                 {
                     return FLUID_OK as i32;

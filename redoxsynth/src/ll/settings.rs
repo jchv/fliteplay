@@ -16,14 +16,14 @@ pub enum Setting {
 
 #[derive(Clone)]
 pub struct StrSetting {
-    value: *mut libc::c_char,
-    def: *mut libc::c_char,
+    value: String,
+    def: String,
     hints: i32,
     update: StrUpdateFn,
     data: *mut libc::c_void,
 }
 pub type StrUpdateFn = Option<
-    unsafe fn(_: *mut libc::c_void, _: &str, _: *mut libc::c_char) -> i32,
+    unsafe fn(_: *mut libc::c_void, _: &str, _: String) -> i32,
 >;
 #[derive(Clone)]
 pub struct IntSetting {
@@ -52,46 +52,19 @@ pub type NumUpdateFn =
     Option<unsafe fn(_: *mut libc::c_void, _: &str, _: f64) -> i32>;
 
 unsafe fn new_fluid_str_setting(
-    value: *const libc::c_char,
-    def: *mut libc::c_char,
+    value: &str,
+    def: &str,
     hints: i32,
     fun: StrUpdateFn,
     data: *mut libc::c_void,
 ) -> StrSetting {
     return StrSetting{
-        value: if !value.is_null() {
-            libc::strcpy(
-                libc::malloc(libc::strlen(value) + 1) as *mut libc::c_char,
-                value,
-            )
-        } else {
-            0 as *mut libc::c_char
-        },
-        def: if !def.is_null() {
-            libc::strcpy(
-                libc::malloc(libc::strlen(def) + 1) as *mut libc::c_char,
-                def,
-            )
-        } else {
-            0 as *mut libc::c_char
-        },
+        value: value.to_string(),
+        def: def.to_string(),
         hints,
         update: fun,
         data,
     };
-}
-
-impl Drop for StrSetting {
-    fn drop(&mut self) {
-        unsafe {
-            if !self.value.is_null() {
-                libc::free(self.value as *mut libc::c_void);
-            }
-            if !self.def.is_null() {
-                libc::free(self.def as *mut libc::c_void);
-            }
-        }
-    }
 }
 
 unsafe fn new_fluid_num_setting(
@@ -197,7 +170,7 @@ unsafe fn fluid_settings_set(
 pub unsafe fn fluid_settings_register_str(
     settings: &mut Settings,
     name: &str,
-    def: *mut libc::c_char,
+    def: &str,
     hints: i32,
     fun: StrUpdateFn,
     data: *mut libc::c_void,
@@ -210,14 +183,7 @@ pub unsafe fn fluid_settings_register_str(
         Some(Setting::Str(setting)) => {
             setting.update = fun;
             setting.data = data;
-            setting.def = if !def.is_null() {
-                libc::strcpy(
-                    libc::malloc(libc::strlen(def).wrapping_add(1)) as *mut libc::c_char,
-                    def,
-                )
-            } else {
-                0 as *mut libc::c_char
-            };
+            setting.def = def.to_string();
             setting.hints = hints;
             return 1 as i32;
         },
@@ -327,34 +293,24 @@ pub unsafe fn fluid_settings_is_realtime(settings: &Settings, name: &str) -> boo
     }
 }
 
-pub unsafe fn fluid_settings_setstr(settings: &mut Settings, name: &str, str: *const libc::c_char) -> i32 {
+pub unsafe fn fluid_settings_setstr(settings: &mut Settings, name: &str, str: &str) -> i32 {
     let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
     match fluid_settings_get_mut(settings, &tokens) {
         Some(Setting::Str(setting)) => {
-            if !setting.value.is_null() {
-                libc::free(setting.value as *mut libc::c_void);
-            }
-            setting.value = if !str.is_null() {
-                libc::strcpy(
-                    libc::malloc(libc::strlen(str).wrapping_add(1)) as *mut libc::c_char,
-                    str,
-                )
-            } else {
-                0 as *mut libc::c_char
-            };
+            setting.value = str.to_string();
             if setting.update.is_some() {
                 Some(setting.update.expect("non-null function pointer"))
                     .expect("non-null function pointer")(
-                    setting.data, name, setting.value
+                    setting.data, name, setting.value.clone()
                 );
             }
             return 1;
         },
         None => {
-            let setting_0;
-            setting_0 = new_fluid_str_setting(
+            let setting;
+            setting = new_fluid_str_setting(
                 str,
-                0 as *mut libc::c_char,
+                "",
                 0 as i32,
                 None,
                 0 as *mut libc::c_void,
@@ -362,37 +318,37 @@ pub unsafe fn fluid_settings_setstr(settings: &mut Settings, name: &str, str: *c
             return fluid_settings_set(
                 settings,
                 &tokens,
-                Setting::Str(setting_0)
+                Setting::Str(setting)
             );
         },
         _ => return 0
     }
 }
 
-pub unsafe fn fluid_settings_getstr(settings: &Settings, name: &str) -> Option<*mut libc::c_char> {
+pub unsafe fn fluid_settings_getstr(settings: &Settings, name: &str) -> Option<String> {
     let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
     return match fluid_settings_get(settings, &tokens) {
-        Some(Setting::Str(s)) => Some(s.value),
+        Some(Setting::Str(s)) => Some(s.value.clone()),
         _ => None,
     }
 }
 
-pub fn fluid_settings_str_equal(settings: &Settings, name: &str, s: *mut libc::c_char,
+pub fn fluid_settings_str_equal(settings: &Settings, name: &str, s: &str,
 ) -> bool {
     unsafe {
         let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
         return match fluid_settings_get(settings, &tokens) {
-            Some(Setting::Str(setting)) => libc::strcmp(setting.value, s) == 0,
+            Some(Setting::Str(setting)) => setting.value == s,
             _ => false,
         };
     }
 }
 
-pub unsafe fn fluid_settings_getstr_default(settings: &Settings, name: &str) -> *mut libc::c_char {
+pub unsafe fn fluid_settings_getstr_default(settings: &Settings, name: &str) -> String {
     let tokens: Vec<String> = name.split(".").map(|x| x.to_string()).collect();
     return match fluid_settings_get(settings, &tokens) {
-        Some(Setting::Str(s)) => s.def,
-        _ => 0 as _,
+        Some(Setting::Str(s)) => s.def.clone(),
+        _ => String::new(),
     }
 }
 

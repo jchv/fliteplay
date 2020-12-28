@@ -1,7 +1,6 @@
 use crate::{ll, Result};
 use bitflags::bitflags;
 use std::{
-    ffi::CStr,
     marker::PhantomData,
     ops::{Bound, RangeBounds}
 };
@@ -263,7 +262,7 @@ impl<'a> Setting<'a, str> {
         let mut value = value.into();
         value.push('\0');
         0 < unsafe {
-            ll::settings::fluid_settings_setstr(&mut *self.handle, &self.name, value.as_ptr() as *const _)
+            ll::settings::fluid_settings_setstr(&mut *self.handle, &self.name, &value)
         }
     }
 
@@ -272,19 +271,19 @@ impl<'a> Setting<'a, str> {
 
     Returns `Some("value")` if the value exists, `None` otherwise
      */
-    pub fn get(&self) -> Option<&str> {
+    pub fn get(&self) -> Option<String> {
         unsafe {
-            return ll::settings::fluid_settings_getstr(&*self.handle, &self.name).and_then(|value| CStr::from_ptr(value).to_str().ok());
+            return ll::settings::fluid_settings_getstr(&*self.handle, &self.name);
         }
     }
 
     /**
     Get the default value of a string setting
      */
-    pub fn default(&self) -> &str {
-        let value = unsafe { ll::settings::fluid_settings_getstr_default(&*self.handle, &self.name) };
-        let value = unsafe { CStr::from_ptr(value) };
-        value.to_str().unwrap()
+    pub fn default(&self) -> String {
+        unsafe {
+            return ll::settings::fluid_settings_getstr_default(&*self.handle, &self.name);
+        }
     }
 }
 
@@ -293,9 +292,7 @@ where
     S: AsRef<str>,
 {
     fn eq(&self, other: &S) -> bool {
-        let mut other = String::from(other.as_ref());
-        other.push('\0');
-        ll::settings::fluid_settings_str_equal(unsafe { &mut *self.handle }, &self.name, other.as_ptr() as *mut _)
+        ll::settings::fluid_settings_str_equal(unsafe { &mut *self.handle }, &self.name, other.as_ref())
     }
 }
 
@@ -492,8 +489,8 @@ mod test {
 
         assert_eq!(active.default(), "yes");
 
-        assert_eq!(active.get(), Some("yes"));
+        assert_eq!(active.get(), Some("yes".to_string()));
         assert!(active.set("no"));
-        assert_eq!(active.get(), Some("no"));
+        assert_eq!(active.get(), Some("no".to_string()));
     }
 }
