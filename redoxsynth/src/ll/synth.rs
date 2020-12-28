@@ -2417,7 +2417,7 @@ pub unsafe fn fluid_synth_create_octave_tuning(
     bank: i32,
     prog: i32,
     name: &[u8],
-    pitch: *const f64,
+    pitch: &[f64; 12],
 ) -> i32 {
     let tuning;
     if synth.is_null() {
@@ -2427,9 +2427,6 @@ pub unsafe fn fluid_synth_create_octave_tuning(
         return FLUID_FAILED as i32;
     }
     if !(prog >= 0 as i32 && prog < 128 as i32) {
-        return FLUID_FAILED as i32;
-    }
-    if pitch.is_null() {
         return FLUID_FAILED as i32;
     }
     tuning = fluid_synth_create_tuning(synth, bank, prog, name);
@@ -2445,7 +2442,7 @@ pub unsafe fn fluid_synth_activate_octave_tuning(
     bank: i32,
     prog: i32,
     name: &[u8],
-    pitch: *const f64,
+    pitch: &[f64; 12],
     _apply: i32,
 ) -> i32 {
     return fluid_synth_create_octave_tuning(synth, bank, prog, name, pitch);
