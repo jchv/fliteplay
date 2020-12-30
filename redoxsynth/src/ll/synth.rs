@@ -20,7 +20,7 @@ use super::settings::fluid_settings_str_equal;
 use super::sfont::Preset;
 use super::sfont::Sample;
 use super::sfont::SoundFont;
-use super::sfont::SoundfontLoader;
+use super::sfont::SoundFontLoader;
 use super::sys::fluid_error;
 use super::sys::fluid_sys_config;
 use super::tuning::fluid_tuning_get_name;
@@ -63,7 +63,7 @@ pub struct Synth {
     effects_channels: i32,
     state: u32,
     ticks: u32,
-    loaders: Vec<*mut SoundfontLoader>,
+    loaders: Vec<*mut SoundFontLoader>,
     sfont: Vec<SoundFont>,
     sfont_id: u32,
     bank_offsets: Vec<*mut BankOffset>,
@@ -1813,7 +1813,7 @@ pub unsafe fn fluid_synth_start_voice(synth: *mut Synth, voice: *mut Voice) {
     fluid_voice_start(voice);
 }
 
-pub fn fluid_synth_add_sfloader(synth: *mut Synth, loader: *mut SoundfontLoader) {
+pub fn fluid_synth_add_sfloader(synth: *mut Synth, loader: *mut SoundFontLoader) {
     unsafe {
         (*synth).loaders.insert(0, loader);
     }
@@ -1888,7 +1888,7 @@ pub unsafe fn fluid_synth_sfreload(synth: *mut Synth, id: u32) -> i32 {
         .sfont
         .iter()
         .position(|x| x.id == id)
-        .expect("Soundfont with ID");
+        .expect("SoundFont with ID");
     sfont = &(*synth).sfont[index];
     let filename = sfont.get_name.expect("non-null function pointer")(sfont);
     if fluid_synth_sfunload(synth, id, 0 as i32) != FLUID_OK as i32 {

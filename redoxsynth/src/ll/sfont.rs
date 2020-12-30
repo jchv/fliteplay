@@ -2,10 +2,10 @@ use std::any::Any;
 
 use super::synth::Synth;
 #[derive(Copy, Clone)]
-pub struct SoundfontLoader {
+pub struct SoundFontLoader {
     pub data: *mut libc::c_void,
-    pub free: Option<unsafe fn(_: *mut SoundfontLoader) -> i32>,
-    pub load: Option<unsafe fn(_: *mut SoundfontLoader, _: &[u8]) -> Option<SoundFont>>,
+    pub free: Option<unsafe fn(_: *mut SoundFontLoader) -> i32>,
+    pub load: Option<unsafe fn(_: *mut SoundFontLoader, _: &[u8]) -> Option<SoundFont>>,
     pub fileapi: *mut FileApi,
 }
 #[derive(Copy, Clone)]

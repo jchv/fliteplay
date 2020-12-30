@@ -8,7 +8,7 @@ use super::sfont::FileApi;
 use super::sfont::Preset;
 use super::sfont::Sample;
 use super::sfont::SoundFont;
-use super::sfont::SoundfontLoader;
+use super::sfont::SoundFontLoader;
 use super::synth::fluid_synth_alloc_voice;
 use super::synth::fluid_synth_start_voice;
 use super::synth::Synth;
@@ -348,14 +348,14 @@ pub unsafe fn fluid_set_default_fileapi(fileapi: *mut FileApi) {
     };
 }
 
-pub fn new_fluid_defsfloader() -> *mut SoundfontLoader {
+pub fn new_fluid_defsfloader() -> *mut SoundFontLoader {
     unsafe {
-        let mut loader: *mut SoundfontLoader;
-        loader = libc::malloc(::std::mem::size_of::<SoundfontLoader>() as libc::size_t)
-            as *mut SoundfontLoader;
+        let mut loader: *mut SoundFontLoader;
+        loader = libc::malloc(::std::mem::size_of::<SoundFontLoader>() as libc::size_t)
+            as *mut SoundFontLoader;
         if loader.is_null() {
             fluid_log!(FLUID_ERR, "Out of memory",);
-            return 0 as *mut SoundfontLoader;
+            return 0 as *mut SoundFontLoader;
         }
         (*loader).data = 0 as *mut libc::c_void;
         (*loader).fileapi = FLUID_DEFAULT_FILEAPI;
@@ -365,7 +365,7 @@ pub fn new_fluid_defsfloader() -> *mut SoundfontLoader {
     }
 }
 
-pub unsafe fn delete_fluid_defsfloader(loader: *mut SoundfontLoader) -> i32 {
+pub unsafe fn delete_fluid_defsfloader(loader: *mut SoundFontLoader) -> i32 {
     if !loader.is_null() {
         libc::free(loader as *mut libc::c_void);
     }
@@ -373,7 +373,7 @@ pub unsafe fn delete_fluid_defsfloader(loader: *mut SoundfontLoader) -> i32 {
 }
 
 pub unsafe fn fluid_defsfloader_load(
-    loader: *mut SoundfontLoader,
+    loader: *mut SoundFontLoader,
     filename: &[u8],
 ) -> Option<SoundFont> {
     let defsfont = new_fluid_defsfont();

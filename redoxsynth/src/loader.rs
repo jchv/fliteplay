@@ -37,7 +37,7 @@ The SoundFont loader object
  */
 #[repr(transparent)]
 pub struct Loader {
-    handle: *mut ll::sfont::SoundfontLoader,
+    handle: *mut ll::sfont::SoundFontLoader,
 }
 
 unsafe impl Send for Loader {}
@@ -50,7 +50,7 @@ impl Loader {
         result_from_ptr(ll::defsfont::new_fluid_defsfloader()).map(|handle| Self { handle })
     }
 
-    pub(crate) fn into_ptr(self) -> *mut ll::sfont::SoundfontLoader {
+    pub(crate) fn into_ptr(self) -> *mut ll::sfont::SoundFontLoader {
         unsafe { transmute(self) }
     }
 
