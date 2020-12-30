@@ -172,7 +172,7 @@ bitflags! {
         specified then the value of LowerBound should be multiplied by the
         sample rate.
          */
-        const BOUNDED_BELOW = ll::HINT_BOUNDED_BELOW as i32;
+        const BOUNDED_BELOW = 1;
 
         /**
         Hint BOUNDED_ABOVE indicates that the UpperBound field
@@ -182,7 +182,7 @@ bitflags! {
         specified then the value of UpperBound should be multiplied by the
         sample rate.
          */
-        const BOUNDED_ABOVE = ll::HINT_BOUNDED_ABOVE as i32;
+        const BOUNDED_ABOVE = 2;
 
         /**
         Hint TOGGLED indicates that the data item should be
@@ -192,7 +192,7 @@ bitflags! {
         conjunction with any other hint except DEFAULT_0 or
         DEFAULT_1.
          */
-        const TOGGLED = ll::HINT_TOGGLED as i32;
+        const TOGGLED = 4;
 
         /**
         Hint SAMPLE_RATE indicates that any bounds specified
@@ -202,14 +202,14 @@ bitflags! {
         with LowerBound = 0 and UpperBound = 0.5. Hosts that support bounds
         at all must support this hint to retain meaning.
          */
-        const SAMPLE_RATE = ll::HINT_SAMPLE_RATE as i32;
+        const SAMPLE_RATE = 8;
 
         /**
         Hint LOGARITHMIC indicates that it is likely that the
         user will find it more intuitive to view values using a logarithmic
         scale. This is particularly useful for frequencies and gains.
          */
-        const LOGARITHMIC = ll::HINT_LOGARITHMIC as i32;
+        const LOGARITHMIC = 16;
 
         /**
         Hint INTEGER indicates that a user interface would
@@ -219,11 +219,11 @@ bitflags! {
         instance, the integer set {0,1,2,3} might be described as [-0.1,
         3.1].
          */
-        const INTEGER = ll::HINT_INTEGER as i32;
+        const INTEGER = 32;
 
-        const FILENAME = ll::HINT_FILENAME as i32;
+        const FILENAME = 1;
 
-        const OPTIONLIST = ll::HINT_OPTIONLIST as i32;
+        const OPTIONLIST = 2;
     }
 }
 

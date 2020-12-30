@@ -1,4 +1,4 @@
-use crate::{ll, Synth};
+use crate::Synth;
 
 /**
 Reverb parameters
@@ -14,10 +14,10 @@ pub struct ReverbParams {
 impl Default for ReverbParams {
     fn default() -> Self {
         Self {
-            roomsize: ll::REVERB_DEFAULT_ROOMSIZE,
-            damp: ll::REVERB_DEFAULT_DAMP,
-            width: ll::REVERB_DEFAULT_WIDTH,
-            level: ll::REVERB_DEFAULT_LEVEL,
+            roomsize: 0.2,
+            damp: 0.0,
+            width: 0.5,
+            level: 0.9,
         }
     }
 }

@@ -20,10 +20,10 @@ pub struct ChorusParams {
 impl Default for ChorusParams {
     fn default() -> Self {
         Self {
-            nr: ll::CHORUS_DEFAULT_N,
-            level: ll::CHORUS_DEFAULT_LEVEL,
-            speed: ll::CHORUS_DEFAULT_SPEED,
-            depth: ll::CHORUS_DEFAULT_DEPTH,
+            nr: 3,
+            level: 2.0,
+            speed: 0.3,
+            depth: 8.0,
             mode: ChorusMode::default(),
         }
     }
