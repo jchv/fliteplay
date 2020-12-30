@@ -393,7 +393,7 @@ impl Synth {
             synth.cur = 64 as i32;
             synth.dither_index = 0 as i32;
             synth.reverb = ReverbModel::new();
-            synth.set_reverb(0.2f32 as f64, 0.0f32 as f64, 0.5f32 as f64, 0.9f32 as f64);
+            synth.set_reverb_params(0.2f32 as f64, 0.0f32 as f64, 0.5f32 as f64, 0.9f32 as f64);
             synth.chorus = Chorus::new(synth.sample_rate as f32);
             if settings.str_equal("synth.drums-channel.active", "yes") != false {
                 synth.bank_select(9 as i32, 128 as i32 as u32);
@@ -980,14 +980,14 @@ impl Synth {
         return FLUID_OK as i32;
     }
 
-    pub fn set_reverb(&mut self, roomsize: f64, damping: f64, width: f64, level: f64) {
+    pub fn set_reverb_params(&mut self, roomsize: f64, damping: f64, width: f64, level: f64) {
         self.reverb.set_room_size(roomsize as f32);
         self.reverb.set_damp(damping as f32);
         self.reverb.set_width(width as f32);
         self.reverb.set_level(level as f32);
     }
 
-    pub unsafe fn set_chorus(
+    pub unsafe fn set_chorus_params(
         &mut self,
         nr: i32,
         level: f64,
@@ -1528,47 +1528,47 @@ impl Synth {
         return 0 as *mut Preset;
     }
 
-    pub unsafe fn set_reverb_on(&mut self, on: i32) {
+    pub fn set_reverb_on(&mut self, on: i32) {
         self.with_reverb = on as i8;
     }
 
-    pub unsafe fn set_chorus_on(&mut self, on: i32) {
+    pub fn set_chorus_on(&mut self, on: i32) {
         self.with_chorus = on as i8;
     }
 
-    pub unsafe fn get_chorus_nr(&self) -> i32 {
+    pub fn get_chorus_nr(&self) -> i32 {
         return self.chorus.get_nr();
     }
 
-    pub unsafe fn get_chorus_level(&self) -> f64 {
+    pub fn get_chorus_level(&self) -> f64 {
         return self.chorus.get_level() as f64;
     }
 
-    pub unsafe fn get_chorus_speed_hz(&self) -> f64 {
+    pub fn get_chorus_speed_hz(&self) -> f64 {
         return self.chorus.get_speed_hz() as f64;
     }
 
-    pub unsafe fn get_chorus_depth_ms(&self) -> f64 {
+    pub fn get_chorus_depth_ms(&self) -> f64 {
         return self.chorus.get_depth_ms() as f64;
     }
 
-    pub unsafe fn get_chorus_type(&self) -> i32 {
+    pub fn get_chorus_type(&self) -> i32 {
         return self.chorus.get_type();
     }
 
-    pub unsafe fn get_reverb_roomsize(&self) -> f64 {
+    pub fn get_reverb_roomsize(&self) -> f64 {
         return self.reverb.get_room_size() as f64;
     }
 
-    pub unsafe fn get_reverb_damp(&self) -> f64 {
+    pub fn get_reverb_damp(&self) -> f64 {
         return self.reverb.get_damp() as f64;
     }
 
-    pub unsafe fn get_reverb_level(&self) -> f64 {
+    pub fn get_reverb_level(&self) -> f64 {
         return self.reverb.get_level() as f64;
     }
 
-    pub unsafe fn get_reverb_width(&self) -> f64 {
+    pub fn get_reverb_width(&self) -> f64 {
         return self.reverb.get_width() as f64;
     }
 
@@ -1602,19 +1602,19 @@ impl Synth {
         return FLUID_OK as i32;
     }
 
-    pub unsafe fn count_midi_channels(&self) -> i32 {
+    pub fn count_midi_channels(&self) -> i32 {
         return self.midi_channels;
     }
 
-    pub unsafe fn count_audio_channels(&self) -> i32 {
+    pub fn count_audio_channels(&self) -> i32 {
         return self.audio_channels;
     }
 
-    pub unsafe fn count_audio_groups(&self) -> i32 {
+    pub fn count_audio_groups(&self) -> i32 {
         return self.audio_groups;
     }
 
-    pub unsafe fn count_effects_channels(&self) -> i32 {
+    pub fn count_effects_channels(&self) -> i32 {
         return self.effects_channels;
     }
     fn get_tuning(&self, bank: i32, prog: i32) -> Option<&Tuning> {
