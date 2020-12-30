@@ -170,7 +170,7 @@ impl<'a> Iterator for FontIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let font =
-            option_from_ptr(unsafe { ll::synth::fluid_synth_get_sfont(self.handle, self.font_no) })
+            option_from_ptr(unsafe { ll::synth::fluid_synth_get_sfont(self.handle.as_mut().unwrap(), self.font_no) })
                 .map(FontRef::from_ptr);
         if font.is_some() {
             self.font_no += 1;

@@ -448,7 +448,7 @@ pub unsafe fn fluid_defsfont_sfont_get_preset(
                 Some(fluid_defpreset_preset_get_num as unsafe fn(_: *const Preset) -> i32);
             (*preset).noteon = Some(
                 fluid_defpreset_preset_noteon
-                    as unsafe fn(_: *mut Preset, _: *mut Synth, _: i32, _: i32, _: i32) -> i32,
+                    as unsafe fn(_: *mut Preset, _: &mut Synth, _: i32, _: i32, _: i32) -> i32,
             );
             (*preset).notify = None;
             return preset;
@@ -480,7 +480,7 @@ pub unsafe fn fluid_defsfont_sfont_iteration_next(
     (*preset).get_num = Some(fluid_defpreset_preset_get_num as unsafe fn(_: *const Preset) -> i32);
     (*preset).noteon = Some(
         fluid_defpreset_preset_noteon
-            as unsafe fn(_: *mut Preset, _: *mut Synth, _: i32, _: i32, _: i32) -> i32,
+            as unsafe fn(_: *mut Preset, _: &mut Synth, _: i32, _: i32, _: i32) -> i32,
     );
     (*preset).notify = None;
     match (*sfont).data.downcast_mut::<DefSFont>() {
@@ -512,7 +512,7 @@ pub unsafe fn fluid_defpreset_preset_get_num(preset: *const Preset) -> i32 {
 
 pub unsafe fn fluid_defpreset_preset_noteon(
     preset: *mut Preset,
-    synth: *mut Synth,
+    synth: &mut Synth,
     chan: i32,
     key: i32,
     vel: i32,
@@ -811,7 +811,7 @@ pub unsafe fn fluid_defpreset_next(preset: *mut DefPreset) -> *mut DefPreset {
 
 pub unsafe fn fluid_defpreset_noteon(
     preset: *mut DefPreset,
-    synth: *mut Synth,
+    synth: &mut Synth,
     chan: i32,
     key: i32,
     vel: i32,

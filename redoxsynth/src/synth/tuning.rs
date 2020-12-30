@@ -263,7 +263,7 @@ impl<'a> Iterator for TuningIter<'a> {
         if self.init {
             self.init = false;
             unsafe {
-                ll::synth::fluid_synth_tuning_iteration_start(self.handle);
+                ll::synth::fluid_synth_tuning_iteration_start(self.handle.as_mut().unwrap());
             }
         }
         if self.next {
@@ -272,7 +272,7 @@ impl<'a> Iterator for TuningIter<'a> {
             self.next = 0
                 != unsafe {
                     ll::synth::fluid_synth_tuning_iteration_next(
-                        self.handle,
+                        self.handle.as_mut().unwrap(),
                         bank.as_mut_ptr(),
                         prog.as_mut_ptr(),
                     )
