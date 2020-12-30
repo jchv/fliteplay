@@ -6,7 +6,6 @@ lazy_static! {
         }
         init
     };
-
     static ref CB2AMP_TAB: [f32; 961] = {
         let mut init = [0f32; 961];
         for i in 0..961 {
@@ -14,7 +13,6 @@ lazy_static! {
         }
         init
     };
-
     static ref ATTEN2AMP_TAB: [f32; 1441] = {
         let mut init = [0f32; 1441];
         for i in 0..1441 {
@@ -22,31 +20,30 @@ lazy_static! {
         }
         init
     };
-
     static ref CONCAVE_TAB: [f32; 128] = {
         let mut init = [0f32; 128];
         init[0] = 0.0f32;
         init[127] = 1.0f32;
         let mut x: f64;
         for i in 1..127 {
-            x = -20.0f64 / 96.0f64 * f64::ln((i * i) as f64 / (127.0f64 * 127.0f64)) / f64::ln(10.0f64);
+            x = -20.0f64 / 96.0f64 * f64::ln((i * i) as f64 / (127.0f64 * 127.0f64))
+                / f64::ln(10.0f64);
             init[127 - i] = x as f32;
         }
         init
     };
-
     static ref CONVEX_TAB: [f32; 128] = {
         let mut init = [0f32; 128];
         init[0] = 0 as i32 as f32;
         init[127] = 1.0f32;
         let mut x: f64;
         for i in 1..127 {
-            x = -20.0f64 / 96.0f64 * f64::ln((i * i) as f64 / (127.0f64 * 127.0f64)) / f64::ln(10.0f64);
+            x = -20.0f64 / 96.0f64 * f64::ln((i * i) as f64 / (127.0f64 * 127.0f64))
+                / f64::ln(10.0f64);
             init[i] = (1.0f64 - x) as f32;
         }
         init
     };
-
     static ref PAN_TAB: [f32; 1002] = {
         let mut init = [0f32; 1002];
         let x = 3.141592654f64 / 2.0f64 / (1002f64 - 1.0f64);
@@ -62,29 +59,29 @@ pub fn fluid_ct2hz_real(cents: f32) -> f32 {
         if cents < 0f32 {
             1.0f32
         } else if cents < 900f32 {
-            6.875f32 * CT2HZ_TAB [cents as usize + 300]
+            6.875f32 * CT2HZ_TAB[cents as usize + 300]
         } else if cents < 2100f32 {
-            13.75f32 * CT2HZ_TAB [cents as usize - 900]
+            13.75f32 * CT2HZ_TAB[cents as usize - 900]
         } else if cents < 3300f32 {
-            27.5f32 * CT2HZ_TAB [cents as usize - 2100]
+            27.5f32 * CT2HZ_TAB[cents as usize - 2100]
         } else if cents < 4500f32 {
-            55.0f32 * CT2HZ_TAB [cents as usize - 3300]
+            55.0f32 * CT2HZ_TAB[cents as usize - 3300]
         } else if cents < 5700f32 {
-            110.0f32 * CT2HZ_TAB [cents as usize - 4500]
+            110.0f32 * CT2HZ_TAB[cents as usize - 4500]
         } else if cents < 6900f32 {
-            220.0f32 * CT2HZ_TAB [cents as usize - 5700]
+            220.0f32 * CT2HZ_TAB[cents as usize - 5700]
         } else if cents < 8100f32 {
-            440.0f32 * CT2HZ_TAB [cents as usize - 6900]
+            440.0f32 * CT2HZ_TAB[cents as usize - 6900]
         } else if cents < 9300f32 {
-            880.0f32 * CT2HZ_TAB [cents as usize - 8100]
+            880.0f32 * CT2HZ_TAB[cents as usize - 8100]
         } else if cents < 10500f32 {
-            1760.0f32 * CT2HZ_TAB [cents as usize - 9300]
+            1760.0f32 * CT2HZ_TAB[cents as usize - 9300]
         } else if cents < 11700f32 {
-            3520.0f32 * CT2HZ_TAB [cents as usize - 10500]
+            3520.0f32 * CT2HZ_TAB[cents as usize - 10500]
         } else if cents < 12900f32 {
-            7040.0f32 * CT2HZ_TAB [cents as usize - 11700]
+            7040.0f32 * CT2HZ_TAB[cents as usize - 11700]
         } else if cents < 14100f32 {
-            14080.0f32 * CT2HZ_TAB [cents as usize - 12900]
+            14080.0f32 * CT2HZ_TAB[cents as usize - 12900]
         } else {
             1.0f32
         }
@@ -105,7 +102,7 @@ pub fn fluid_cb2amp(cb: f32) -> f32 {
         1.0f32
     } else if cb >= 961f32 {
         0.0f32
-    } else  {
+    } else {
         CB2AMP_TAB[cb as i32 as usize]
     };
 }

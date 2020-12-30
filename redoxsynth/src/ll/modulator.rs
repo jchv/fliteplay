@@ -35,20 +35,12 @@ pub fn fluid_mod_clone(mut mod_0: &mut Mod, src: &Mod) {
     mod_0.amount = src.amount;
 }
 
-pub unsafe fn fluid_mod_set_source1(
-    mut mod_0: &mut Mod,
-    src: i32,
-    flags: i32,
-) {
+pub unsafe fn fluid_mod_set_source1(mut mod_0: &mut Mod, src: i32, flags: i32) {
     (*mod_0).src1 = src as u8;
     (*mod_0).flags1 = flags as u8;
 }
 
-pub unsafe fn fluid_mod_set_source2(
-    mut mod_0: &mut Mod,
-    src: i32,
-    flags: i32,
-) {
+pub unsafe fn fluid_mod_set_source2(mut mod_0: &mut Mod, src: i32, flags: i32) {
     (*mod_0).src2 = src as u8;
     (*mod_0).flags2 = flags as u8;
 }
@@ -65,11 +57,7 @@ pub fn fluid_mod_get_dest(mod_0: &Mod) -> i32 {
     return (*mod_0).dest as i32;
 }
 
-pub fn fluid_mod_get_value(
-    mod_0: &mut Mod,
-    chan: &mut Channel,
-    voice: &mut Voice,
-) -> f32 {
+pub fn fluid_mod_get_value(mod_0: &mut Mod, chan: &mut Channel, voice: &mut Voice) -> f32 {
     let mut v1: f32;
     let mut v2: f32 = 1.0f32;
     let mut range1: f32 = 127.0f32;
@@ -117,56 +105,32 @@ pub fn fluid_mod_get_value(
             5 => v1 = fluid_concave(127 as i32 as f32 - v1),
             6 => {
                 v1 = if v1 > 64 as i32 as f32 {
-                    fluid_concave(
-                        2 as i32 as f32
-                            * (v1 - 64 as i32 as f32),
-                    )
+                    fluid_concave(2 as i32 as f32 * (v1 - 64 as i32 as f32))
                 } else {
-                    -fluid_concave(
-                        2 as i32 as f32
-                            * (64 as i32 as f32 - v1),
-                    )
+                    -fluid_concave(2 as i32 as f32 * (64 as i32 as f32 - v1))
                 }
             }
             7 => {
                 v1 = if v1 > 64 as i32 as f32 {
-                    -fluid_concave(
-                        2 as i32 as f32
-                            * (v1 - 64 as i32 as f32),
-                    )
+                    -fluid_concave(2 as i32 as f32 * (v1 - 64 as i32 as f32))
                 } else {
-                    fluid_concave(
-                        2 as i32 as f32
-                            * (64 as i32 as f32 - v1),
-                    )
+                    fluid_concave(2 as i32 as f32 * (64 as i32 as f32 - v1))
                 }
             }
             8 => v1 = fluid_convex(v1),
             9 => v1 = fluid_convex(127 as i32 as f32 - v1),
             10 => {
                 v1 = if v1 > 64 as i32 as f32 {
-                    fluid_convex(
-                        2 as i32 as f32
-                            * (v1 - 64 as i32 as f32),
-                    )
+                    fluid_convex(2 as i32 as f32 * (v1 - 64 as i32 as f32))
                 } else {
-                    -fluid_convex(
-                        2 as i32 as f32
-                            * (64 as i32 as f32 - v1),
-                    )
+                    -fluid_convex(2 as i32 as f32 * (64 as i32 as f32 - v1))
                 }
             }
             11 => {
                 v1 = if v1 > 64 as i32 as f32 {
-                    -fluid_convex(
-                        2 as i32 as f32
-                            * (v1 - 64 as i32 as f32),
-                    )
+                    -fluid_convex(2 as i32 as f32 * (v1 - 64 as i32 as f32))
                 } else {
-                    fluid_convex(
-                        2 as i32 as f32
-                            * (64 as i32 as f32 - v1),
-                    )
+                    fluid_convex(2 as i32 as f32 * (64 as i32 as f32 - v1))
                 }
             }
             12 => {
@@ -229,56 +193,32 @@ pub fn fluid_mod_get_value(
             5 => v2 = fluid_concave(127 as i32 as f32 - v2),
             6 => {
                 v2 = if v2 > 64 as i32 as f32 {
-                    fluid_concave(
-                        2 as i32 as f32
-                            * (v2 - 64 as i32 as f32),
-                    )
+                    fluid_concave(2 as i32 as f32 * (v2 - 64 as i32 as f32))
                 } else {
-                    -fluid_concave(
-                        2 as i32 as f32
-                            * (64 as i32 as f32 - v2),
-                    )
+                    -fluid_concave(2 as i32 as f32 * (64 as i32 as f32 - v2))
                 }
             }
             7 => {
                 v2 = if v2 > 64 as i32 as f32 {
-                    -fluid_concave(
-                        2 as i32 as f32
-                            * (v2 - 64 as i32 as f32),
-                    )
+                    -fluid_concave(2 as i32 as f32 * (v2 - 64 as i32 as f32))
                 } else {
-                    fluid_concave(
-                        2 as i32 as f32
-                            * (64 as i32 as f32 - v2),
-                    )
+                    fluid_concave(2 as i32 as f32 * (64 as i32 as f32 - v2))
                 }
             }
             8 => v2 = fluid_convex(v2),
             9 => v2 = 1.0f32 - fluid_convex(v2),
             10 => {
                 v2 = if v2 > 64 as i32 as f32 {
-                    -fluid_convex(
-                        2 as i32 as f32
-                            * (v2 - 64 as i32 as f32),
-                    )
+                    -fluid_convex(2 as i32 as f32 * (v2 - 64 as i32 as f32))
                 } else {
-                    fluid_convex(
-                        2 as i32 as f32
-                            * (64 as i32 as f32 - v2),
-                    )
+                    fluid_convex(2 as i32 as f32 * (64 as i32 as f32 - v2))
                 }
             }
             11 => {
                 v2 = if v2 > 64 as i32 as f32 {
-                    -fluid_convex(
-                        2 as i32 as f32
-                            * (v2 - 64 as i32 as f32),
-                    )
+                    -fluid_convex(2 as i32 as f32 * (v2 - 64 as i32 as f32))
                 } else {
-                    fluid_convex(
-                        2 as i32 as f32
-                            * (64 as i32 as f32 - v2),
-                    )
+                    fluid_convex(2 as i32 as f32 * (64 as i32 as f32 - v2))
                 }
             }
             12 => {
@@ -335,10 +275,7 @@ pub fn fluid_mod_delete(mod_0: &mut Mod) {
     }
 }
 
-pub fn fluid_mod_test_identity(
-    mod1: &Mod,
-    mod2: &Mod,
-) -> i32 {
+pub fn fluid_mod_test_identity(mod1: &Mod, mod2: &Mod) -> i32 {
     if mod1.dest as i32 != mod2.dest as i32 {
         return 0 as i32;
     }

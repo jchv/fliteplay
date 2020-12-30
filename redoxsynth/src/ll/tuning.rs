@@ -6,11 +6,7 @@ pub struct Tuning {
     pub(crate) pitch: [f64; 128],
 }
 
-pub unsafe fn new_fluid_tuning(
-    name: &[u8],
-    bank: i32,
-    prog: i32,
-) -> *mut Tuning {
+pub unsafe fn new_fluid_tuning(name: &[u8], bank: i32, prog: i32) -> *mut Tuning {
     let mut tuning;
     let mut i;
     tuning = libc::malloc(::std::mem::size_of::<Tuning>() as libc::size_t) as *mut Tuning;
@@ -42,8 +38,7 @@ pub unsafe fn fluid_tuning_set_octave(tuning: &mut Tuning, pitch_deriv: &[f64; 1
     let mut i;
     i = 0 as i32;
     while i < 128 as i32 {
-        tuning.pitch[i as usize] =
-            i as f64 * 100.0f64 + pitch_deriv[i as usize % 12];
+        tuning.pitch[i as usize] = i as f64 * 100.0f64 + pitch_deriv[i as usize % 12];
         i += 1
     }
 }

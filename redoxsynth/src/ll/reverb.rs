@@ -26,7 +26,6 @@ const ALLPASSTUNING_R3: usize = 341 + STEREO_SPREAD;
 const ALLPASSTUNING_L4: usize = 225;
 const ALLPASSTUNING_R4: usize = 225 + STEREO_SPREAD;
 
-
 #[derive(Clone)]
 pub struct Comb {
     pub feedback: f32,
@@ -39,7 +38,7 @@ pub struct Comb {
 
 impl Comb {
     pub fn new(size: usize) -> Self {
-        return Self{
+        return Self {
             feedback: 0f32,
             filterstore: 0f32,
             damp1: 0f32,
@@ -53,7 +52,7 @@ impl Comb {
         self.damp1 = val;
         self.damp2 = 1f32 - val;
     }
-    
+
     pub fn set_feedback(&mut self, val: f32) {
         self.feedback = val;
     }
@@ -79,7 +78,7 @@ pub struct AllPass {
 
 impl AllPass {
     pub fn new(size: usize, feedback: f32) -> Self {
-        return Self{
+        return Self {
             feedback,
             buffer: vec![DC_OFFSET; size],
             bufidx: 0,
@@ -128,20 +127,56 @@ impl ReverbModel {
             width: 1f32,
             gain: 0.015f32,
             comb: [
-                LRPair{ l: Comb::new(COMBTUNING_L1), r: Comb::new(COMBTUNING_R1) },
-                LRPair{ l: Comb::new(COMBTUNING_L2), r: Comb::new(COMBTUNING_R2) },
-                LRPair{ l: Comb::new(COMBTUNING_L3), r: Comb::new(COMBTUNING_R3) },
-                LRPair{ l: Comb::new(COMBTUNING_L4), r: Comb::new(COMBTUNING_R4) },
-                LRPair{ l: Comb::new(COMBTUNING_L5), r: Comb::new(COMBTUNING_R5) },
-                LRPair{ l: Comb::new(COMBTUNING_L6), r: Comb::new(COMBTUNING_R6) },
-                LRPair{ l: Comb::new(COMBTUNING_L7), r: Comb::new(COMBTUNING_R7) },
-                LRPair{ l: Comb::new(COMBTUNING_L8), r: Comb::new(COMBTUNING_R8) },
+                LRPair {
+                    l: Comb::new(COMBTUNING_L1),
+                    r: Comb::new(COMBTUNING_R1),
+                },
+                LRPair {
+                    l: Comb::new(COMBTUNING_L2),
+                    r: Comb::new(COMBTUNING_R2),
+                },
+                LRPair {
+                    l: Comb::new(COMBTUNING_L3),
+                    r: Comb::new(COMBTUNING_R3),
+                },
+                LRPair {
+                    l: Comb::new(COMBTUNING_L4),
+                    r: Comb::new(COMBTUNING_R4),
+                },
+                LRPair {
+                    l: Comb::new(COMBTUNING_L5),
+                    r: Comb::new(COMBTUNING_R5),
+                },
+                LRPair {
+                    l: Comb::new(COMBTUNING_L6),
+                    r: Comb::new(COMBTUNING_R6),
+                },
+                LRPair {
+                    l: Comb::new(COMBTUNING_L7),
+                    r: Comb::new(COMBTUNING_R7),
+                },
+                LRPair {
+                    l: Comb::new(COMBTUNING_L8),
+                    r: Comb::new(COMBTUNING_R8),
+                },
             ],
             allpass: [
-                LRPair{ l: AllPass::new(ALLPASSTUNING_L1, 0.5f32), r: AllPass::new(ALLPASSTUNING_R1, 0.5f32), },
-                LRPair{ l: AllPass::new(ALLPASSTUNING_L2, 0.5f32), r: AllPass::new(ALLPASSTUNING_R2, 0.5f32), },
-                LRPair{ l: AllPass::new(ALLPASSTUNING_L3, 0.5f32), r: AllPass::new(ALLPASSTUNING_R3, 0.5f32), },
-                LRPair{ l: AllPass::new(ALLPASSTUNING_L4, 0.5f32), r: AllPass::new(ALLPASSTUNING_R4, 0.5f32), },
+                LRPair {
+                    l: AllPass::new(ALLPASSTUNING_L1, 0.5f32),
+                    r: AllPass::new(ALLPASSTUNING_R1, 0.5f32),
+                },
+                LRPair {
+                    l: AllPass::new(ALLPASSTUNING_L2, 0.5f32),
+                    r: AllPass::new(ALLPASSTUNING_R2, 0.5f32),
+                },
+                LRPair {
+                    l: AllPass::new(ALLPASSTUNING_L3, 0.5f32),
+                    r: AllPass::new(ALLPASSTUNING_R3, 0.5f32),
+                },
+                LRPair {
+                    l: AllPass::new(ALLPASSTUNING_L4, 0.5f32),
+                    r: AllPass::new(ALLPASSTUNING_R4, 0.5f32),
+                },
             ],
         };
         rev.update();
@@ -150,36 +185,65 @@ impl ReverbModel {
 
     pub fn reset(self: &mut Self) {
         self.comb = [
-            LRPair{ l: Comb::new(COMBTUNING_L1), r: Comb::new(COMBTUNING_R1) },
-            LRPair{ l: Comb::new(COMBTUNING_L2), r: Comb::new(COMBTUNING_R2) },
-            LRPair{ l: Comb::new(COMBTUNING_L3), r: Comb::new(COMBTUNING_R3) },
-            LRPair{ l: Comb::new(COMBTUNING_L4), r: Comb::new(COMBTUNING_R4) },
-            LRPair{ l: Comb::new(COMBTUNING_L5), r: Comb::new(COMBTUNING_R5) },
-            LRPair{ l: Comb::new(COMBTUNING_L6), r: Comb::new(COMBTUNING_R6) },
-            LRPair{ l: Comb::new(COMBTUNING_L7), r: Comb::new(COMBTUNING_R7) },
-            LRPair{ l: Comb::new(COMBTUNING_L8), r: Comb::new(COMBTUNING_R8) },
+            LRPair {
+                l: Comb::new(COMBTUNING_L1),
+                r: Comb::new(COMBTUNING_R1),
+            },
+            LRPair {
+                l: Comb::new(COMBTUNING_L2),
+                r: Comb::new(COMBTUNING_R2),
+            },
+            LRPair {
+                l: Comb::new(COMBTUNING_L3),
+                r: Comb::new(COMBTUNING_R3),
+            },
+            LRPair {
+                l: Comb::new(COMBTUNING_L4),
+                r: Comb::new(COMBTUNING_R4),
+            },
+            LRPair {
+                l: Comb::new(COMBTUNING_L5),
+                r: Comb::new(COMBTUNING_R5),
+            },
+            LRPair {
+                l: Comb::new(COMBTUNING_L6),
+                r: Comb::new(COMBTUNING_R6),
+            },
+            LRPair {
+                l: Comb::new(COMBTUNING_L7),
+                r: Comb::new(COMBTUNING_R7),
+            },
+            LRPair {
+                l: Comb::new(COMBTUNING_L8),
+                r: Comb::new(COMBTUNING_R8),
+            },
         ];
         self.allpass = [
-            LRPair{ l: AllPass::new(ALLPASSTUNING_L1, 0.5f32), r: AllPass::new(ALLPASSTUNING_R1, 0.5f32), },
-            LRPair{ l: AllPass::new(ALLPASSTUNING_L2, 0.5f32), r: AllPass::new(ALLPASSTUNING_R2, 0.5f32), },
-            LRPair{ l: AllPass::new(ALLPASSTUNING_L3, 0.5f32), r: AllPass::new(ALLPASSTUNING_R3, 0.5f32), },
-            LRPair{ l: AllPass::new(ALLPASSTUNING_L4, 0.5f32), r: AllPass::new(ALLPASSTUNING_R4, 0.5f32), },
+            LRPair {
+                l: AllPass::new(ALLPASSTUNING_L1, 0.5f32),
+                r: AllPass::new(ALLPASSTUNING_R1, 0.5f32),
+            },
+            LRPair {
+                l: AllPass::new(ALLPASSTUNING_L2, 0.5f32),
+                r: AllPass::new(ALLPASSTUNING_R2, 0.5f32),
+            },
+            LRPair {
+                l: AllPass::new(ALLPASSTUNING_L3, 0.5f32),
+                r: AllPass::new(ALLPASSTUNING_R3, 0.5f32),
+            },
+            LRPair {
+                l: AllPass::new(ALLPASSTUNING_L4, 0.5f32),
+                r: AllPass::new(ALLPASSTUNING_R4, 0.5f32),
+            },
         ];
     }
 
-    pub fn process_replace(
-        &mut self,
-        in_0: *mut f32,
-        left_out: *mut f32,
-        right_out: *mut f32,
-    ) {
+    pub fn process_replace(&mut self, in_0: *mut f32, left_out: *mut f32, right_out: *mut f32) {
         for k in 0..64 {
             let mut out_r = 0f32;
             let mut out_l = 0f32;
 
-            let input = unsafe {
-                ((2f32 * *in_0.offset(k)) + DC_OFFSET) * self.gain
-            };
+            let input = unsafe { ((2f32 * *in_0.offset(k)) + DC_OFFSET) * self.gain };
 
             for comb in self.comb.iter_mut() {
                 out_l += comb.l.process(input);
@@ -201,18 +265,11 @@ impl ReverbModel {
         }
     }
 
-    pub fn process_mix(
-        &mut self,
-        in_0: *mut f32,
-        left_out: *mut f32,
-        right_out: *mut f32,
-    ) {
+    pub fn process_mix(&mut self, in_0: *mut f32, left_out: *mut f32, right_out: *mut f32) {
         for k in 0..64 {
             let mut out_r = 0f32;
             let mut out_l = out_r;
-            let input = unsafe {
-                ((2f32 * *in_0.offset(k as isize)) + DC_OFFSET) * self.gain
-            };
+            let input = unsafe { ((2f32 * *in_0.offset(k as isize)) + DC_OFFSET) * self.gain };
 
             for comb in self.comb.iter_mut() {
                 out_l += comb.l.process(input);
