@@ -20,20 +20,20 @@ pub const FLUID_OK: i32 = 0;
 pub const FLUID_FAILED: i32 = -1;
 #[derive(Clone)]
 #[repr(C)]
-pub struct DefSFont {
+pub struct DefaultSoundFont {
     filename: Vec<u8>,
     samplepos: u32,
     samplesize: u32,
     sampledata: *mut i16,
     sample: Vec<*mut Sample>,
-    preset: *mut DefPreset,
-    iter_cur: *mut DefPreset,
+    preset: *mut DefaultPreset,
+    iter_cur: *mut DefaultPreset,
 }
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct DefPreset {
-    next: *mut DefPreset,
-    sfont: *mut DefSFont,
+pub struct DefaultPreset {
+    next: *mut DefaultPreset,
+    sfont: *mut DefaultSoundFont,
     name: [u8; 21],
     bank: u32,
     num: u32,
@@ -312,19 +312,19 @@ pub unsafe fn fluid_defsfloader_load(
         iteration_next: Some(fluid_defsfont_sfont_iteration_next as _),
     };
     if fluid_defsfont_load(
-        sfont.data.downcast_mut::<DefSFont>().unwrap(),
+        sfont.data.downcast_mut::<DefaultSoundFont>().unwrap(),
         filename,
         (*loader).filesystem.as_mut(),
     ) == FLUID_FAILED as i32
     {
-        delete_fluid_defsfont(sfont.data.downcast_mut::<DefSFont>().unwrap());
+        delete_fluid_defsfont(sfont.data.downcast_mut::<DefaultSoundFont>().unwrap());
         return None;
     }
     return Some(sfont);
 }
 
 pub unsafe fn fluid_defsfont_sfont_delete(sfont: *mut SoundFont) -> i32 {
-    match (*sfont).data.downcast_mut::<DefSFont>() {
+    match (*sfont).data.downcast_mut::<DefaultSoundFont>() {
         Some(defsfont) => {
             if delete_fluid_defsfont(defsfont) != 0 as i32 {
                 return -(1 as i32);
@@ -339,7 +339,7 @@ pub unsafe fn fluid_defsfont_sfont_delete(sfont: *mut SoundFont) -> i32 {
 pub unsafe fn fluid_defsfont_sfont_get_name(sfont: *const SoundFont) -> Option<Vec<u8>> {
     return (*sfont)
         .data
-        .downcast_ref::<DefSFont>()
+        .downcast_ref::<DefaultSoundFont>()
         .map(|defsfont| fluid_defsfont_get_name(defsfont));
 }
 
@@ -348,10 +348,10 @@ pub unsafe fn fluid_defsfont_sfont_get_preset(
     bank: u32,
     prenum: u32,
 ) -> *mut Preset {
-    match (*sfont).data.downcast_ref::<DefSFont>() {
+    match (*sfont).data.downcast_ref::<DefaultSoundFont>() {
         Some(defsfont) => {
             let mut preset: *mut Preset;
-            let defpreset: *mut DefPreset;
+            let defpreset: *mut DefaultPreset;
             defpreset = fluid_defsfont_get_preset(defsfont, bank, prenum);
             if defpreset.is_null() {
                 return 0 as *mut Preset;
@@ -385,7 +385,7 @@ pub unsafe fn fluid_defsfont_sfont_get_preset(
 }
 
 pub unsafe fn fluid_defsfont_sfont_iteration_start(sfont: *mut SoundFont) {
-    match (*sfont).data.downcast_mut::<DefSFont>() {
+    match (*sfont).data.downcast_mut::<DefaultSoundFont>() {
         Some(defsfont) => {
             fluid_defsfont_iteration_start(defsfont);
         }
@@ -408,7 +408,7 @@ pub unsafe fn fluid_defsfont_sfont_iteration_next(
             as unsafe fn(_: *mut Preset, _: &mut Synth, _: i32, _: i32, _: i32) -> i32,
     );
     (*preset).notify = None;
-    match (*sfont).data.downcast_mut::<DefSFont>() {
+    match (*sfont).data.downcast_mut::<DefaultSoundFont>() {
         Some(defsfont) => {
             return fluid_defsfont_iteration_next(defsfont, preset);
         }
@@ -424,15 +424,15 @@ pub unsafe fn fluid_defpreset_preset_delete(preset: *mut Preset) -> i32 {
 }
 
 pub unsafe fn fluid_defpreset_preset_get_name(preset: *const Preset) -> Vec<u8> {
-    return fluid_defpreset_get_name((*preset).data as *mut DefPreset);
+    return fluid_defpreset_get_name((*preset).data as *mut DefaultPreset);
 }
 
 pub unsafe fn fluid_defpreset_preset_get_banknum(preset: *const Preset) -> i32 {
-    return fluid_defpreset_get_banknum((*preset).data as *mut DefPreset);
+    return fluid_defpreset_get_banknum((*preset).data as *mut DefaultPreset);
 }
 
 pub unsafe fn fluid_defpreset_preset_get_num(preset: *const Preset) -> i32 {
-    return fluid_defpreset_get_num((*preset).data as *mut DefPreset);
+    return fluid_defpreset_get_num((*preset).data as *mut DefaultPreset);
 }
 
 pub unsafe fn fluid_defpreset_preset_noteon(
@@ -442,11 +442,11 @@ pub unsafe fn fluid_defpreset_preset_noteon(
     key: i32,
     vel: i32,
 ) -> i32 {
-    return fluid_defpreset_noteon((*preset).data as *mut DefPreset, synth, chan, key, vel);
+    return fluid_defpreset_noteon((*preset).data as *mut DefaultPreset, synth, chan, key, vel);
 }
 
-pub unsafe fn new_fluid_defsfont() -> DefSFont {
-    return DefSFont {
+pub unsafe fn new_fluid_defsfont() -> DefaultSoundFont {
+    return DefaultSoundFont {
         filename: Vec::new(),
         samplepos: 0 as _,
         samplesize: 0 as _,
@@ -457,8 +457,8 @@ pub unsafe fn new_fluid_defsfont() -> DefSFont {
     };
 }
 
-pub unsafe fn delete_fluid_defsfont(mut sfont: *mut DefSFont) -> i32 {
-    let mut preset: *mut DefPreset;
+pub unsafe fn delete_fluid_defsfont(mut sfont: *mut DefaultSoundFont) -> i32 {
+    let mut preset: *mut DefaultPreset;
     for sample in (*sfont).sample.iter() {
         if (**sample).refcount != 0 as i32 as u32 {
             return -(1 as i32);
@@ -479,20 +479,20 @@ pub unsafe fn delete_fluid_defsfont(mut sfont: *mut DefSFont) -> i32 {
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_defsfont_get_name(sfont: *const DefSFont) -> Vec<u8> {
+pub unsafe fn fluid_defsfont_get_name(sfont: *const DefaultSoundFont) -> Vec<u8> {
     return (*sfont).filename.to_vec();
 }
 
 pub static mut PRESET_CALLBACK: Option<unsafe fn(_: u32, _: u32, _: &[u8]) -> ()> = None;
 
 unsafe fn fluid_defsfont_load(
-    mut sfont: *mut DefSFont,
+    mut sfont: *mut DefaultSoundFont,
     file: &[u8],
     fapi: &mut dyn FileSystem,
 ) -> i32 {
     let sfdata: *mut SFData;
     let mut sample: *mut Sample;
-    let mut preset: *mut DefPreset;
+    let mut preset: *mut DefaultPreset;
     (*sfont).filename = file.to_vec();
     sfdata = sfload_file(file, fapi);
     if sfdata.is_null() {
@@ -541,23 +541,23 @@ unsafe fn fluid_defsfont_load(
     return FLUID_OK;
 }
 
-pub unsafe fn fluid_defsfont_add_sample(sfont: *mut DefSFont, sample: *mut Sample) -> i32 {
+pub unsafe fn fluid_defsfont_add_sample(sfont: *mut DefaultSoundFont, sample: *mut Sample) -> i32 {
     (*sfont).sample.push(sample);
     return FLUID_OK as i32;
 }
 
 pub unsafe fn fluid_defsfont_add_preset(
-    mut sfont: *mut DefSFont,
-    mut preset: *mut DefPreset,
+    mut sfont: *mut DefaultSoundFont,
+    mut preset: *mut DefaultPreset,
 ) -> i32 {
-    let mut cur: *mut DefPreset;
-    let mut prev: *mut DefPreset;
+    let mut cur: *mut DefaultPreset;
+    let mut prev: *mut DefaultPreset;
     if (*sfont).preset.is_null() {
-        (*preset).next = 0 as *mut DefPreset;
+        (*preset).next = 0 as *mut DefaultPreset;
         (*sfont).preset = preset
     } else {
         cur = (*sfont).preset;
-        prev = 0 as *mut DefPreset;
+        prev = 0 as *mut DefaultPreset;
         while !cur.is_null() {
             if (*preset).bank < (*cur).bank
                 || (*preset).bank == (*cur).bank && (*preset).num < (*cur).num
@@ -574,13 +574,13 @@ pub unsafe fn fluid_defsfont_add_preset(
             prev = cur;
             cur = (*cur).next
         }
-        (*preset).next = 0 as *mut DefPreset;
+        (*preset).next = 0 as *mut DefaultPreset;
         (*prev).next = preset
     }
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_defsfont_load_sampledata(mut sfont: *mut DefSFont, fapi: &mut dyn FileSystem) -> i32 {
+pub unsafe fn fluid_defsfont_load_sampledata(mut sfont: *mut DefaultSoundFont, fapi: &mut dyn FileSystem) -> i32 {
     let mut fd;
     let mut endian: u16;
     fd = match fapi.open(Path::new(CStr::from_bytes_with_nul(&(*sfont).filename).unwrap().to_str().unwrap())) {
@@ -631,7 +631,7 @@ pub unsafe fn fluid_defsfont_load_sampledata(mut sfont: *mut DefSFont, fapi: &mu
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_defsfont_get_sample(sfont: *mut DefSFont, s: &[u8]) -> *mut Sample {
+pub unsafe fn fluid_defsfont_get_sample(sfont: *mut DefaultSoundFont, s: &[u8]) -> *mut Sample {
     for sample in (*sfont).sample.iter() {
         if libc::strcmp((**sample).name.as_ptr() as _, s.as_ptr() as _) == 0 as i32 {
             return *sample;
@@ -641,26 +641,26 @@ pub unsafe fn fluid_defsfont_get_sample(sfont: *mut DefSFont, s: &[u8]) -> *mut 
 }
 
 pub unsafe fn fluid_defsfont_get_preset(
-    sfont: *const DefSFont,
+    sfont: *const DefaultSoundFont,
     bank: u32,
     num: u32,
-) -> *mut DefPreset {
-    let mut preset: *mut DefPreset = (*sfont).preset;
+) -> *mut DefaultPreset {
+    let mut preset: *mut DefaultPreset = (*sfont).preset;
     while !preset.is_null() {
         if (*preset).bank == bank && (*preset).num == num {
             return preset;
         }
         preset = (*preset).next
     }
-    return 0 as *mut DefPreset;
+    return 0 as *mut DefaultPreset;
 }
 
-pub unsafe fn fluid_defsfont_iteration_start(mut sfont: *mut DefSFont) {
+pub unsafe fn fluid_defsfont_iteration_start(mut sfont: *mut DefaultSoundFont) {
     (*sfont).iter_cur = (*sfont).preset;
 }
 
 pub unsafe fn fluid_defsfont_iteration_next(
-    mut sfont: *mut DefSFont,
+    mut sfont: *mut DefaultSoundFont,
     mut preset: *mut Preset,
 ) -> i32 {
     if (*sfont).iter_cur.is_null() {
@@ -671,14 +671,14 @@ pub unsafe fn fluid_defsfont_iteration_next(
     return 1 as i32;
 }
 
-pub unsafe fn new_fluid_defpreset(sfont: *mut DefSFont) -> *mut DefPreset {
-    let mut preset: *mut DefPreset =
-        libc::malloc(::std::mem::size_of::<DefPreset>() as libc::size_t) as *mut DefPreset;
+pub unsafe fn new_fluid_defpreset(sfont: *mut DefaultSoundFont) -> *mut DefaultPreset {
+    let mut preset: *mut DefaultPreset =
+        libc::malloc(::std::mem::size_of::<DefaultPreset>() as libc::size_t) as *mut DefaultPreset;
     if preset.is_null() {
         fluid_log!(FLUID_ERR, "Out of memory",);
-        return 0 as *mut DefPreset;
+        return 0 as *mut DefaultPreset;
     }
-    (*preset).next = 0 as *mut DefPreset;
+    (*preset).next = 0 as *mut DefaultPreset;
     (*preset).sfont = sfont;
     (*preset).name = [0; 21];
     (*preset).bank = 0 as i32 as u32;
@@ -688,7 +688,7 @@ pub unsafe fn new_fluid_defpreset(sfont: *mut DefSFont) -> *mut DefPreset {
     return preset;
 }
 
-pub unsafe fn delete_fluid_defpreset(mut preset: *mut DefPreset) -> i32 {
+pub unsafe fn delete_fluid_defpreset(mut preset: *mut DefaultPreset) -> i32 {
     let mut err: i32 = FLUID_OK as i32;
     let mut zone: *mut PresetZone;
     if !(*preset).global_zone.is_null() {
@@ -709,24 +709,24 @@ pub unsafe fn delete_fluid_defpreset(mut preset: *mut DefPreset) -> i32 {
     return err;
 }
 
-pub unsafe fn fluid_defpreset_get_banknum(preset: *mut DefPreset) -> i32 {
+pub unsafe fn fluid_defpreset_get_banknum(preset: *mut DefaultPreset) -> i32 {
     return (*preset).bank as i32;
 }
 
-pub unsafe fn fluid_defpreset_get_num(preset: *mut DefPreset) -> i32 {
+pub unsafe fn fluid_defpreset_get_num(preset: *mut DefaultPreset) -> i32 {
     return (*preset).num as i32;
 }
 
-pub unsafe fn fluid_defpreset_get_name(preset: *mut DefPreset) -> Vec<u8> {
+pub unsafe fn fluid_defpreset_get_name(preset: *mut DefaultPreset) -> Vec<u8> {
     return (*preset).name.to_vec();
 }
 
-pub unsafe fn fluid_defpreset_next(preset: *mut DefPreset) -> *mut DefPreset {
+pub unsafe fn fluid_defpreset_next(preset: *mut DefaultPreset) -> *mut DefaultPreset {
     return (*preset).next;
 }
 
 pub unsafe fn fluid_defpreset_noteon(
-    preset: *mut DefPreset,
+    preset: *mut DefaultPreset,
     synth: &mut Synth,
     chan: i32,
     key: i32,
@@ -909,7 +909,7 @@ pub unsafe fn fluid_defpreset_noteon(
 }
 
 pub unsafe fn fluid_defpreset_set_global_zone(
-    mut preset: *mut DefPreset,
+    mut preset: *mut DefaultPreset,
     zone: *mut PresetZone,
 ) -> i32 {
     (*preset).global_zone = zone;
@@ -917,9 +917,9 @@ pub unsafe fn fluid_defpreset_set_global_zone(
 }
 
 pub unsafe fn fluid_defpreset_import_sfont(
-    mut preset: *mut DefPreset,
+    mut preset: *mut DefaultPreset,
     sfpreset: *mut SFPreset,
-    sfont: *mut DefSFont,
+    sfont: *mut DefaultSoundFont,
 ) -> i32 {
     let mut zone: *mut PresetZone;
     let mut count: i32;
@@ -974,7 +974,7 @@ pub unsafe fn fluid_defpreset_import_sfont(
 }
 
 pub unsafe fn fluid_defpreset_add_zone(
-    mut preset: *mut DefPreset,
+    mut preset: *mut DefaultPreset,
     mut zone: *mut PresetZone,
 ) -> i32 {
     if (*preset).zone.is_null() {
@@ -987,11 +987,11 @@ pub unsafe fn fluid_defpreset_add_zone(
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_defpreset_get_zone(preset: *mut DefPreset) -> *mut PresetZone {
+pub unsafe fn fluid_defpreset_get_zone(preset: *mut DefaultPreset) -> *mut PresetZone {
     return (*preset).zone;
 }
 
-pub unsafe fn fluid_defpreset_get_global_zone(preset: *mut DefPreset) -> *mut PresetZone {
+pub unsafe fn fluid_defpreset_get_global_zone(preset: *mut DefaultPreset) -> *mut PresetZone {
     return (*preset).global_zone;
 }
 
@@ -1038,7 +1038,7 @@ pub unsafe fn delete_fluid_preset_zone(zone: *mut PresetZone) -> i32 {
 pub unsafe fn fluid_preset_zone_import_sfont(
     mut zone: *mut PresetZone,
     sfzone: *mut SFZone,
-    sfont: *mut DefSFont,
+    sfont: *mut DefaultSoundFont,
 ) -> i32 {
     let mut count: i32;
     count = 0 as i32;
@@ -1217,7 +1217,7 @@ pub unsafe fn fluid_inst_set_global_zone(
 pub unsafe fn fluid_inst_import_sfont(
     inst: *mut Instrument,
     sfinst: *mut SFInst,
-    sfont: *mut DefSFont,
+    sfont: *mut DefaultSoundFont,
 ) -> i32 {
     let mut zone: *mut InstrumentZone;
     let mut zone_name: [u8; 256] = [0; 256];
@@ -1320,7 +1320,7 @@ pub unsafe fn fluid_inst_zone_next(zone: *mut InstrumentZone) -> *mut Instrument
 pub unsafe fn fluid_inst_zone_import_sfont(
     mut zone: *mut InstrumentZone,
     sfzone: *mut SFZone,
-    sfont: *mut DefSFont,
+    sfont: *mut DefaultSoundFont,
 ) -> i32 {
     let mut count: i32;
     count = 0 as i32;
@@ -1476,7 +1476,7 @@ pub unsafe fn fluid_sample_in_rom(sample: *mut Sample) -> i32 {
 pub unsafe fn fluid_sample_import_sfont(
     mut sample: *mut Sample,
     sfsample: *mut SFSample,
-    sfont: *mut DefSFont,
+    sfont: *mut DefaultSoundFont,
 ) -> i32 {
     libc::strcpy(
         (*sample).name.as_mut_ptr() as _,
