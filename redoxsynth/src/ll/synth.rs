@@ -2062,12 +2062,6 @@ impl Synth {
         );
     }
 
-    pub fn version(major: &mut i32, minor: &mut i32, micro: &mut i32) {
-        *major = 1 as i32;
-        *minor = 2 as i32;
-        *micro = 1 as i32;
-    }
-
     unsafe fn init() {
         FLUID_SYNTH_INITIALIZED += 1;
         fluid_dsp_float_config();
