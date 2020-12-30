@@ -21,7 +21,6 @@ use super::modulator::fluid_mod_get_value;
 use super::modulator::fluid_mod_test_identity;
 use super::modulator::Mod;
 use super::sfont::Sample;
-use super::tuning::Tuning;
 use super::synth::Synth;
 #[derive(Copy, Clone)]
 pub struct Voice {
@@ -691,11 +690,11 @@ pub unsafe fn fluid_voice_calculate_runtime_synthesis_parameters(mut voice: *mut
         (*dest_gen).mod_0 += modval as f64;
         i += 1
     }
-    if !(*(*voice).channel).tuning.is_null() {
-        let tuning: *mut Tuning = (*(*voice).channel).tuning;
-        (*voice).gen[GEN_PITCH as i32 as usize].val = (*tuning).pitch[60 as i32 as usize]
+    if !(*(*voice).channel).tuning.is_none() {
+        let tuning = (*(*voice).channel).tuning.as_ref().unwrap();
+        (*voice).gen[GEN_PITCH as i32 as usize].val = tuning.pitch[60 as i32 as usize]
             + (*voice).gen[GEN_SCALETUNE as i32 as usize].val / 100.0f32 as f64
-                * ((*tuning).pitch[(*voice).key as usize] - (*tuning).pitch[60 as i32 as usize])
+                * (tuning.pitch[(*voice).key as usize] - tuning.pitch[60 as i32 as usize])
     } else {
         (*voice).gen[GEN_PITCH as i32 as usize].val = (*voice).gen[GEN_SCALETUNE as i32 as usize]
             .val

@@ -24,7 +24,7 @@ pub struct Channel {
     pub(crate) cc: [i16; 128],
     bank_msb: u8,
     interp_method: i32,
-    pub(crate) tuning: *mut Tuning,
+    pub(crate) tuning: Option<Tuning>,
     nrpn_select: i16,
     nrpn_active: i16,
     pub(crate) gen: [f32; 60],
@@ -79,7 +79,7 @@ impl Channel {
             cc: [0; 128],
             bank_msb: 0 as _,
             interp_method: 0 as _,
-            tuning: 0 as _,
+            tuning: None,
             nrpn_select: 0 as _,
             nrpn_active: 0 as _,
             gen: [0f32; 60],
@@ -105,7 +105,7 @@ impl Channel {
         }
         self.preset = unsafe { fluid_synth_find_preset(synth, self.banknum, self.prognum) };
         self.interp_method = INTERPOLATION_DEFAULT as i32;
-        self.tuning = 0 as *mut Tuning;
+        self.tuning = None;
         self.nrpn_select = 0 as i32 as i16;
         self.nrpn_active = 0 as i32 as i16;
     }

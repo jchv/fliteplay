@@ -30,7 +30,7 @@ impl Synth {
                 tuning_bank as _,
                 tuning_prog as _,
                 name.as_bytes_with_nul(),
-                pitch.as_ptr() as _,
+                pitch,
             )
         })
     }

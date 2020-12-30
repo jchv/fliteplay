@@ -82,8 +82,8 @@ pub struct Synth {
     chorus: Chorus,
     cur: i32,
     dither_index: i32,
-    tuning: *mut *mut *mut Tuning,
-    cur_tuning: *mut Tuning,
+    tuning: Vec<Vec<Option<Tuning>>>,
+    cur_tuning: Option<Tuning>,
     pub(crate) min_note_length_ticks: u32,
 }
 
@@ -130,8 +130,8 @@ impl Synth {
                 chorus: Chorus::new(44100f32),
                 cur: 0 as _,
                 dither_index: 0 as _,
-                tuning: 0 as _,
-                cur_tuning: 0 as _,
+                tuning: vec![vec![None; 128]; 128],
+                cur_tuning: None,
                 min_note_length_ticks: 0 as _,
             };
 
@@ -234,7 +234,7 @@ impl Synth {
             synth.state = FLUID_SYNTH_PLAYING as i32 as u32;
             synth.noteid = 0 as i32 as u32;
             synth.ticks = 0 as i32 as u32;
-            synth.tuning = 0 as *mut *mut *mut Tuning;
+            synth.tuning.clear();
             loader = new_fluid_defsfloader();
             if loader.is_null() {
                 fluid_log!(FLUID_WARN, "Failed to create the default SoundFont loader",);
@@ -760,26 +760,6 @@ impl Drop for Synth {
             }
             self.voice.clear();
             self.chorus.delete();
-            let mut i;
-            let mut k;
-            if !self.tuning.is_null() {
-                i = 0 as i32;
-                while i < 128 as i32 {
-                    if !(*self.tuning.offset(i as isize)).is_null() {
-                        k = 0 as i32;
-                        while k < 128 as i32 {
-                            if !(*(*self.tuning.offset(i as isize)).offset(k as isize)).is_null() {
-                                libc::free(*(*self.tuning.offset(i as isize)).offset(k as isize)
-                                    as *mut libc::c_void);
-                            }
-                            k += 1
-                        }
-                        libc::free(*self.tuning.offset(i as isize) as *mut libc::c_void);
-                    }
-                    i += 1
-                }
-                libc::free(self.tuning as *mut libc::c_void);
-            }
         }
     }
 }
@@ -2038,96 +2018,36 @@ pub unsafe fn fluid_synth_count_audio_groups(synth: &Synth) -> i32 {
 pub unsafe fn fluid_synth_count_effects_channels(synth: &Synth) -> i32 {
     return synth.effects_channels;
 }
-unsafe fn fluid_synth_get_tuning(synth: &Synth, bank: i32, prog: i32) -> *mut Tuning {
+fn fluid_synth_get_tuning(synth: &Synth, bank: i32, prog: i32) -> Option<&Tuning> {
     if bank < 0 as i32 || bank >= 128 as i32 {
         fluid_log!(FLUID_WARN, "Bank number out of range",);
-        return 0 as *mut Tuning;
+        return None;
     }
     if prog < 0 as i32 || prog >= 128 as i32 {
         fluid_log!(FLUID_WARN, "Program number out of range",);
-        return 0 as *mut Tuning;
+        return None;
     }
-    if synth.tuning.is_null()
-        || (*synth.tuning.offset(bank as isize)).is_null()
-        || (*(*synth.tuning.offset(bank as isize)).offset(prog as isize)).is_null()
-    {
-        fluid_log!(FLUID_WARN, "No tuning at bank {}, prog {}", bank, prog);
-        return 0 as *mut Tuning;
-    }
-    return *(*synth.tuning.offset(bank as isize)).offset(prog as isize);
+    return synth.tuning[bank as usize][prog as usize].as_ref();
 }
-unsafe fn fluid_synth_create_tuning(
-    synth: &mut Synth,
+unsafe fn fluid_synth_create_tuning<'a>(
+    synth: &'a mut Synth,
     bank: i32,
     prog: i32,
     name: &[u8],
-) -> *mut Tuning {
+) -> Option<&'a mut Tuning> {
     if bank < 0 as i32 || bank >= 128 as i32 {
         fluid_log!(FLUID_WARN, "Bank number out of range",);
-        return 0 as *mut Tuning;
+        return None;
     }
     if prog < 0 as i32 || prog >= 128 as i32 {
         fluid_log!(FLUID_WARN, "Program number out of range",);
-        return 0 as *mut Tuning;
+        return None;
     }
-    if synth.tuning.is_null() {
-        synth.tuning = libc::malloc(
-            (128 as i32 as libc::size_t)
-                .wrapping_mul(::std::mem::size_of::<*mut *mut Tuning>() as libc::size_t),
-        ) as *mut *mut *mut Tuning;
-        if synth.tuning.is_null() {
-            fluid_log!(FLUID_PANIC as i32, "Out of memory",);
-            return 0 as *mut Tuning;
-        }
-        libc::memset(
-            synth.tuning as *mut libc::c_void,
-            0 as i32,
-            (128 as i32 as libc::size_t)
-                .wrapping_mul(::std::mem::size_of::<*mut *mut Tuning>() as libc::size_t),
-        );
+    let tuning = synth.tuning[bank as usize][prog as usize].get_or_insert_with(|| new_fluid_tuning(name, bank, prog));
+    if libc::strcmp(fluid_tuning_get_name(tuning).as_ptr() as _, name.as_ptr() as _) != 0 {
+        fluid_tuning_set_name(tuning, name);
     }
-    if (*synth.tuning.offset(bank as isize)).is_null() {
-        let ref mut fresh31 = *synth.tuning.offset(bank as isize);
-        *fresh31 = libc::malloc(
-            (128 as i32 as libc::size_t)
-                .wrapping_mul(::std::mem::size_of::<*mut Tuning>() as libc::size_t),
-        ) as *mut *mut Tuning;
-        if (*synth.tuning.offset(bank as isize)).is_null() {
-            fluid_log!(FLUID_PANIC as i32, "Out of memory",);
-            return 0 as *mut Tuning;
-        }
-        libc::memset(
-            *synth.tuning.offset(bank as isize) as *mut libc::c_void,
-            0 as i32,
-            (128 as i32 as libc::size_t)
-                .wrapping_mul(::std::mem::size_of::<*mut Tuning>() as libc::size_t),
-        );
-    }
-    if (*(*synth.tuning.offset(bank as isize)).offset(prog as isize)).is_null() {
-        let ref mut fresh32 = *(*synth.tuning.offset(bank as isize)).offset(prog as isize);
-        *fresh32 = new_fluid_tuning(name, bank, prog);
-        if (*(*synth.tuning.offset(bank as isize)).offset(prog as isize)).is_null() {
-            return 0 as *mut Tuning;
-        }
-    }
-    if libc::strcmp(
-        fluid_tuning_get_name(
-            (*(*synth.tuning.offset(bank as isize)).offset(prog as isize))
-                .as_ref()
-                .unwrap(),
-        )
-        .as_ptr() as _,
-        name.as_ptr() as _,
-    ) != 0 as i32
-    {
-        fluid_tuning_set_name(
-            (*(*synth.tuning.offset(bank as isize)).offset(prog as isize))
-                .as_mut()
-                .unwrap(),
-            name,
-        );
-    }
-    return *(*synth.tuning.offset(bank as isize)).offset(prog as isize);
+    return Some(tuning);
 }
 
 pub unsafe fn fluid_synth_create_key_tuning(
@@ -2135,16 +2055,17 @@ pub unsafe fn fluid_synth_create_key_tuning(
     bank: i32,
     prog: i32,
     name: &[u8],
-    pitch: *mut f64,
+    pitch: &[f64; 128],
 ) -> i32 {
-    let tuning: *mut Tuning = fluid_synth_create_tuning(synth, bank, prog, name);
-    if tuning.is_null() {
-        return FLUID_FAILED as i32;
-    }
-    if !pitch.is_null() {
-        fluid_tuning_set_all(tuning.as_mut().unwrap(), pitch);
-    }
-    return FLUID_OK as i32;
+    return match fluid_synth_create_tuning(synth, bank, prog, name) {
+        Some(tuning) => {
+            fluid_tuning_set_all(tuning, pitch);
+            FLUID_OK as i32
+        }
+        None => {
+            FLUID_FAILED as i32
+        }
+    };
 }
 
 pub unsafe fn fluid_synth_create_octave_tuning(
@@ -2154,19 +2075,21 @@ pub unsafe fn fluid_synth_create_octave_tuning(
     name: &[u8],
     pitch: &[f64; 12],
 ) -> i32 {
-    let tuning;
     if !(bank >= 0 as i32 && bank < 128 as i32) {
         return FLUID_FAILED as i32;
     }
     if !(prog >= 0 as i32 && prog < 128 as i32) {
         return FLUID_FAILED as i32;
     }
-    tuning = fluid_synth_create_tuning(synth, bank, prog, name);
-    if tuning.is_null() {
-        return FLUID_FAILED as i32;
-    }
-    fluid_tuning_set_octave(tuning.as_mut().unwrap(), pitch);
-    return FLUID_OK as i32;
+    return match fluid_synth_create_tuning(synth, bank, prog, name) {
+        Some(tuning) => {
+            fluid_tuning_set_octave(tuning, pitch);
+            FLUID_OK as i32
+        }
+        None => {
+            FLUID_FAILED as i32
+        }
+    };
 }
 
 pub unsafe fn fluid_synth_activate_octave_tuning(
@@ -2189,8 +2112,6 @@ pub unsafe fn fluid_synth_tune_notes(
     pitch: *mut f64,
     _apply: i32,
 ) -> i32 {
-    let mut tuning;
-    let mut i;
     if !(bank >= 0 as i32 && bank < 128 as i32) {
         return FLUID_FAILED as i32;
     }
@@ -2206,23 +2127,21 @@ pub unsafe fn fluid_synth_tune_notes(
     if pitch.is_null() {
         return FLUID_FAILED as i32;
     }
-    tuning = fluid_synth_get_tuning(synth, bank, prog);
-    if tuning.is_null() {
-        tuning = new_fluid_tuning(b"Unnamed\x00", bank, prog)
+    match fluid_synth_create_tuning(synth, bank, prog, b"Unnamed\x00") {
+        Some(tuning) => {
+            for i in 0..len {
+                fluid_tuning_set_pitch(
+                    tuning,
+                    *key.offset(i as isize),
+                    *pitch.offset(i as isize),
+                );
+            }
+            return FLUID_OK as i32;
+        }
+        None => {
+            return FLUID_FAILED as i32;
+        }
     }
-    if tuning.is_null() {
-        return FLUID_FAILED as i32;
-    }
-    i = 0 as i32;
-    while i < len {
-        fluid_tuning_set_pitch(
-            tuning.as_mut().unwrap(),
-            *key.offset(i as isize),
-            *pitch.offset(i as isize),
-        );
-        i += 1
-    }
-    return FLUID_OK as i32;
 }
 
 pub unsafe fn fluid_synth_select_tuning(synth: &mut Synth, chan: i32, bank: i32, prog: i32) -> i32 {
@@ -2234,15 +2153,14 @@ pub unsafe fn fluid_synth_select_tuning(synth: &mut Synth, chan: i32, bank: i32,
         return FLUID_FAILED as i32;
     }
     tuning = fluid_synth_get_tuning(synth, bank, prog);
-    if tuning.is_null() {
+    if tuning.is_none() {
         return FLUID_FAILED as i32;
     }
     if chan < 0 as i32 || chan >= synth.midi_channels {
         fluid_log!(FLUID_WARN, "Channel out of range",);
         return FLUID_FAILED as i32;
     }
-    let ref mut fresh33 = synth.channel[chan as usize].tuning;
-    *fresh33 = *(*synth.tuning.offset(bank as isize)).offset(prog as isize);
+    synth.channel[chan as usize].tuning = Some(tuning.unwrap().clone());
     return FLUID_OK as i32;
 }
 
@@ -2261,13 +2179,12 @@ pub unsafe fn fluid_synth_reset_tuning(synth: &mut Synth, chan: i32) -> i32 {
         fluid_log!(FLUID_WARN, "Channel out of range",);
         return FLUID_FAILED as i32;
     }
-    let ref mut fresh34 = synth.channel[chan as usize].tuning;
-    *fresh34 = 0 as *mut Tuning;
+    synth.channel[chan as usize].tuning = None;
     return FLUID_OK as i32;
 }
 
 pub unsafe fn fluid_synth_tuning_iteration_start(synth: &mut Synth) {
-    synth.cur_tuning = 0 as *mut Tuning;
+    synth.cur_tuning = None;
 }
 
 pub unsafe fn fluid_synth_tuning_iteration_next(
@@ -2275,30 +2192,30 @@ pub unsafe fn fluid_synth_tuning_iteration_next(
     bank: *mut i32,
     prog: *mut i32,
 ) -> i32 {
-    let mut b: i32 = 0 as i32;
-    let mut p: i32 = 0 as i32;
-    if synth.tuning.is_null() {
-        return 0 as i32;
-    }
-    if !synth.cur_tuning.is_null() {
-        b = (*synth.cur_tuning).bank;
-        p = 1 as i32 + (*synth.cur_tuning).prog;
-        if p >= 128 as i32 {
-            p = 0 as i32;
-            b += 1
+    let mut b = 0;
+    let mut p = 0;
+    match synth.cur_tuning.as_ref() {
+        Some(tuning) => {
+            b = tuning.bank;
+            p = tuning.prog + 1;
+            if p >= 128 {
+                p = 0;
+                b += 1
+            }
         }
+        None => {}
     }
-    while b < 128 as i32 {
-        if !(*synth.tuning.offset(b as isize)).is_null() {
-            while p < 128 as i32 {
-                if !(*(*synth.tuning.offset(b as isize)).offset(p as isize)).is_null() {
-                    synth.cur_tuning = *(*synth.tuning.offset(b as isize)).offset(p as isize);
+    while b < 128 {
+        while p < 128 {
+            match synth.tuning[b as usize][p as usize] {
+                Some(_) => {
                     *bank = b;
                     *prog = p;
-                    return 1 as i32;
+                    return 1;
                 }
-                p += 1
+                None => {}
             }
+            p += 1
         }
         p = 0 as i32;
         b += 1
@@ -2314,27 +2231,30 @@ pub unsafe fn fluid_synth_tuning_dump(
     len: i32,
     pitch: *mut f64,
 ) -> i32 {
-    let tuning: *mut Tuning = fluid_synth_get_tuning(synth, bank, prog);
-    if tuning.is_null() {
-        return FLUID_FAILED as i32;
+    match fluid_synth_get_tuning(synth, bank, prog) {
+        Some(tuning) => {
+            if !name.is_null() {
+                libc::strncpy(
+                    name,
+                    fluid_tuning_get_name(&tuning).as_ptr() as _,
+                    (len - 1 as i32) as libc::size_t,
+                );
+                *name.offset((len - 1 as i32) as isize) = 0 as i32 as i8
+            }
+            if !pitch.is_null() {
+                libc::memcpy(
+                    pitch as *mut libc::c_void,
+                    tuning.pitch.as_ptr().offset(0 as i32 as isize) as *mut f64
+                        as *const libc::c_void,
+                    (128 as i32 as libc::size_t).wrapping_mul(::std::mem::size_of::<f64>() as libc::size_t),
+                );
+            }
+            return FLUID_OK as i32;
+        }
+        None => {
+            return FLUID_FAILED as i32;
+        }
     }
-    if !name.is_null() {
-        libc::strncpy(
-            name,
-            fluid_tuning_get_name(tuning.as_ref().unwrap()).as_ptr() as _,
-            (len - 1 as i32) as libc::size_t,
-        );
-        *name.offset((len - 1 as i32) as isize) = 0 as i32 as i8
-    }
-    if !pitch.is_null() {
-        libc::memcpy(
-            pitch as *mut libc::c_void,
-            &mut *(*tuning).pitch.as_mut_ptr().offset(0 as i32 as isize) as *mut f64
-                as *const libc::c_void,
-            (128 as i32 as libc::size_t).wrapping_mul(::std::mem::size_of::<f64>() as libc::size_t),
-        );
-    }
-    return FLUID_OK as i32;
 }
 
 pub unsafe fn fluid_synth_set_gen(synth: &mut Synth, chan: i32, param: i32, value: f32) -> i32 {
