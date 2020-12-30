@@ -41,6 +41,5 @@ pub(crate) mod reverb;
 pub(crate) mod settings;
 pub(crate) mod soundfont;
 pub(crate) mod synth;
-pub(crate) mod sys;
 pub(crate) mod tuning;
 pub(crate) mod voice;

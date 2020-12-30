@@ -11,8 +11,6 @@ use super::soundfont::Preset;
 use super::soundfont::Sample;
 use super::soundfont::SoundFont;
 use super::soundfont::SoundFontLoader;
-use super::sys::fluid_error;
-use super::sys::fluid_sys_config;
 use super::tuning::Tuning;
 use super::voice::delete_fluid_voice;
 use super::voice::fluid_voice_add_mod;
@@ -31,6 +29,8 @@ use super::voice::fluid_voice_write;
 use super::voice::new_fluid_voice;
 use super::voice::FluidVoiceAddMod;
 use super::voice::Voice;
+
+static mut FLUID_ERRBUF: [u8; 512] = [0; 512];
 
 pub struct Synth {
     pub settings: Settings,
@@ -2065,7 +2065,6 @@ impl Synth {
     unsafe fn init() {
         FLUID_SYNTH_INITIALIZED += 1;
         fluid_dsp_float_config();
-        fluid_sys_config();
         init_dither();
         DEFAULT_VEL2ATT_MOD.set_source1(
             FLUID_MOD_VELOCITY as i32,
@@ -2212,7 +2211,7 @@ impl Drop for Synth {
 }
 
 pub unsafe fn error() -> *mut u8 {
-    return fluid_error();
+    return FLUID_ERRBUF.as_mut_ptr();
 }
 
 static mut RAND_TABLE: [[f32; 48000]; 2] = [[0.; 48000]; 2];
