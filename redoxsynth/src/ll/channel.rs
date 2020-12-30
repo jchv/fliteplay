@@ -1,5 +1,4 @@
 use super::gen::fluid_gen_scale_nrpn;
-use super::settings::fluid_settings_str_equal;
 use super::sfont::Preset;
 use super::synth::Synth;
 use super::tuning::Tuning;
@@ -229,11 +228,10 @@ impl Channel {
                 }
                 0 => {
                     if self.channum == 9 as i32
-                        && fluid_settings_str_equal(
-                            &synth.settings,
-                            "synth.drums-channel.active",
-                            "yes",
-                        ) != false
+                        && synth
+                            .settings
+                            .str_equal("synth.drums-channel.active", "yes")
+                            != false
                     {
                         return FLUID_OK as i32;
                     }
@@ -242,11 +240,10 @@ impl Channel {
                 }
                 32 => {
                     if self.channum == 9 as i32
-                        && fluid_settings_str_equal(
-                            &synth.settings,
-                            "synth.drums-channel.active",
-                            "yes",
-                        ) != false
+                        && synth
+                            .settings
+                            .str_equal("synth.drums-channel.active", "yes")
+                            != false
                     {
                         return FLUID_OK as i32;
                     }

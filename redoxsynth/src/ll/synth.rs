@@ -6,14 +6,7 @@ use super::defsfont::new_fluid_defsfloader;
 use super::dsp_float::fluid_dsp_float_config;
 use super::modulator::Mod;
 use super::reverb::ReverbModel;
-use super::settings::fluid_settings_getint;
-use super::settings::fluid_settings_getnum;
-use super::settings::fluid_settings_register_int;
-use super::settings::fluid_settings_register_num;
-use super::settings::fluid_settings_register_str;
-use super::settings::fluid_settings_setint;
-use super::settings::fluid_settings_str_equal;
-use super::settings::{new_fluid_settings, Settings};
+use super::settings::Settings;
 use super::sfont::Preset;
 use super::sfont::Sample;
 use super::sfont::SoundFont;
@@ -246,7 +239,7 @@ impl Synth {
             }
 
             let mut synth = Self {
-                settings: new_fluid_settings(),
+                settings: Settings::new(),
                 polyphony: 0 as _,
                 with_reverb: 0 as _,
                 with_chorus: 0 as _,
@@ -283,25 +276,20 @@ impl Synth {
                 min_note_length_ticks: 0 as _,
             };
 
-            synth.with_reverb =
-                fluid_settings_str_equal(&settings, "synth.reverb.active", "yes") as i8;
-            synth.with_chorus =
-                fluid_settings_str_equal(&settings, "synth.chorus.active", "yes") as i8;
-            synth.verbose = fluid_settings_str_equal(&settings, "synth.verbose", "yes") as i8;
-            synth.dump = fluid_settings_str_equal(&settings, "synth.dump", "yes") as i8;
-            synth.polyphony = fluid_settings_getint(&settings, "synth.polyphony").unwrap();
-            synth.sample_rate = fluid_settings_getnum(&settings, "synth.sample-rate").unwrap();
-            synth.midi_channels = fluid_settings_getint(&settings, "synth.midi-channels").unwrap();
-            synth.audio_channels =
-                fluid_settings_getint(&settings, "synth.audio-channels").unwrap();
-            synth.audio_groups = fluid_settings_getint(&settings, "synth.audio-groups").unwrap();
-            synth.effects_channels =
-                fluid_settings_getint(&settings, "synth.effects-channels").unwrap();
-            synth.gain = fluid_settings_getnum(&settings, "synth.gain").unwrap();
-            i = fluid_settings_getint(&settings, "synth.min-note-length").unwrap();
+            synth.with_reverb = settings.str_equal("synth.reverb.active", "yes") as i8;
+            synth.with_chorus = settings.str_equal("synth.chorus.active", "yes") as i8;
+            synth.verbose = settings.str_equal("synth.verbose", "yes") as i8;
+            synth.dump = settings.str_equal("synth.dump", "yes") as i8;
+            synth.polyphony = settings.getint("synth.polyphony").unwrap();
+            synth.sample_rate = settings.getnum("synth.sample-rate").unwrap();
+            synth.midi_channels = settings.getint("synth.midi-channels").unwrap();
+            synth.audio_channels = settings.getint("synth.audio-channels").unwrap();
+            synth.audio_groups = settings.getint("synth.audio-groups").unwrap();
+            synth.effects_channels = settings.getint("synth.effects-channels").unwrap();
+            synth.gain = settings.getnum("synth.gain").unwrap();
+            i = settings.getint("synth.min-note-length").unwrap();
             synth.min_note_length_ticks = (i as f64 * synth.sample_rate / 1000.0f32 as f64) as u32;
-            fluid_settings_register_num(
-                &mut settings,
+            settings.register_num(
                 "synth.gain",
                 0.2f32 as f64,
                 0.0f32 as f64,
@@ -315,8 +303,7 @@ impl Synth {
                 )),
                 &mut synth as *mut Self as *mut libc::c_void,
             );
-            fluid_settings_register_int(
-                &mut settings,
+            settings.register_int(
                 "synth.polyphony",
                 synth.polyphony,
                 16 as i32,
@@ -333,7 +320,7 @@ impl Synth {
             if synth.midi_channels % 16 as i32 != 0 as i32 {
                 let n: i32 = synth.midi_channels / 16 as i32;
                 synth.midi_channels = (n + 1 as i32) * 16 as i32;
-                fluid_settings_setint(&mut settings, "synth.midi-channels", synth.midi_channels);
+                settings.setint("synth.midi-channels", synth.midi_channels);
                 fluid_log!(FLUID_WARN,
                         "Requested number of MIDI channels is not a multiple of 16. I\'ll increase the number of channels to the next multiple.",
                         );
@@ -408,7 +395,7 @@ impl Synth {
             synth.reverb = ReverbModel::new();
             synth.set_reverb(0.2f32 as f64, 0.0f32 as f64, 0.5f32 as f64, 0.9f32 as f64);
             synth.chorus = Chorus::new(synth.sample_rate as f32);
-            if fluid_settings_str_equal(&settings, "synth.drums-channel.active", "yes") != false {
+            if settings.str_equal("synth.drums-channel.active", "yes") != false {
                 synth.bank_select(9 as i32, 128 as i32 as u32);
             }
             synth.settings = settings;
@@ -804,8 +791,7 @@ impl Synth {
             fluid_log!(FLUID_INFO, "prog\t{}\t{}\t{}", chan, banknum, prognum);
         }
         if self.channel[chan as usize].channum == 9 as i32
-            && fluid_settings_str_equal(&self.settings, "synth.drums-channel.active", "yes")
-                != false
+            && self.settings.str_equal("synth.drums-channel.active", "yes") != false
         {
             preset = self.find_preset(128 as i32 as u32, prognum as u32)
         } else {
@@ -1969,64 +1955,44 @@ impl Synth {
     }
 
     pub(crate) unsafe fn register_settings(settings: &mut Settings) {
-        fluid_settings_register_str(
-            settings,
+        settings.register_str(
             "synth.verbose",
             "no",
             0 as i32,
             None,
             0 as *mut libc::c_void,
         );
-        fluid_settings_register_str(
-            settings,
-            "synth.dump",
-            "no",
-            0 as i32,
-            None,
-            0 as *mut libc::c_void,
-        );
-        fluid_settings_register_str(
-            settings,
+        settings.register_str("synth.dump", "no", 0 as i32, None, 0 as *mut libc::c_void);
+        settings.register_str(
             "synth.reverb.active",
             "yes",
             0 as i32,
             None,
             0 as *mut libc::c_void,
         );
-        fluid_settings_register_str(
-            settings,
+        settings.register_str(
             "synth.chorus.active",
             "yes",
             0 as i32,
             None,
             0 as *mut libc::c_void,
         );
-        fluid_settings_register_str(
-            settings,
+        settings.register_str(
             "synth.ladspa.active",
             "no",
             0 as i32,
             None,
             0 as *mut libc::c_void,
         );
-        fluid_settings_register_str(
-            settings,
-            "midi.portname",
-            "",
-            0 as i32,
-            None,
-            0 as *mut libc::c_void,
-        );
-        fluid_settings_register_str(
-            settings,
+        settings.register_str("midi.portname", "", 0 as i32, None, 0 as *mut libc::c_void);
+        settings.register_str(
             "synth.drums-channel.active",
             "yes",
             0 as i32,
             None,
             0 as *mut libc::c_void,
         );
-        fluid_settings_register_int(
-            settings,
+        settings.register_int(
             "synth.polyphony",
             256 as i32,
             16 as i32,
@@ -2035,8 +2001,7 @@ impl Synth {
             None,
             0 as *mut libc::c_void,
         );
-        fluid_settings_register_int(
-            settings,
+        settings.register_int(
             "synth.midi-channels",
             16 as i32,
             16 as i32,
@@ -2045,8 +2010,7 @@ impl Synth {
             None,
             0 as *mut libc::c_void,
         );
-        fluid_settings_register_num(
-            settings,
+        settings.register_num(
             "synth.gain",
             0.2f32 as f64,
             0.0f32 as f64,
@@ -2055,8 +2019,7 @@ impl Synth {
             None,
             0 as *mut libc::c_void,
         );
-        fluid_settings_register_int(
-            settings,
+        settings.register_int(
             "synth.audio-channels",
             1 as i32,
             1 as i32,
@@ -2065,8 +2028,7 @@ impl Synth {
             None,
             0 as *mut libc::c_void,
         );
-        fluid_settings_register_int(
-            settings,
+        settings.register_int(
             "synth.audio-groups",
             1 as i32,
             1 as i32,
@@ -2075,8 +2037,7 @@ impl Synth {
             None,
             0 as *mut libc::c_void,
         );
-        fluid_settings_register_int(
-            settings,
+        settings.register_int(
             "synth.effects-channels",
             2 as i32,
             2 as i32,
@@ -2085,8 +2046,7 @@ impl Synth {
             None,
             0 as *mut libc::c_void,
         );
-        fluid_settings_register_num(
-            settings,
+        settings.register_num(
             "synth.sample-rate",
             44100.0f32 as f64,
             22050.0f32 as f64,
@@ -2095,8 +2055,7 @@ impl Synth {
             None,
             0 as *mut libc::c_void,
         );
-        fluid_settings_register_int(
-            settings,
+        settings.register_int(
             "synth.min-note-length",
             10 as i32,
             0 as i32,

@@ -2,7 +2,7 @@ use crate::{ll, Result};
 use bitflags::bitflags;
 use std::{
     marker::PhantomData,
-    ops::{Bound, RangeBounds}
+    ops::{Bound, RangeBounds},
 };
 
 /**
@@ -26,7 +26,9 @@ pub struct SettingsRef<'a> {
 
 impl Settings {
     pub fn new() -> Result<Self> {
-        return Ok(Self { handle: unsafe { ll::settings::new_fluid_settings() } });
+        return Ok(Self {
+            handle: unsafe { ll::settings::Settings::new() },
+        });
     }
 }
 
@@ -63,7 +65,7 @@ pub trait IsSettings {
 
 mod private {
     use crate::{ll, private::HasHandle, IsSetting, IsSettings, Setting, Settings, SettingsRef};
-    use std::{marker::PhantomData};
+    use std::marker::PhantomData;
 
     impl<X> IsSettings for X
     where
@@ -76,8 +78,7 @@ mod private {
         {
             let handle = self.get_mut_handle();
 
-            if T::TYPE == unsafe { ll::settings::fluid_settings_get_type(handle.as_ref().unwrap(), name.to_string().as_str()) }
-            {
+            if T::TYPE == unsafe { handle.as_ref().unwrap().get_type(name.to_string().as_str()) } {
                 Some(Setting {
                     handle,
                     name: name.to_string(),
@@ -241,14 +242,14 @@ where
 {
     pub fn hints(&self) -> Hints {
         Hints::from_bits_truncate(unsafe {
-            ll::settings::fluid_settings_get_hints(&*self.handle, &self.name)
+            ll::settings::Settings::get_hints(&*self.handle, &self.name)
         })
     }
 
     /** Returns whether the setting is changeable in real-time
      */
     pub fn is_realtime(&self) -> bool {
-        unsafe { ll::settings::fluid_settings_is_realtime(&*self.handle, &self.name) }
+        unsafe { ll::settings::Settings::is_realtime(&*self.handle, &self.name) }
     }
 }
 
@@ -261,9 +262,7 @@ impl<'a> Setting<'a, str> {
     pub fn set<S: Into<String>>(&self, value: S) -> bool {
         let mut value = value.into();
         value.push('\0');
-        0 < unsafe {
-            ll::settings::fluid_settings_setstr(&mut *self.handle, &self.name, &value)
-        }
+        0 < unsafe { ll::settings::Settings::setstr(&mut *self.handle, &self.name, &value) }
     }
 
     /**
@@ -273,7 +272,7 @@ impl<'a> Setting<'a, str> {
      */
     pub fn get(&self) -> Option<String> {
         unsafe {
-            return ll::settings::fluid_settings_getstr(&*self.handle, &self.name);
+            return ll::settings::Settings::getstr(&*self.handle, &self.name);
         }
     }
 
@@ -282,7 +281,7 @@ impl<'a> Setting<'a, str> {
      */
     pub fn default(&self) -> String {
         unsafe {
-            return ll::settings::fluid_settings_getstr_default(&*self.handle, &self.name);
+            return ll::settings::Settings::getstr_default(&*self.handle, &self.name);
         }
     }
 }
@@ -292,7 +291,7 @@ where
     S: AsRef<str>,
 {
     fn eq(&self, other: &S) -> bool {
-        ll::settings::fluid_settings_str_equal(unsafe { &mut *self.handle }, &self.name, other.as_ref())
+        ll::settings::Settings::str_equal(unsafe { &mut *self.handle }, &self.name, other.as_ref())
     }
 }
 
@@ -338,7 +337,7 @@ impl<'a> Setting<'a, f64> {
     Returns `true` if the value has been set, `false` otherwise
      */
     pub fn set(&self, value: f64) -> bool {
-        0 < unsafe { ll::settings::fluid_settings_setnum(&mut *self.handle, &self.name, value) }
+        0 < unsafe { ll::settings::Settings::setnum(&mut *self.handle, &self.name, value) }
     }
 
     /**
@@ -347,14 +346,14 @@ impl<'a> Setting<'a, f64> {
     Returns `Some(value)` if the value exists, `None` otherwise
      */
     pub fn get(&self) -> Option<f64> {
-        return ll::settings::fluid_settings_getnum(unsafe { &*self.handle }, &self.name)
+        return ll::settings::Settings::getnum(unsafe { &*self.handle }, &self.name);
     }
 
     /**
     Get the default value of a numeric setting
      */
     pub fn default(&self) -> f64 {
-        unsafe { ll::settings::fluid_settings_getnum_default(&*self.handle, &self.name) }
+        unsafe { ll::settings::Settings::getnum_default(&*self.handle, &self.name) }
     }
 
     /**
@@ -363,25 +362,20 @@ impl<'a> Setting<'a, f64> {
     pub fn range(&self) -> Range<f64> {
         unsafe {
             let hints = self.hints();
-            return match ll::settings::fluid_settings_getnum_range(
-                &*self.handle,
-                &self.name
-            ) {
-                Some(range) => {
-                    Range::new(
-                        if hints.contains(Hints::BOUNDED_BELOW) {
-                            Some(range.min)
-                        } else {
-                            None
-                        },
-                        if hints.contains(Hints::BOUNDED_ABOVE) {
-                            Some(range.max)
-                        } else {
-                            None
-                        },
-                    )
-                },
-                None => Range::new(None, None)
+            return match ll::settings::Settings::getnum_range(&*self.handle, &self.name) {
+                Some(range) => Range::new(
+                    if hints.contains(Hints::BOUNDED_BELOW) {
+                        Some(range.min)
+                    } else {
+                        None
+                    },
+                    if hints.contains(Hints::BOUNDED_ABOVE) {
+                        Some(range.max)
+                    } else {
+                        None
+                    },
+                ),
+                None => Range::new(None, None),
             };
         }
     }
@@ -394,7 +388,7 @@ impl<'a> Setting<'a, i32> {
     Returns `true` if the value has been set, `false` otherwise
      */
     pub fn set(&self, value: i32) -> bool {
-        0 < ll::settings::fluid_settings_setint(unsafe { &mut *self.handle }, &self.name, value)
+        0 < ll::settings::Settings::setint(unsafe { &mut *self.handle }, &self.name, value)
     }
 
     /**
@@ -403,14 +397,14 @@ impl<'a> Setting<'a, i32> {
     Returns `Some(value)` if the value exists, `None` otherwise
      */
     pub fn get(&self) -> Option<i32> {
-        return ll::settings::fluid_settings_getint(unsafe { &*self.handle }, &self.name)
+        return ll::settings::Settings::getint(unsafe { &*self.handle }, &self.name);
     }
 
     /**
     Get the default value of a integer setting
      */
     pub fn default(&self) -> i32 {
-        unsafe { ll::settings::fluid_settings_getint_default(&*self.handle, &self.name) }
+        unsafe { ll::settings::Settings::getint_default(&*self.handle, &self.name) }
     }
 
     /**
@@ -419,25 +413,20 @@ impl<'a> Setting<'a, i32> {
     pub fn range(&self) -> Range<i32> {
         unsafe {
             let hints = self.hints();
-            return match ll::settings::fluid_settings_getint_range(
-                &*self.handle,
-                &self.name
-            ) {
-                Some(range) => {
-                    Range::new(
-                        if hints.contains(Hints::BOUNDED_BELOW) {
-                            Some(range.min)
-                        } else {
-                            None
-                        },
-                        if hints.contains(Hints::BOUNDED_ABOVE) {
-                            Some(range.max)
-                        } else {
-                            None
-                        },
-                    )
-                },
-                None => Range::new(None, None)
+            return match ll::settings::Settings::getint_range(&*self.handle, &self.name) {
+                Some(range) => Range::new(
+                    if hints.contains(Hints::BOUNDED_BELOW) {
+                        Some(range.min)
+                    } else {
+                        None
+                    },
+                    if hints.contains(Hints::BOUNDED_ABOVE) {
+                        Some(range.max)
+                    } else {
+                        None
+                    },
+                ),
+                None => Range::new(None, None),
             };
         }
     }
