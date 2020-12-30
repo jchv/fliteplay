@@ -118,22 +118,15 @@ impl Synth {
      */
     pub fn select_tuning(&mut self, chan: Chan, tuning_bank: Bank, tuning_prog: Prog) -> Status {
         Synth::zero_ok(unsafe {
-            self.handle.select_tuning(
-                chan as _,
-                tuning_bank as _,
-                tuning_prog as _,
-            )
+            self.handle
+                .select_tuning(chan as _, tuning_bank as _, tuning_prog as _)
         })
     }
 
     pub fn activate_tuning(&mut self, chan: Chan, bank: Bank, prog: Prog, apply: bool) -> Status {
         Synth::zero_ok(unsafe {
-            self.handle.activate_tuning(
-                chan as _,
-                bank as _,
-                prog as _,
-                apply as _,
-            )
+            self.handle
+                .activate_tuning(chan as _, bank as _, prog as _, apply as _)
         })
     }
 
@@ -214,13 +207,8 @@ impl Synth {
         let mut pitch = MaybeUninit::<[f64; 128]>::uninit();
 
         Synth::zero_ok(unsafe {
-            self.handle.tuning_dump(
-                bank as _,
-                prog as _,
-                null_mut(),
-                0,
-                pitch.as_mut_ptr() as _,
-            )
+            self.handle
+                .tuning_dump(bank as _, prog as _, null_mut(), 0, pitch.as_mut_ptr() as _)
         })?;
         Ok(unsafe { pitch.assume_init() })
     }
@@ -262,10 +250,10 @@ impl<'a> Iterator for TuningIter<'a> {
             let mut prog = MaybeUninit::uninit();
             self.next = 0
                 != unsafe {
-                    self.handle.as_mut().unwrap().tuning_iteration_next(
-                        bank.as_mut_ptr(),
-                        prog.as_mut_ptr(),
-                    )
+                    self.handle
+                        .as_mut()
+                        .unwrap()
+                        .tuning_iteration_next(bank.as_mut_ptr(), prog.as_mut_ptr())
                 };
 
             Some((unsafe { bank.assume_init() as _ }, unsafe {

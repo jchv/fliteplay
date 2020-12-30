@@ -1,4 +1,4 @@
-use super::{channel::{Channel, InterpMethod}};
+use super::channel::{Channel, InterpMethod};
 use super::conv::fluid_act2hz;
 use super::conv::fluid_atten2amp;
 use super::conv::fluid_cb2amp;
@@ -486,8 +486,12 @@ pub unsafe fn fluid_voice_write(
                     match (*voice).interp_method {
                         InterpMethod::None => count = fluid_dsp_float_interpolate_none(voice),
                         InterpMethod::Linear => count = fluid_dsp_float_interpolate_linear(voice),
-                        InterpMethod::FourthOrder => count = fluid_dsp_float_interpolate_4th_order(voice),
-                        InterpMethod::SeventhOrder => count = fluid_dsp_float_interpolate_7th_order(voice),
+                        InterpMethod::FourthOrder => {
+                            count = fluid_dsp_float_interpolate_4th_order(voice)
+                        }
+                        InterpMethod::SeventhOrder => {
+                            count = fluid_dsp_float_interpolate_7th_order(voice)
+                        }
                     }
                     if count > 0 as i32 {
                         fluid_voice_effects(

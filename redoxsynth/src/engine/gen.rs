@@ -136,7 +136,7 @@ pub enum GenParam {
     Pitch = 59,
 
     Last = 60,
- }
+}
 
 #[derive(Copy, Clone)]
 pub struct Gen {

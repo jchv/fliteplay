@@ -38,8 +38,16 @@ impl Synth {
     If faulty parameters are given, all new settings are discarded.
     Keep in mind, that the needed CPU time is proportional to `nr`.
      */
-    pub fn set_chorus_params(&mut self, nr: u32, level: f64, speed: f64, depth: f64, mode: ChorusMode) {
-        self.handle.set_chorus_params(nr as i32, level, speed, depth, mode);
+    pub fn set_chorus_params(
+        &mut self,
+        nr: u32,
+        level: f64,
+        speed: f64,
+        depth: f64,
+        mode: ChorusMode,
+    ) {
+        self.handle
+            .set_chorus_params(nr as i32, level, speed, depth, mode);
     }
 
     /**

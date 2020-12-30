@@ -69,13 +69,7 @@ impl Synth {
         rincr: u32,
     ) -> Status {
         Synth::zero_ok(self.handle.write_s16(
-            len as _,
-            lbuf as _,
-            loff as _,
-            lincr as _,
-            rbuf as _,
-            roff as _,
-            rincr as _,
+            len as _, lbuf as _, loff as _, lincr as _, rbuf as _, roff as _, rincr as _,
         ))
     }
 
@@ -100,13 +94,7 @@ impl Synth {
         rincr: u32,
     ) -> Status {
         Synth::zero_ok(self.handle.write_float(
-            len as _,
-            lbuf as _,
-            loff as _,
-            lincr as _,
-            rbuf as _,
-            roff as _,
-            rincr as _,
+            len as _, lbuf as _, loff as _, lincr as _, rbuf as _, roff as _, rincr as _,
         ))
     }
 }

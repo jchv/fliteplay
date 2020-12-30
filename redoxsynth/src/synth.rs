@@ -13,7 +13,7 @@ mod write;
 pub use self::tuning::TuningIter;
 pub use self::write::IsSamples;
 
-use crate::{Error, Result, Settings, SettingsRef, engine};
+use crate::{engine, Error, Result, Settings, SettingsRef};
 
 /**
 The synth object
@@ -44,7 +44,7 @@ impl Synth {
      */
     pub fn new(settings: Settings) -> Result<Self> {
         match engine::synth::Synth::new(settings.handle) {
-            Ok(handle) => return Ok(Synth{ handle }),
+            Ok(handle) => return Ok(Synth { handle }),
             Err(_) => return Err(Error::Alloc),
         }
     }
@@ -79,19 +79,27 @@ mod test {
 
         let mut synth = Synth::new(settings).unwrap();
 
-        synth.sfload("../redoxsynth/testdata/Boomwhacker.sf2", true).unwrap();
+        synth
+            .sfload("../redoxsynth/testdata/Boomwhacker.sf2", true)
+            .unwrap();
 
         let mut samples = [0f32; 44100 * 2];
 
         synth.note_on(0, 60, 127).unwrap();
 
         synth.write(samples.as_mut()).unwrap();
-        pcm.write(unsafe { from_raw_parts(samples.as_ptr() as _, std::mem::size_of_val(&samples)) }).unwrap();
+        pcm.write(unsafe {
+            from_raw_parts(samples.as_ptr() as _, std::mem::size_of_val(&samples))
+        })
+        .unwrap();
 
         synth.note_off(0, 60).unwrap();
 
         synth.write(samples.as_mut()).unwrap();
-        pcm.write(unsafe { from_raw_parts(samples.as_ptr() as _, std::mem::size_of_val(&samples)) }).unwrap();
+        pcm.write(unsafe {
+            from_raw_parts(samples.as_ptr() as _, std::mem::size_of_val(&samples))
+        })
+        .unwrap();
 
         drop(synth);
     }

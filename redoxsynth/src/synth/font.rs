@@ -1,4 +1,6 @@
-use crate::{engine, option_from_ptr, Chan, Error, FontId, FontRef, PresetRef, Result, Status, Synth};
+use crate::{
+    engine, option_from_ptr, Chan, Error, FontId, FontRef, PresetRef, Result, Status, Synth,
+};
 use std::{ffi::CString, marker::PhantomData, path::Path};
 
 /**
@@ -17,7 +19,10 @@ impl Synth {
         let filename = CString::new(filename).map_err(|_| Error::Path)?;
 
         Synth::neg_err(unsafe {
-            self.handle.sfload(CString::from(filename).as_bytes_with_nul(), reset_presets as _)
+            self.handle.sfload(
+                CString::from(filename).as_bytes_with_nul(),
+                reset_presets as _,
+            )
         })
         .map(|id| id as _)
     }
@@ -27,8 +32,7 @@ impl Synth {
     index on the stack.
      */
     pub fn sfreload(&mut self, id: FontId) -> Result<FontId> {
-        Synth::neg_err(unsafe { self.handle.sfreload(id as _) })
-            .map(|id| id as _)
+        Synth::neg_err(unsafe { self.handle.sfreload(id as _) }).map(|id| id as _)
     }
 
     /**
@@ -52,8 +56,7 @@ impl Synth {
     - `num` The number of the SoundFont (0 <= num < sfcount)
      */
     pub fn get_sfont(&mut self, num: u32) -> Option<FontRef<'_>> {
-        option_from_ptr(unsafe { self.handle.get_sfont(num) })
-            .map(FontRef::from_ptr)
+        option_from_ptr(unsafe { self.handle.get_sfont(num) }).map(FontRef::from_ptr)
     }
 
     /**
@@ -67,8 +70,7 @@ impl Synth {
     Get a SoundFont. The SoundFont is specified by its ID.
      */
     pub fn get_sfont_by_id(&mut self, id: FontId) -> Option<FontRef<'_>> {
-        option_from_ptr(unsafe { self.handle.get_sfont_by_id(id) })
-            .map(FontRef::from_ptr)
+        option_from_ptr(unsafe { self.handle.get_sfont_by_id(id) }).map(FontRef::from_ptr)
     }
 
     /**
@@ -105,17 +107,14 @@ impl Synth {
     Returns -1 if an error occured (out of memory or negative offset)
      */
     pub fn set_bank_offset(&mut self, sfont_id: FontId, offset: u32) -> Status {
-        Synth::zero_ok(unsafe {
-            self.handle.set_bank_offset(sfont_id as _, offset as _)
-        })
+        Synth::zero_ok(unsafe { self.handle.set_bank_offset(sfont_id as _, offset as _) })
     }
 
     /**
     Get the offset of the bank numbers in a SoundFont.
      */
     pub fn get_bank_offset(&self, sfont_id: FontId) -> Result<u32> {
-        Synth::neg_err(unsafe { self.handle.get_bank_offset(sfont_id as _) })
-            .map(|val| val as _)
+        Synth::neg_err(unsafe { self.handle.get_bank_offset(sfont_id as _) }).map(|val| val as _)
     }
 }
 
@@ -129,14 +128,19 @@ mod test {
 
         assert_eq!(synth.sfcount(), 0);
 
-        synth.sfload("../redoxsynth/testdata/Boomwhacker.sf2", true).unwrap();
+        synth
+            .sfload("../redoxsynth/testdata/Boomwhacker.sf2", true)
+            .unwrap();
 
         assert_eq!(synth.sfcount(), 1);
 
         let font = synth.get_sfont(0).unwrap();
 
         assert_eq!(font.get_id(), 1);
-        assert_eq!(font.get_name().unwrap(), "../redoxsynth/testdata/Boomwhacker.sf2");
+        assert_eq!(
+            font.get_name().unwrap(),
+            "../redoxsynth/testdata/Boomwhacker.sf2"
+        );
 
         let preset = font.get_preset(0, 0).unwrap();
 

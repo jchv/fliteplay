@@ -16,12 +16,12 @@ mod redoxsynth_macros {
 pub(crate) mod channel;
 pub(crate) mod chorus;
 pub(crate) mod conv;
-pub(crate) mod sfloader;
 pub(crate) mod dsp_float;
 pub(crate) mod gen;
 pub(crate) mod modulator;
 pub(crate) mod reverb;
 pub(crate) mod settings;
+pub(crate) mod sfloader;
 pub(crate) mod soundfont;
 pub(crate) mod synth;
 pub(crate) mod tuning;

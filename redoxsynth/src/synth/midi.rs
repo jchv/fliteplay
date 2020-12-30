@@ -32,10 +32,8 @@ impl Synth {
     pub fn get_cc(&self, chan: Chan, ctrl: Ctrl) -> Result<Val> {
         let mut val = MaybeUninit::uninit();
 
-        Synth::zero_ok(unsafe {
-            self.handle.get_cc(chan as _, ctrl as _, val.as_mut_ptr())
-        })
-        .map(|_| unsafe { val.assume_init() as _ })
+        Synth::zero_ok(unsafe { self.handle.get_cc(chan as _, ctrl as _, val.as_mut_ptr()) })
+            .map(|_| unsafe { val.assume_init() as _ })
     }
 
     /**
@@ -52,7 +50,8 @@ impl Synth {
         let mut pitch_bend = MaybeUninit::uninit();
 
         Synth::zero_ok(unsafe {
-            self.handle.get_pitch_bend(chan as _, pitch_bend.as_mut_ptr())
+            self.handle
+                .get_pitch_bend(chan as _, pitch_bend.as_mut_ptr())
         })
         .map(|_| unsafe { pitch_bend.assume_init() as _ })
     }
@@ -71,7 +70,8 @@ impl Synth {
         let mut val = MaybeUninit::uninit();
 
         Synth::zero_ok(unsafe {
-            self.handle.get_pitch_wheel_sens(chan as _, val.as_mut_ptr())
+            self.handle
+                .get_pitch_wheel_sens(chan as _, val.as_mut_ptr())
         })
         .map(|_| unsafe { val.assume_init() as _ })
     }
@@ -94,9 +94,7 @@ impl Synth {
     Set key pressure (aftertouch)
      */
     pub fn key_pressure(&mut self, chan: Chan, key: Key, val: Val) -> Status {
-        Synth::zero_ok(unsafe {
-            self.handle.key_pressure(chan as _, key as _, val as _)
-        })
+        Synth::zero_ok(unsafe { self.handle.key_pressure(chan as _, key as _, val as _) })
     }
 
     /**
@@ -127,7 +125,8 @@ impl Synth {
         preset_num: PresetId,
     ) -> Status {
         Synth::zero_ok(unsafe {
-            self.handle.program_select(chan as _, sfont_id, bank_num, preset_num)
+            self.handle
+                .program_select(chan as _, sfont_id, bank_num, preset_num)
         })
     }
 

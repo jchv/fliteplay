@@ -1,4 +1,7 @@
-use std::{io::{Read, Seek, SeekFrom}, path::Path};
+use std::{
+    io::{Read, Seek, SeekFrom},
+    path::Path,
+};
 
 /** The file API. */
 pub trait File {
@@ -21,7 +24,7 @@ pub trait FileSystem {
 struct DefaultFileSystem;
 
 struct DefaultFile {
-    file: std::fs::File
+    file: std::fs::File,
 }
 
 impl File for DefaultFile {
@@ -40,10 +43,12 @@ impl File for DefaultFile {
 
 impl FileSystem for DefaultFileSystem {
     fn open(&mut self, filename: &Path) -> Option<Box<dyn File>> {
-        std::fs::File::open(filename).ok().map(|file| -> Box<dyn File> {Box::new(DefaultFile{file})})
+        std::fs::File::open(filename)
+            .ok()
+            .map(|file| -> Box<dyn File> { Box::new(DefaultFile { file }) })
     }
 }
 
 pub(crate) fn make_default_fs() -> Box<dyn FileSystem> {
-    return Box::new(DefaultFileSystem{});
+    return Box::new(DefaultFileSystem {});
 }

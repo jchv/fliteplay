@@ -1,4 +1,4 @@
-use crate::fileapi::{File, FileSystem, make_default_fs};
+use crate::fileapi::{make_default_fs, File, FileSystem};
 
 use super::gen::fluid_gen_set_default_values;
 use super::gen::Gen;
@@ -14,8 +14,12 @@ use super::voice::fluid_voice_gen_set;
 use super::voice::fluid_voice_optimize_sample;
 use super::voice::FluidVoiceAddMod;
 use super::voice::Voice;
+use std::{
+    cmp::Ordering,
+    ffi::{CStr, CString},
+    path::Path,
+};
 use std::{io::SeekFrom, slice::from_raw_parts_mut};
-use std::{cmp::Ordering, ffi::{CStr, CString}, path::Path};
 pub const FLUID_OK: i32 = 0;
 pub const FLUID_FAILED: i32 = -1;
 #[derive(Clone)]
@@ -278,7 +282,10 @@ pub type GenType = u32;
 pub type GenFlags = u32;
 
 unsafe fn read_unsafe<T>(fd: &mut dyn File, t: &mut T) -> bool {
-    return fd.read(from_raw_parts_mut(t as *mut T as _, std::mem::size_of::<T>()));
+    return fd.read(from_raw_parts_mut(
+        t as *mut T as _,
+        std::mem::size_of::<T>(),
+    ));
 }
 
 pub fn new_fluid_defsfloader() -> *mut SoundFontLoader {
@@ -578,15 +585,23 @@ pub unsafe fn fluid_defsfont_add_preset(
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_defsfont_load_sampledata(mut sfont: *mut DefaultSoundFont, fapi: &mut dyn FileSystem) -> i32 {
+pub unsafe fn fluid_defsfont_load_sampledata(
+    mut sfont: *mut DefaultSoundFont,
+    fapi: &mut dyn FileSystem,
+) -> i32 {
     let mut fd;
     let mut endian: u16;
-    fd = match fapi.open(Path::new(CStr::from_bytes_with_nul(&(*sfont).filename).unwrap().to_str().unwrap())) {
+    fd = match fapi.open(Path::new(
+        CStr::from_bytes_with_nul(&(*sfont).filename)
+            .unwrap()
+            .to_str()
+            .unwrap(),
+    )) {
         None => {
             fluid_log!(FLUID_ERR, "Can't open soundfont file",);
             return FLUID_FAILED as i32;
         }
-        Some(file) => file
+        Some(file) => file,
     };
     if !fd.seek(SeekFrom::Start((*sfont).samplepos as _)) {
         libc::perror(b"error\x00" as *const u8 as *const i8);
@@ -598,8 +613,10 @@ pub unsafe fn fluid_defsfont_load_sampledata(mut sfont: *mut DefaultSoundFont, f
         fluid_log!(FLUID_ERR, "Out of memory",);
         return FLUID_FAILED as i32;
     }
-    if !fd.read(from_raw_parts_mut((*sfont).sampledata as _, (*sfont).samplesize as _))
-    {
+    if !fd.read(from_raw_parts_mut(
+        (*sfont).sampledata as _,
+        (*sfont).samplesize as _,
+    )) {
         fluid_log!(FLUID_ERR, "Failed to read sample data",);
         return FLUID_FAILED as i32;
     }
@@ -1537,7 +1554,9 @@ pub unsafe fn sfload_file(fname: &[u8], fapi: &mut dyn FileSystem) -> *mut SFDat
     let mut sf: *mut SFData;
     let mut fd;
     let fsize: i32;
-    fd = match fapi.open(Path::new(CStr::from_bytes_with_nul(fname).unwrap().to_str().unwrap())) {
+    fd = match fapi.open(Path::new(
+        CStr::from_bytes_with_nul(fname).unwrap().to_str().unwrap(),
+    )) {
         None => {
             fluid_log!(
                 FLUID_ERR,
@@ -1548,7 +1567,7 @@ pub unsafe fn sfload_file(fname: &[u8], fapi: &mut dyn FileSystem) -> *mut SFDat
             );
             return 0 as *mut SFData;
         }
-        Some(file) => file
+        Some(file) => file,
     };
 
     sf = libc::malloc(::std::mem::size_of::<SFData>() as libc::size_t) as *mut SFData;
@@ -1568,7 +1587,9 @@ pub unsafe fn sfload_file(fname: &[u8], fapi: &mut dyn FileSystem) -> *mut SFDat
         return 0 as _;
     }
     match fd.tell() {
-        Some(pos) => { fsize = pos as _; }
+        Some(pos) => {
+            fsize = pos as _;
+        }
         None => {
             fluid_log!(FLUID_ERR, "Get end of file position failed",);
             sfont_close(sf);
@@ -1651,10 +1672,7 @@ unsafe fn load_body(size: u32, sf: *mut SFData, fd: &mut dyn File) -> i32 {
     });
     return 1 as i32;
 }
-unsafe fn read_listchunk(
-    mut chunk: *mut SFChunk,
-    fd: &mut dyn File
-) -> i32 {
+unsafe fn read_listchunk(mut chunk: *mut SFChunk, fd: &mut dyn File) -> i32 {
     if !fd.read(from_raw_parts_mut(chunk as _, 8)) {
         return 0;
     }
@@ -1668,11 +1686,7 @@ unsafe fn read_listchunk(
     (*chunk).size = (*chunk).size.wrapping_sub(4 as i32 as u32);
     return 1 as i32;
 }
-unsafe fn process_info(
-    mut size: i32,
-    sf: *mut SFData,
-    fd: &mut dyn File,
-) -> i32 {
+unsafe fn process_info(mut size: i32, sf: *mut SFData, fd: &mut dyn File) -> i32 {
     let mut chunk: SFChunk = SFChunk { id: 0, size: 0 };
     let mut id: u8;
     while size > 0 as i32 {
@@ -1685,8 +1699,9 @@ unsafe fn process_info(
             if chunk.size != 4 as i32 as u32 {
                 return gerr!(ErrCorr, "Sound font version info chunk has invalid size",);
             }
-            if !read_unsafe(fd, &mut (*sf).version.major) ||
-               !read_unsafe(fd, &mut (*sf).version.minor) {
+            if !read_unsafe(fd, &mut (*sf).version.major)
+                || !read_unsafe(fd, &mut (*sf).version.minor)
+            {
                 return 0;
             }
             if ((*sf).version.major as i32) < 2 as i32 {
@@ -1730,7 +1745,10 @@ unsafe fn process_info(
             let mut item = Vec::new();
             item.resize(chunk.size as usize + 1, 0);
             item[0] = id;
-            if !fd.read(from_raw_parts_mut(item.as_mut_ptr().offset(1) as _, chunk.size as _)) {
+            if !fd.read(from_raw_parts_mut(
+                item.as_mut_ptr().offset(1) as _,
+                chunk.size as _,
+            )) {
                 return 0;
             }
             item[chunk.size as usize - 1] = 0;
@@ -1745,11 +1763,7 @@ unsafe fn process_info(
     }
     return 1 as i32;
 }
-unsafe fn process_sdta(
-    mut size: i32,
-    mut sf: *mut SFData,
-    fd: &mut dyn File,
-) -> i32 {
+unsafe fn process_sdta(mut size: i32, mut sf: *mut SFData, fd: &mut dyn File) -> i32 {
     let mut chunk: SFChunk = SFChunk { id: 0, size: 0 };
     if size == 0 {
         return 1;
@@ -1777,7 +1791,7 @@ unsafe fn pdtahelper(
     reclen: u32,
     chunk: *mut SFChunk,
     size: *mut i32,
-    fd: &mut dyn File
+    fd: &mut dyn File,
 ) -> i32 {
     let id: u32;
     let expstr: *mut i8;
@@ -1786,7 +1800,7 @@ unsafe fn pdtahelper(
             .wrapping_sub(1 as i32 as u32)
             .wrapping_mul(4 as i32 as u32) as isize,
     ) as *mut i8;
-    
+
     if !read_unsafe(fd, &mut *chunk) {
         return 0;
     }
@@ -1817,11 +1831,7 @@ unsafe fn pdtahelper(
     }
     return 1 as i32;
 }
-unsafe fn process_pdta(
-    mut size: i32,
-    sf: *mut SFData,
-    fd: &mut dyn File,
-) -> i32 {
+unsafe fn process_pdta(mut size: i32, sf: *mut SFData, fd: &mut dyn File) -> i32 {
     let mut chunk: SFChunk = SFChunk { id: 0, size: 0 };
     if pdtahelper(
         PHDR_ID as i32 as u32,
@@ -1841,7 +1851,7 @@ unsafe fn process_pdta(
         4 as i32 as u32,
         &mut chunk,
         &mut size,
-        fd
+        fd,
     ) == 0
     {
         return 0 as i32;
@@ -1854,7 +1864,7 @@ unsafe fn process_pdta(
         10 as i32 as u32,
         &mut chunk,
         &mut size,
-        fd
+        fd,
     ) == 0
     {
         return 0 as i32;
@@ -1867,7 +1877,7 @@ unsafe fn process_pdta(
         4 as i32 as u32,
         &mut chunk,
         &mut size,
-        fd
+        fd,
     ) == 0
     {
         return 0 as i32;
@@ -1880,7 +1890,7 @@ unsafe fn process_pdta(
         22 as i32 as u32,
         &mut chunk,
         &mut size,
-        fd
+        fd,
     ) == 0
     {
         return 0 as i32;
@@ -1893,7 +1903,7 @@ unsafe fn process_pdta(
         4 as i32 as u32,
         &mut chunk,
         &mut size,
-        fd
+        fd,
     ) == 0
     {
         return 0 as i32;
@@ -1906,7 +1916,7 @@ unsafe fn process_pdta(
         10 as i32 as u32,
         &mut chunk,
         &mut size,
-        fd
+        fd,
     ) == 0
     {
         return 0 as i32;
@@ -1919,7 +1929,7 @@ unsafe fn process_pdta(
         4 as i32 as u32,
         &mut chunk,
         &mut size,
-        fd
+        fd,
     ) == 0
     {
         return 0 as i32;
@@ -1932,7 +1942,7 @@ unsafe fn process_pdta(
         46 as i32 as u32,
         &mut chunk,
         &mut size,
-        fd
+        fd,
     ) == 0
     {
         return 0 as i32;
@@ -2021,11 +2031,7 @@ unsafe fn load_phdr(size: i32, sf: *mut SFData, fd: &mut dyn File) -> i32 {
     }
     return 1 as i32;
 }
-unsafe fn load_pbag(
-    mut size: i32,
-    sf: *mut SFData,
-    fd: &mut dyn File
-) -> i32 {
+unsafe fn load_pbag(mut size: i32, sf: *mut SFData, fd: &mut dyn File) -> i32 {
     let mut pz: *mut SFZone = 0 as _;
     let mut genndx: u16 = 0;
     let mut modndx: u16 = 0;
@@ -2118,11 +2124,7 @@ unsafe fn load_pbag(
     }
     return 1 as i32;
 }
-unsafe fn load_pmod(
-    mut size: i32,
-    sf: *mut SFData,
-    fd: &mut dyn File
-) -> i32 {
+unsafe fn load_pmod(mut size: i32, sf: *mut SFData, fd: &mut dyn File) -> i32 {
     for preset in (*sf).preset.iter() {
         for z in (**preset).zone.iter() {
             for m in (**z).mod_0.iter_mut() {
@@ -2146,17 +2148,12 @@ unsafe fn load_pmod(
     if size != 0 as i32 {
         return gerr!(ErrCorr, "Preset modulator chunk size mismatch",);
     }
-    if !fd.seek(SeekFrom::Current(10))
-    {
+    if !fd.seek(SeekFrom::Current(10)) {
         return 0 as i32;
     }
     return 1 as i32;
 }
-unsafe fn load_pgen(
-    mut size: i32,
-    sf: *mut SFData,
-    fd: &mut dyn File
-) -> i32 {
+unsafe fn load_pgen(mut size: i32, sf: *mut SFData, fd: &mut dyn File) -> i32 {
     let mut p3;
     let mut dup;
     let hz: usize = 0;
@@ -2291,17 +2288,12 @@ unsafe fn load_pgen(
     if size != 0 as i32 {
         return gerr!(ErrCorr, "Preset generator chunk size mismatch",);
     }
-    if !fd.seek(SeekFrom::Current(4))
-    {
+    if !fd.seek(SeekFrom::Current(4)) {
         return 0 as i32;
     }
     return 1 as i32;
 }
-unsafe fn load_ihdr(
-    mut size: i32,
-    sf: *mut SFData,
-    fd: &mut dyn File
-) -> i32 {
+unsafe fn load_ihdr(mut size: i32, sf: *mut SFData, fd: &mut dyn File) -> i32 {
     let mut i: i32;
     let mut i2: i32;
     let mut p: *mut SFInst;
@@ -2371,11 +2363,7 @@ unsafe fn load_ihdr(
     }
     return 1 as i32;
 }
-unsafe fn load_ibag(
-    mut size: i32,
-    sf: *mut SFData,
-    fd: &mut dyn File
-) -> i32 {
+unsafe fn load_ibag(mut size: i32, sf: *mut SFData, fd: &mut dyn File) -> i32 {
     let mut pz: *mut SFZone = 0 as _;
     let mut genndx: u16 = 0;
     let mut modndx: u16 = 0;
@@ -2474,11 +2462,7 @@ unsafe fn load_ibag(
     }
     return 1 as i32;
 }
-unsafe fn load_imod(
-    mut size: i32,
-    sf: *mut SFData,
-    fd: &mut dyn File
-) -> i32 {
+unsafe fn load_imod(mut size: i32, sf: *mut SFData, fd: &mut dyn File) -> i32 {
     for inst in (*sf).inst.iter() {
         for zone in (**inst).zone.iter() {
             for m in (**zone).mod_0.iter_mut() {
@@ -2507,11 +2491,7 @@ unsafe fn load_imod(
     }
     return 1 as i32;
 }
-unsafe fn load_igen(
-    mut size: i32,
-    sf: *mut SFData,
-    fd: &mut dyn File
-) -> i32 {
+unsafe fn load_igen(mut size: i32, sf: *mut SFData, fd: &mut dyn File) -> i32 {
     let mut p3;
     let mut dup;
     let mut hz: usize;
@@ -2662,11 +2642,7 @@ unsafe fn load_igen(
     }
     return 1 as i32;
 }
-unsafe fn load_shdr(
-    mut size: u32,
-    sf: *mut SFData,
-    fd: &mut dyn File
-) -> i32 {
+unsafe fn load_shdr(mut size: u32, sf: *mut SFData, fd: &mut dyn File) -> i32 {
     let mut i: u32;
     let mut p: *mut SFSample;
     if size.wrapping_rem(46 as i32 as u32) != 0 || size == 0 as i32 as u32 {
@@ -2706,8 +2682,7 @@ unsafe fn load_shdr(
         (*p).samfile = 0;
         i += 1
     }
-    if !fd.seek(SeekFrom::Current(46))
-    {
+    if !fd.seek(SeekFrom::Current(46)) {
         return 0 as i32;
     }
     return 1 as i32;

@@ -1,12 +1,11 @@
 use std::ffi::CStr;
 
-use super::{channel::{Channel, InterpMethod}, chorus::ChorusMode};
 use super::chorus::Chorus;
-use super::sfloader::new_fluid_defsfloader;
 use super::dsp_float::fluid_dsp_float_config;
 use super::modulator::Mod;
 use super::reverb::ReverbModel;
 use super::settings::Settings;
+use super::sfloader::new_fluid_defsfloader;
 use super::soundfont::Preset;
 use super::soundfont::Sample;
 use super::soundfont::SoundFont;
@@ -29,6 +28,10 @@ use super::voice::fluid_voice_write;
 use super::voice::new_fluid_voice;
 use super::voice::FluidVoiceAddMod;
 use super::voice::Voice;
+use super::{
+    channel::{Channel, InterpMethod},
+    chorus::ChorusMode,
+};
 
 static mut FLUID_ERRBUF: [u8; 512] = [0; 512];
 

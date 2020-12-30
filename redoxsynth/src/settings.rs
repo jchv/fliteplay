@@ -64,7 +64,9 @@ pub trait IsSettings {
 }
 
 mod private {
-    use crate::{engine, private::HasHandle, IsSetting, IsSettings, Setting, Settings, SettingsRef};
+    use crate::{
+        engine, private::HasHandle, IsSetting, IsSettings, Setting, Settings, SettingsRef,
+    };
     use std::marker::PhantomData;
 
     impl<X> IsSettings for X
@@ -291,7 +293,11 @@ where
     S: AsRef<str>,
 {
     fn eq(&self, other: &S) -> bool {
-        engine::settings::Settings::str_equal(unsafe { &mut *self.handle }, &self.name, other.as_ref())
+        engine::settings::Settings::str_equal(
+            unsafe { &mut *self.handle },
+            &self.name,
+            other.as_ref(),
+        )
     }
 }
 

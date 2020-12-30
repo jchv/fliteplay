@@ -1,4 +1,4 @@
-use super::gen::{GenParam, fluid_gen_scale_nrpn};
+use super::gen::{fluid_gen_scale_nrpn, GenParam};
 use super::soundfont::Preset;
 use super::synth::Synth;
 use super::tuning::Tuning;
@@ -30,7 +30,6 @@ impl Default for InterpMethod {
         Self::FourthOrder
     }
 }
-
 
 #[derive(Clone)]
 pub struct Channel {
