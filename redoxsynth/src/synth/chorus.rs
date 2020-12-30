@@ -1,6 +1,6 @@
-use crate::{ll, Synth};
+use crate::{engine, Synth};
 
-type ChorusMode = ll::chorus::ChorusMode;
+type ChorusMode = engine::chorus::ChorusMode;
 
 /**
 Chorus parameters

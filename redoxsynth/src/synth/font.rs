@@ -1,4 +1,4 @@
-use crate::{ll, option_from_ptr, Chan, Error, FontId, FontRef, PresetRef, Result, Status, Synth};
+use crate::{engine, option_from_ptr, Chan, Error, FontId, FontRef, PresetRef, Result, Status, Synth};
 use std::{ffi::CString, marker::PhantomData, path::Path};
 
 /**
@@ -88,7 +88,7 @@ impl Synth {
     the SoundFont stack.
      */
     pub fn add_sfont(&self, sfont: &SFont) -> Result<FontId> {
-        self.neg_err(unsafe { ll::fluid_synth_add_sfont(self.handle, sfont.as_ptr()) })
+        self.neg_err(unsafe { engine::fluid_synth_add_sfont(self.handle, sfont.as_ptr()) })
     }
      */
 
@@ -150,13 +150,13 @@ mod test {
 The iterator over loaded SoundFonts.
  */
 pub struct FontIter<'a> {
-    handle: *mut ll::synth::Synth,
+    handle: *mut engine::synth::Synth,
     phantom: PhantomData<&'a ()>,
     font_no: u32,
 }
 
 impl<'a> FontIter<'a> {
-    fn from_ptr(handle: *mut ll::synth::Synth) -> Self {
+    fn from_ptr(handle: *mut engine::synth::Synth) -> Self {
         Self {
             handle,
             phantom: PhantomData,

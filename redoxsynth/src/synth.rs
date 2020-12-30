@@ -13,7 +13,7 @@ mod write;
 pub use self::tuning::TuningIter;
 pub use self::write::IsSamples;
 
-use crate::{Error, Result, Settings, SettingsRef, ll};
+use crate::{Error, Result, Settings, SettingsRef, engine};
 
 /**
 The synth object
@@ -31,7 +31,7 @@ The API for sending MIDI events is probably what you expect:
 `Synth::noteon()`, `Synth::noteoff()`, ...
  */
 pub struct Synth {
-    handle: ll::synth::Synth,
+    handle: engine::synth::Synth,
 }
 
 unsafe impl Send for Synth {}
@@ -43,7 +43,7 @@ impl Synth {
     As soon as the synthesizer is created, it will start playing.
      */
     pub fn new(settings: Settings) -> Result<Self> {
-        match ll::synth::Synth::new(settings.handle) {
+        match engine::synth::Synth::new(settings.handle) {
             Ok(handle) => return Ok(Synth{ handle }),
             Err(_) => return Err(Error::Alloc),
         }

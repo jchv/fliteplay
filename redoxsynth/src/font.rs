@@ -1,4 +1,4 @@
-use crate::{ll, Bank, FontId, PresetId};
+use crate::{engine, Bank, FontId, PresetId};
 use std::marker::PhantomData;
 
 /**
@@ -24,19 +24,19 @@ Reference to SoundFont object
  */
 #[repr(transparent)]
 pub struct FontRef<'a> {
-    handle: *mut ll::soundfont::SoundFont,
+    handle: *mut engine::soundfont::SoundFont,
     phantom: PhantomData<&'a ()>,
 }
 
 impl<'a> FontRef<'a> {
-    pub(crate) fn from_ptr(handle: *mut ll::soundfont::SoundFont) -> Self {
+    pub(crate) fn from_ptr(handle: *mut engine::soundfont::SoundFont) -> Self {
         Self {
             handle,
             phantom: PhantomData,
         }
     }
 
-    pub(crate) fn as_ptr(&self) -> *mut ll::soundfont::SoundFont {
+    pub(crate) fn as_ptr(&self) -> *mut engine::soundfont::SoundFont {
         self.handle
     }
 }
@@ -46,12 +46,12 @@ Reference to Preset object
  */
 #[repr(transparent)]
 pub struct PresetRef<'a> {
-    handle: *mut ll::soundfont::Preset,
+    handle: *mut engine::soundfont::Preset,
     phantom: PhantomData<&'a ()>,
 }
 
 impl<'a> PresetRef<'a> {
-    pub(crate) fn from_ptr(handle: *mut ll::soundfont::Preset) -> Self {
+    pub(crate) fn from_ptr(handle: *mut engine::soundfont::Preset) -> Self {
         Self {
             handle,
             phantom: PhantomData,
@@ -61,13 +61,13 @@ impl<'a> PresetRef<'a> {
 
 mod private {
     use crate::{
-        ll, option_from_ptr, private::HasHandle, Bank, FontId, FontRef, IsFont, IsPreset,
+        engine, option_from_ptr, private::HasHandle, Bank, FontId, FontRef, IsFont, IsPreset,
         PresetId, PresetRef,
     };
 
     impl<X> IsFont for X
     where
-        X: HasHandle<Handle = ll::soundfont::SoundFont>,
+        X: HasHandle<Handle = engine::soundfont::SoundFont>,
     {
         fn get_id(&self) -> FontId {
             let handle = self.get_handle();
@@ -92,7 +92,7 @@ mod private {
     }
 
     impl<'a> HasHandle for FontRef<'a> {
-        type Handle = ll::soundfont::SoundFont;
+        type Handle = engine::soundfont::SoundFont;
 
         fn get_handle(&self) -> *const Self::Handle {
             self.handle
@@ -105,7 +105,7 @@ mod private {
 
     impl<X> IsPreset for X
     where
-        X: HasHandle<Handle = ll::soundfont::Preset>,
+        X: HasHandle<Handle = engine::soundfont::Preset>,
     {
         fn get_name(&self) -> Option<String> {
             let handle = self.get_handle();
@@ -141,7 +141,7 @@ mod private {
     }
 
     impl<'a> HasHandle for PresetRef<'a> {
-        type Handle = ll::soundfont::Preset;
+        type Handle = engine::soundfont::Preset;
 
         fn get_handle(&self) -> *const Self::Handle {
             self.handle

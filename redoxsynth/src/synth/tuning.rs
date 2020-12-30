@@ -1,4 +1,4 @@
-use crate::{ll, Bank, Chan, Prog, Result, Status, Synth};
+use crate::{engine, Bank, Chan, Prog, Result, Status, Synth};
 use std::{
     ffi::{CStr, CString},
     marker::PhantomData,
@@ -230,14 +230,14 @@ impl Synth {
 The iterator over tunings
  */
 pub struct TuningIter<'a> {
-    handle: *mut ll::synth::Synth,
+    handle: *mut engine::synth::Synth,
     phantom: PhantomData<&'a ()>,
     init: bool,
     next: bool,
 }
 
 impl<'a> TuningIter<'a> {
-    fn from_ptr(handle: *mut ll::synth::Synth) -> Self {
+    fn from_ptr(handle: *mut engine::synth::Synth) -> Self {
         Self {
             handle,
             phantom: PhantomData,

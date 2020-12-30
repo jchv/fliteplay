@@ -1,4 +1,4 @@
-use crate::{ll, Error, Result, Status, Synth};
+use crate::{engine, Error, Result, Status, Synth};
 use std::ffi::CStr;
 
 impl Synth {
@@ -6,7 +6,7 @@ impl Synth {
     Get a textual representation of the last error
      */
     pub(super) fn error() -> String {
-        let error = unsafe { ll::synth::error() };
+        let error = unsafe { engine::synth::error() };
         let error = unsafe { CStr::from_ptr(error as _) };
         error.to_str().unwrap().into()
     }

@@ -1,6 +1,6 @@
-use crate::{ll, Chan, Status, Synth};
+use crate::{engine, Chan, Status, Synth};
 
-type GenParam = ll::gen::GenParam;
+type GenParam = engine::gen::GenParam;
 
 /**
 Generator interface

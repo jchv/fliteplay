@@ -1,6 +1,6 @@
 use crate::{Status, Synth};
 
-type InterpMethod = crate::ll::channel::InterpMethod;
+type InterpMethod = crate::engine::channel::InterpMethod;
 
 /**
 Synthesis parameters

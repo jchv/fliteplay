@@ -1,4 +1,4 @@
-use crate::{ll, Result};
+use crate::{engine, Result};
 use bitflags::bitflags;
 use std::{
     marker::PhantomData,
@@ -10,7 +10,7 @@ The generic settings object
  */
 #[repr(transparent)]
 pub struct Settings {
-    pub(crate) handle: ll::settings::Settings,
+    pub(crate) handle: engine::settings::Settings,
 }
 
 unsafe impl Send for Settings {}
@@ -20,20 +20,20 @@ The settings reference
 */
 #[repr(transparent)]
 pub struct SettingsRef<'a> {
-    pub(crate) handle: *mut ll::settings::Settings,
+    pub(crate) handle: *mut engine::settings::Settings,
     phantom: PhantomData<&'a ()>,
 }
 
 impl Settings {
     pub fn new() -> Result<Self> {
         return Ok(Self {
-            handle: unsafe { ll::settings::Settings::new() },
+            handle: unsafe { engine::settings::Settings::new() },
         });
     }
 }
 
 impl<'a> SettingsRef<'a> {
-    pub(crate) fn from_ptr(handle: *mut ll::settings::Settings) -> Self {
+    pub(crate) fn from_ptr(handle: *mut engine::settings::Settings) -> Self {
         Self {
             handle,
             phantom: PhantomData,
@@ -64,12 +64,12 @@ pub trait IsSettings {
 }
 
 mod private {
-    use crate::{ll, private::HasHandle, IsSetting, IsSettings, Setting, Settings, SettingsRef};
+    use crate::{engine, private::HasHandle, IsSetting, IsSettings, Setting, Settings, SettingsRef};
     use std::marker::PhantomData;
 
     impl<X> IsSettings for X
     where
-        X: HasHandle<Handle = ll::settings::Settings>,
+        X: HasHandle<Handle = engine::settings::Settings>,
     {
         fn pick<S, T>(&mut self, name: S) -> Option<Setting<'_, T>>
         where
@@ -112,7 +112,7 @@ mod private {
     }
 
     impl HasHandle for Settings {
-        type Handle = ll::settings::Settings;
+        type Handle = engine::settings::Settings;
 
         fn get_handle(&self) -> *const Self::Handle {
             &self.handle as *const Self::Handle
@@ -124,7 +124,7 @@ mod private {
     }
 
     impl<'a> HasHandle for SettingsRef<'a> {
-        type Handle = ll::settings::Settings;
+        type Handle = engine::settings::Settings;
 
         fn get_handle(&self) -> *const Self::Handle {
             self.handle
@@ -140,23 +140,23 @@ mod private {
 The single setting object interface
  */
 pub trait IsSetting {
-    const TYPE: ll::settings::SettingsType;
+    const TYPE: engine::settings::SettingsType;
 }
 
 impl IsSetting for str {
-    const TYPE: ll::settings::SettingsType = ll::settings::FLUID_STR_TYPE;
+    const TYPE: engine::settings::SettingsType = engine::settings::FLUID_STR_TYPE;
 }
 
 impl IsSetting for f64 {
-    const TYPE: ll::settings::SettingsType = ll::settings::FLUID_NUM_TYPE;
+    const TYPE: engine::settings::SettingsType = engine::settings::FLUID_NUM_TYPE;
 }
 
 impl IsSetting for i32 {
-    const TYPE: ll::settings::SettingsType = ll::settings::FLUID_INT_TYPE;
+    const TYPE: engine::settings::SettingsType = engine::settings::FLUID_INT_TYPE;
 }
 
 impl IsSetting for () {
-    const TYPE: ll::settings::SettingsType = ll::settings::FLUID_SET_TYPE;
+    const TYPE: engine::settings::SettingsType = engine::settings::FLUID_SET_TYPE;
 }
 
 bitflags! {
@@ -231,7 +231,7 @@ bitflags! {
 The single setting of specific type
  */
 pub struct Setting<'a, T: ?Sized> {
-    handle: *mut ll::settings::Settings,
+    handle: *mut engine::settings::Settings,
     name: String,
     phantom: PhantomData<(&'a (), T)>,
 }
@@ -242,14 +242,14 @@ where
 {
     pub fn hints(&self) -> Hints {
         Hints::from_bits_truncate(unsafe {
-            ll::settings::Settings::get_hints(&*self.handle, &self.name)
+            engine::settings::Settings::get_hints(&*self.handle, &self.name)
         })
     }
 
     /** Returns whether the setting is changeable in real-time
      */
     pub fn is_realtime(&self) -> bool {
-        unsafe { ll::settings::Settings::is_realtime(&*self.handle, &self.name) }
+        unsafe { engine::settings::Settings::is_realtime(&*self.handle, &self.name) }
     }
 }
 
@@ -262,7 +262,7 @@ impl<'a> Setting<'a, str> {
     pub fn set<S: Into<String>>(&self, value: S) -> bool {
         let mut value = value.into();
         value.push('\0');
-        0 < unsafe { ll::settings::Settings::setstr(&mut *self.handle, &self.name, &value) }
+        0 < unsafe { engine::settings::Settings::setstr(&mut *self.handle, &self.name, &value) }
     }
 
     /**
@@ -272,7 +272,7 @@ impl<'a> Setting<'a, str> {
      */
     pub fn get(&self) -> Option<String> {
         unsafe {
-            return ll::settings::Settings::getstr(&*self.handle, &self.name);
+            return engine::settings::Settings::getstr(&*self.handle, &self.name);
         }
     }
 
@@ -281,7 +281,7 @@ impl<'a> Setting<'a, str> {
      */
     pub fn default(&self) -> String {
         unsafe {
-            return ll::settings::Settings::getstr_default(&*self.handle, &self.name);
+            return engine::settings::Settings::getstr_default(&*self.handle, &self.name);
         }
     }
 }
@@ -291,7 +291,7 @@ where
     S: AsRef<str>,
 {
     fn eq(&self, other: &S) -> bool {
-        ll::settings::Settings::str_equal(unsafe { &mut *self.handle }, &self.name, other.as_ref())
+        engine::settings::Settings::str_equal(unsafe { &mut *self.handle }, &self.name, other.as_ref())
     }
 }
 
@@ -337,7 +337,7 @@ impl<'a> Setting<'a, f64> {
     Returns `true` if the value has been set, `false` otherwise
      */
     pub fn set(&self, value: f64) -> bool {
-        0 < unsafe { ll::settings::Settings::setnum(&mut *self.handle, &self.name, value) }
+        0 < unsafe { engine::settings::Settings::setnum(&mut *self.handle, &self.name, value) }
     }
 
     /**
@@ -346,14 +346,14 @@ impl<'a> Setting<'a, f64> {
     Returns `Some(value)` if the value exists, `None` otherwise
      */
     pub fn get(&self) -> Option<f64> {
-        return ll::settings::Settings::getnum(unsafe { &*self.handle }, &self.name);
+        return engine::settings::Settings::getnum(unsafe { &*self.handle }, &self.name);
     }
 
     /**
     Get the default value of a numeric setting
      */
     pub fn default(&self) -> f64 {
-        unsafe { ll::settings::Settings::getnum_default(&*self.handle, &self.name) }
+        unsafe { engine::settings::Settings::getnum_default(&*self.handle, &self.name) }
     }
 
     /**
@@ -362,7 +362,7 @@ impl<'a> Setting<'a, f64> {
     pub fn range(&self) -> Range<f64> {
         unsafe {
             let hints = self.hints();
-            return match ll::settings::Settings::getnum_range(&*self.handle, &self.name) {
+            return match engine::settings::Settings::getnum_range(&*self.handle, &self.name) {
                 Some(range) => Range::new(
                     if hints.contains(Hints::BOUNDED_BELOW) {
                         Some(range.min)
@@ -388,7 +388,7 @@ impl<'a> Setting<'a, i32> {
     Returns `true` if the value has been set, `false` otherwise
      */
     pub fn set(&self, value: i32) -> bool {
-        0 < ll::settings::Settings::setint(unsafe { &mut *self.handle }, &self.name, value)
+        0 < engine::settings::Settings::setint(unsafe { &mut *self.handle }, &self.name, value)
     }
 
     /**
@@ -397,14 +397,14 @@ impl<'a> Setting<'a, i32> {
     Returns `Some(value)` if the value exists, `None` otherwise
      */
     pub fn get(&self) -> Option<i32> {
-        return ll::settings::Settings::getint(unsafe { &*self.handle }, &self.name);
+        return engine::settings::Settings::getint(unsafe { &*self.handle }, &self.name);
     }
 
     /**
     Get the default value of a integer setting
      */
     pub fn default(&self) -> i32 {
-        unsafe { ll::settings::Settings::getint_default(&*self.handle, &self.name) }
+        unsafe { engine::settings::Settings::getint_default(&*self.handle, &self.name) }
     }
 
     /**
@@ -413,7 +413,7 @@ impl<'a> Setting<'a, i32> {
     pub fn range(&self) -> Range<i32> {
         unsafe {
             let hints = self.hints();
-            return match ll::settings::Settings::getint_range(&*self.handle, &self.name) {
+            return match engine::settings::Settings::getint_range(&*self.handle, &self.name) {
                 Some(range) => Range::new(
                     if hints.contains(Hints::BOUNDED_BELOW) {
                         Some(range.min)
