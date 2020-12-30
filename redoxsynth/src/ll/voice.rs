@@ -15,14 +15,13 @@ use super::dsp_float::fluid_dsp_float_interpolate_linear;
 use super::dsp_float::fluid_dsp_float_interpolate_none;
 use super::gen::fluid_gen_init;
 use super::gen::Gen;
-use super::modulator::fluid_mod_clone;
 use super::modulator::fluid_mod_get_dest;
 use super::modulator::fluid_mod_get_value;
 use super::modulator::fluid_mod_test_identity;
 use super::modulator::Mod;
 use super::sfont::Sample;
 use super::synth::Synth;
-#[derive(Copy, Clone)]
+
 pub struct Voice {
     pub(crate) id: u32,
     pub(crate) status: u8,
@@ -1549,10 +1548,7 @@ pub unsafe fn fluid_voice_add_mod(mut voice: *mut Voice, mod_0: &Mod, mode: i32)
     if (*voice).mod_count < 64 as i32 {
         let fresh7 = (*voice).mod_count;
         (*voice).mod_count = (*voice).mod_count + 1;
-        fluid_mod_clone(
-            &mut *(*voice).mod_0.as_mut_ptr().offset(fresh7 as isize),
-            mod_0,
-        );
+        *(*voice).mod_0.as_mut_ptr().offset(fresh7 as isize) = mod_0.clone();
     };
 }
 

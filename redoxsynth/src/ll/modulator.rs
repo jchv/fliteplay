@@ -2,16 +2,6 @@ use super::channel::Channel;
 use super::conv::fluid_concave;
 use super::conv::fluid_convex;
 use super::voice::Voice;
-#[derive(Copy, Clone)]
-pub struct Mod {
-    pub(crate) dest: u8,
-    pub(crate) src1: u8,
-    pub(crate) flags1: u8,
-    pub(crate) src2: u8,
-    pub(crate) flags2: u8,
-    pub(crate) amount: f64,
-    pub(crate) next: *mut Mod,
-}
 pub type ModFlags = u32;
 pub const FLUID_MOD_CC: ModFlags = 16;
 pub const FLUID_MOD_GC: ModFlags = 0;
@@ -25,13 +15,28 @@ pub const FLUID_MOD_VELOCITY: ModSrc = 2;
 pub type GenType = u32;
 pub const GEN_FILTERFC: GenType = 8;
 
-pub fn fluid_mod_clone(mut mod_0: &mut Mod, src: &Mod) {
-    mod_0.dest = src.dest;
-    mod_0.src1 = src.src1;
-    mod_0.flags1 = src.flags1;
-    mod_0.src2 = src.src2;
-    mod_0.flags2 = src.flags2;
-    mod_0.amount = src.amount;
+pub struct Mod {
+    pub(crate) dest: u8,
+    pub(crate) src1: u8,
+    pub(crate) flags1: u8,
+    pub(crate) src2: u8,
+    pub(crate) flags2: u8,
+    pub(crate) amount: f64,
+    pub(crate) next: *mut Mod,
+}
+
+impl Clone for Mod {
+    fn clone(&self) -> Self {
+        Self {
+            dest: self.dest,
+            src1: self.src1,
+            flags1: self.flags1,
+            src2: self.src2,
+            flags2: self.flags2,
+            amount: self.amount,
+            next: 0 as _
+        }
+    }
 }
 
 pub unsafe fn fluid_mod_set_source1(mut mod_0: &mut Mod, src: i32, flags: i32) {
