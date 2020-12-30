@@ -1,20 +1,5 @@
 use std::ffi::CStr;
 
-use super::channel::fluid_channel_get_banknum;
-use super::channel::fluid_channel_get_num;
-use super::channel::fluid_channel_get_preset;
-use super::channel::fluid_channel_get_prognum;
-use super::channel::fluid_channel_get_sfontnum;
-use super::channel::fluid_channel_pitch_bend;
-use super::channel::fluid_channel_pitch_wheel_sens;
-use super::channel::fluid_channel_pressure;
-use super::channel::fluid_channel_reset;
-use super::channel::fluid_channel_set_banknum;
-use super::channel::fluid_channel_set_interp_method;
-use super::channel::fluid_channel_set_preset;
-use super::channel::fluid_channel_set_prognum;
-use super::channel::fluid_channel_set_sfontnum;
-use super::channel::new_fluid_channel;
 use super::channel::Channel;
 use super::chorus::Chorus;
 use super::defsfont::new_fluid_defsfloader;
@@ -62,10 +47,7 @@ use super::voice::fluid_voice_write;
 use super::voice::new_fluid_voice;
 use super::voice::FluidVoiceAddMod;
 use super::voice::Voice;
-use super::{
-    channel::fluid_channel_cc,
-    settings::{new_fluid_settings, Settings},
-};
+use super::settings::{new_fluid_settings, Settings};
 
 pub struct Synth {
     pub settings: Settings,
@@ -260,7 +242,7 @@ impl Synth {
                 fluid_synth_add_sfloader(&mut synth, loader);
             }
             for i in 0..synth.midi_channels {
-                synth.channel.push(new_fluid_channel(&synth, i));
+                synth.channel.push(Channel::new(&synth, i));
             }
             synth.nvoice = synth.polyphony;
             for _ in 0..synth.nvoice {
@@ -913,7 +895,7 @@ pub unsafe fn fluid_synth_cc(synth: *mut Synth, chan: i32, num: i32, val: i32) -
     if (*synth).verbose != 0 {
         fluid_log!(FLUID_INFO, "cc\t{}\t{}\t{}", chan, num, val);
     }
-    fluid_channel_cc(&mut (*synth).channel[chan as usize], &mut *synth, num, val);
+    (*synth).channel[chan as usize].cc(&mut *synth, num, val);
     return FLUID_OK as i32;
 }
 
@@ -979,7 +961,7 @@ pub unsafe fn fluid_synth_system_reset(synth: *mut Synth) -> i32 {
     }
     i = 0 as i32;
     while i < (*synth).midi_channels {
-        fluid_channel_reset(&mut (*synth).channel[i as usize], &*synth);
+        (*synth).channel[i as usize].reset(&*synth);
         i += 1
     }
     (*synth).chorus.reset();
@@ -1028,7 +1010,7 @@ pub unsafe fn fluid_synth_channel_pressure(synth: *mut Synth, chan: i32, val: i3
     if (*synth).verbose != 0 {
         fluid_log!(FLUID_INFO, "channelpressure\t{}\t{}", chan, val);
     }
-    fluid_channel_pressure(&mut (*synth).channel[chan as usize], &mut *synth, val);
+    (*synth).channel[chan as usize].pressure(&mut *synth, val);
     return FLUID_OK as i32;
 }
 
@@ -1068,7 +1050,7 @@ pub unsafe fn fluid_synth_pitch_bend(synth: *mut Synth, chan: i32, val: i32) -> 
     if (*synth).verbose != 0 {
         fluid_log!(FLUID_INFO, "pitchb\t{}\t{}", chan, val);
     }
-    fluid_channel_pitch_bend(&mut (*synth).channel[chan as usize], &mut *synth, val);
+    (*synth).channel[chan as usize].pitch_bend(&mut *synth, val);
     return FLUID_OK as i32;
 }
 
@@ -1093,7 +1075,7 @@ pub unsafe fn fluid_synth_pitch_wheel_sens(synth: *mut Synth, chan: i32, val: i3
     if (*synth).verbose != 0 {
         fluid_log!(FLUID_INFO, "pitchsens\t{}\t{}", chan, val);
     }
-    fluid_channel_pitch_wheel_sens(&mut (*synth).channel[chan as usize], &mut *synth, val);
+    (*synth).channel[chan as usize].pitch_wheel_sens(&mut *synth, val);
     return FLUID_OK as i32;
 }
 
@@ -1177,8 +1159,8 @@ pub unsafe fn fluid_synth_program_change(synth: *mut Synth, chan: i32, prognum: 
         return FLUID_FAILED as i32;
     }
     channel = &mut (*synth).channel[chan as usize];
-    banknum = fluid_channel_get_banknum(channel);
-    fluid_channel_set_prognum(channel, prognum);
+    banknum = channel.get_banknum();
+    channel.set_prognum(prognum);
     if (*synth).verbose != 0 {
         fluid_log!(FLUID_INFO, "prog\t{}\t{}\t{}", chan, banknum, prognum);
     }
@@ -1216,15 +1198,15 @@ pub unsafe fn fluid_synth_program_change(synth: *mut Synth, chan: i32, prognum: 
     } else {
         0 as i32 as u32
     };
-    fluid_channel_set_sfontnum(channel, sfont_id);
-    fluid_channel_set_preset(channel, preset);
+    channel.set_sfontnum(sfont_id);
+    channel.set_preset(preset);
     return FLUID_OK as i32;
 }
 
 pub fn fluid_synth_bank_select(synth: *mut Synth, chan: i32, bank: u32) -> i32 {
     unsafe {
         if chan >= 0 as i32 && chan < (*synth).midi_channels {
-            fluid_channel_set_banknum(&mut (*synth).channel[chan as usize], bank);
+            (*synth).channel[chan as usize].set_banknum(bank);
             return FLUID_OK as i32;
         }
         return FLUID_FAILED as i32;
@@ -1233,7 +1215,7 @@ pub fn fluid_synth_bank_select(synth: *mut Synth, chan: i32, bank: u32) -> i32 {
 
 pub unsafe fn fluid_synth_sfont_select(synth: *mut Synth, chan: i32, sfont_id: u32) -> i32 {
     if chan >= 0 as i32 && chan < (*synth).midi_channels {
-        fluid_channel_set_sfontnum(&mut (*synth).channel[chan as usize], sfont_id);
+        (*synth).channel[chan as usize].set_sfontnum(sfont_id);
         return FLUID_OK as i32;
     }
     return FLUID_FAILED as i32;
@@ -1249,9 +1231,9 @@ pub unsafe fn fluid_synth_get_program(
     let channel;
     if chan >= 0 as i32 && chan < (*synth).midi_channels {
         channel = &(*synth).channel[chan as usize];
-        *sfont_id = fluid_channel_get_sfontnum(channel);
-        *bank_num = fluid_channel_get_banknum(channel);
-        *preset_num = fluid_channel_get_prognum(channel) as u32;
+        *sfont_id = channel.get_sfontnum();
+        *bank_num = channel.get_banknum();
+        *preset_num = channel.get_prognum() as u32;
         return FLUID_OK as i32;
     }
     return FLUID_FAILED as i32;
@@ -1282,10 +1264,10 @@ pub unsafe fn fluid_synth_program_select(
         );
         return FLUID_FAILED as i32;
     }
-    fluid_channel_set_sfontnum(channel, sfont_id);
-    fluid_channel_set_banknum(channel, bank_num);
-    fluid_channel_set_prognum(channel, preset_num as i32);
-    fluid_channel_set_preset(channel, preset);
+    channel.set_sfontnum(sfont_id);
+    channel.set_banknum(bank_num);
+    channel.set_prognum(preset_num as i32);
+    channel.set_preset(preset);
     return FLUID_OK as i32;
 }
 
@@ -1295,13 +1277,12 @@ pub unsafe fn fluid_synth_update_presets(synth: *mut Synth) {
     chan = 0 as i32;
     while chan < (*synth).midi_channels {
         channel = &mut (*synth).channel[chan as usize];
-        fluid_channel_set_preset(
-            channel,
+        channel.set_preset(
             fluid_synth_get_preset(
                 synth,
-                fluid_channel_get_sfontnum(channel),
-                fluid_channel_get_banknum(channel),
-                fluid_channel_get_prognum(channel) as u32,
+                channel.get_sfontnum(),
+                channel.get_banknum(),
+                channel.get_prognum() as u32,
             ),
         );
         chan += 1
@@ -1378,7 +1359,7 @@ pub unsafe fn fluid_synth_program_reset(synth: *mut Synth) -> i32 {
         fluid_synth_program_change(
             synth,
             i,
-            fluid_channel_get_prognum(&(*synth).channel[i as usize]),
+            (*synth).channel[i as usize].get_prognum(),
         );
         i += 1
     }
@@ -1606,7 +1587,7 @@ pub unsafe fn fluid_synth_one_block(synth: *mut Synth, do_not_mix_fx_to_out: i32
         if (*voice).status as i32 == FLUID_VOICE_ON as i32
             || (*voice).status as i32 == FLUID_VOICE_SUSTAINED as i32
         {
-            auchan = fluid_channel_get_num(fluid_voice_get_channel(voice).as_ref().unwrap());
+            auchan = fluid_voice_get_channel(voice).as_ref().unwrap().get_num();
             auchan %= (*synth).audio_groups;
             left_buf = (*synth).left_buf[auchan as usize].as_mut_ptr();
             right_buf = (*synth).right_buf[auchan as usize].as_mut_ptr();
@@ -1964,7 +1945,7 @@ pub unsafe fn fluid_synth_get_sfont_by_id(synth: *mut Synth, id: u32) -> *mut So
 
 pub unsafe fn fluid_synth_get_channel_preset(synth: *const Synth, chan: i32) -> *mut Preset {
     if chan >= 0 as i32 && chan < (*synth).midi_channels {
-        return fluid_channel_get_preset(&(*synth).channel[chan as usize]);
+        return (*synth).channel[chan as usize].get_preset();
     }
     return 0 as *mut Preset;
 }
@@ -2039,8 +2020,8 @@ pub unsafe fn fluid_synth_set_interp_method(
     let mut i;
     i = 0 as i32;
     while i < (*synth).midi_channels {
-        if chan < 0 as i32 || fluid_channel_get_num(&(*synth).channel[chan as usize]) == chan {
-            fluid_channel_set_interp_method(&mut (*synth).channel[chan as usize], interp_method);
+        if chan < 0 as i32 || (*synth).channel[chan as usize].get_num() == chan {
+            (*synth).channel[chan as usize].set_interp_method(interp_method);
         }
         i += 1
     }

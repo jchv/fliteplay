@@ -1,4 +1,3 @@
-use super::channel::fluid_channel_get_cc;
 use super::channel::Channel;
 use super::conv::fluid_concave;
 use super::conv::fluid_convex;
@@ -80,7 +79,7 @@ pub fn fluid_mod_get_value(mod_0: &mut Mod, chan: &mut Channel, voice: &mut Voic
     }
     if mod_0.src1 as i32 > 0 as i32 {
         if mod_0.flags1 as i32 & FLUID_MOD_CC as i32 != 0 {
-            v1 = fluid_channel_get_cc(chan, (*mod_0).src1 as i32) as f32
+            v1 = chan.get_cc((*mod_0).src1 as i32) as f32
         } else {
             match (*mod_0).src1 as i32 {
                 0 => v1 = range1,
@@ -171,7 +170,7 @@ pub fn fluid_mod_get_value(mod_0: &mut Mod, chan: &mut Channel, voice: &mut Voic
     }
     if (*mod_0).src2 as i32 > 0 as i32 {
         if (*mod_0).flags2 as i32 & FLUID_MOD_CC as i32 != 0 {
-            v2 = fluid_channel_get_cc(chan, mod_0.src2 as i32) as f32
+            v2 = chan.get_cc(mod_0.src2 as i32) as f32
         } else {
             match (*mod_0).src2 as i32 {
                 0 => v2 = range2,
@@ -258,20 +257,20 @@ pub fn fluid_mod_get_value(mod_0: &mut Mod, chan: &mut Channel, voice: &mut Voic
 }
 
 pub fn fluid_mod_new() -> *mut Mod {
-    unsafe {
-        let mod_0: *mut Mod =
-            libc::malloc(::std::mem::size_of::<Mod>() as libc::size_t) as *mut Mod;
-        if mod_0.is_null() {
-            fluid_log!(FLUID_ERR, "Out of memory",);
-            return 0 as *mut Mod;
-        }
-        return mod_0;
-    }
+    return Box::into_raw(Box::new(Mod {
+        dest: 0,
+        src1: 0,
+        flags1: 0,
+        src2: 0,
+        flags2: 0,
+        amount: 0f64,
+        next: 0 as _,
+    }));
 }
 
 pub fn fluid_mod_delete(mod_0: &mut Mod) {
     unsafe {
-        libc::free(mod_0 as *mut Mod as *mut libc::c_void);
+        Box::from_raw(mod_0);
     }
 }
 

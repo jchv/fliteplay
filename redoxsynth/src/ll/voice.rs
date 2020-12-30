@@ -1,4 +1,3 @@
-use super::channel::fluid_channel_get_num;
 use super::channel::Channel;
 use super::conv::fluid_act2hz;
 use super::conv::fluid_atten2amp;
@@ -23,7 +22,7 @@ use super::modulator::fluid_mod_test_identity;
 use super::modulator::Mod;
 use super::sfont::Sample;
 use super::tuning::Tuning;
-use super::{channel::fluid_channel_get_interp_method, synth::Synth};
+use super::synth::Synth;
 #[derive(Copy, Clone)]
 pub struct Voice {
     pub(crate) id: u32,
@@ -253,7 +252,7 @@ pub unsafe fn fluid_voice_init(
     gain: f32,
 ) -> i32 {
     (*voice).id = id;
-    (*voice).chan = fluid_channel_get_num(channel.as_ref().unwrap()) as u8;
+    (*voice).chan = channel.as_ref().unwrap().get_num() as u8;
     (*voice).key = key as u8;
     (*voice).vel = vel as u8;
     (*voice).channel = channel;
@@ -266,7 +265,7 @@ pub unsafe fn fluid_voice_init(
     (*voice).has_looped = 0 as i32;
     (*voice).last_fres = -(1 as i32) as f32;
     (*voice).filter_startup = 1 as i32;
-    (*voice).interp_method = fluid_channel_get_interp_method((*voice).channel.as_ref().unwrap());
+    (*voice).interp_method = (*voice).channel.as_ref().unwrap().get_interp_method();
     (*voice).volenv_count = 0 as i32 as u32;
     (*voice).volenv_section = 0 as i32;
     (*voice).volenv_val = 0.0f32;
