@@ -340,11 +340,7 @@ impl Channel {
     pub fn pressure(&mut self, synth: &mut Synth, val: i32) -> i32 {
         self.channel_pressure = val as i16;
         unsafe {
-            synth.modulate_voices(
-                self.channum,
-                0 as i32,
-                FLUID_MOD_CHANNELPRESSURE as i32,
-            );
+            synth.modulate_voices(self.channum, 0 as i32, FLUID_MOD_CHANNELPRESSURE as i32);
         }
         return FLUID_OK as i32;
     }
@@ -360,11 +356,7 @@ impl Channel {
     pub fn pitch_wheel_sens(&mut self, synth: &mut Synth, val: i32) -> i32 {
         self.pitch_wheel_sensitivity = val as i16;
         unsafe {
-            synth.modulate_voices(
-                self.channum,
-                0 as i32,
-                FLUID_MOD_PITCHWHEELSENS as i32,
-            );
+            synth.modulate_voices(self.channum, 0 as i32, FLUID_MOD_PITCHWHEELSENS as i32);
         }
         return FLUID_OK as i32;
     }
