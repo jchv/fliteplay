@@ -23,12 +23,6 @@ use super::sfont::SoundFont;
 use super::sfont::SoundFontLoader;
 use super::sys::fluid_error;
 use super::sys::fluid_sys_config;
-use super::tuning::fluid_tuning_get_name;
-use super::tuning::fluid_tuning_set_all;
-use super::tuning::fluid_tuning_set_name;
-use super::tuning::fluid_tuning_set_octave;
-use super::tuning::fluid_tuning_set_pitch;
-use super::tuning::new_fluid_tuning;
 use super::tuning::Tuning;
 use super::voice::delete_fluid_voice;
 use super::voice::fluid_voice_add_mod;
@@ -2043,9 +2037,9 @@ unsafe fn fluid_synth_create_tuning<'a>(
         fluid_log!(FLUID_WARN, "Program number out of range",);
         return None;
     }
-    let tuning = synth.tuning[bank as usize][prog as usize].get_or_insert_with(|| new_fluid_tuning(name, bank, prog));
-    if libc::strcmp(fluid_tuning_get_name(tuning).as_ptr() as _, name.as_ptr() as _) != 0 {
-        fluid_tuning_set_name(tuning, name);
+    let tuning = synth.tuning[bank as usize][prog as usize].get_or_insert_with(|| Tuning::new(name, bank, prog));
+    if libc::strcmp(tuning.get_name().as_ptr() as _, name.as_ptr() as _) != 0 {
+        tuning.set_name(name);
     }
     return Some(tuning);
 }
@@ -2059,7 +2053,7 @@ pub unsafe fn fluid_synth_create_key_tuning(
 ) -> i32 {
     return match fluid_synth_create_tuning(synth, bank, prog, name) {
         Some(tuning) => {
-            fluid_tuning_set_all(tuning, pitch);
+            tuning.set_all(pitch);
             FLUID_OK as i32
         }
         None => {
@@ -2083,7 +2077,7 @@ pub unsafe fn fluid_synth_create_octave_tuning(
     }
     return match fluid_synth_create_tuning(synth, bank, prog, name) {
         Some(tuning) => {
-            fluid_tuning_set_octave(tuning, pitch);
+            tuning.set_octave(pitch);
             FLUID_OK as i32
         }
         None => {
@@ -2130,8 +2124,7 @@ pub unsafe fn fluid_synth_tune_notes(
     match fluid_synth_create_tuning(synth, bank, prog, b"Unnamed\x00") {
         Some(tuning) => {
             for i in 0..len {
-                fluid_tuning_set_pitch(
-                    tuning,
+                tuning.set_pitch(
                     *key.offset(i as isize),
                     *pitch.offset(i as isize),
                 );
@@ -2236,7 +2229,7 @@ pub unsafe fn fluid_synth_tuning_dump(
             if !name.is_null() {
                 libc::strncpy(
                     name,
-                    fluid_tuning_get_name(&tuning).as_ptr() as _,
+                    tuning.get_name().as_ptr() as _,
                     (len - 1 as i32) as libc::size_t,
                 );
                 *name.offset((len - 1 as i32) as isize) = 0 as i32 as i8
