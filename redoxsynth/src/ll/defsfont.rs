@@ -1,8 +1,5 @@
 use super::gen::fluid_gen_set_default_values;
 use super::gen::Gen;
-use super::modulator::fluid_mod_delete;
-use super::modulator::fluid_mod_new;
-use super::modulator::fluid_mod_test_identity;
 use super::modulator::Mod;
 use super::sfont::FileApi;
 use super::sfont::Preset;
@@ -876,10 +873,11 @@ pub unsafe fn fluid_defpreset_noteon(
                             i = 0 as i32;
                             while i < mod_list_count {
                                 if !mod_list[i as usize].is_null()
-                                    && fluid_mod_test_identity(
-                                        mod_0.as_ref().unwrap(),
-                                        mod_list[i as usize].as_ref().unwrap(),
-                                    ) != 0
+                                    && mod_0
+                                        .as_ref()
+                                        .unwrap()
+                                        .test_identity(mod_list[i as usize].as_ref().unwrap())
+                                        != 0
                                 {
                                     mod_list[i as usize] = 0 as *mut Mod
                                 }
@@ -951,10 +949,11 @@ pub unsafe fn fluid_defpreset_noteon(
                             i = 0 as i32;
                             while i < mod_list_count {
                                 if !mod_list[i as usize].is_null()
-                                    && fluid_mod_test_identity(
-                                        mod_0.as_ref().unwrap(),
-                                        mod_list[i as usize].as_ref().unwrap(),
-                                    ) != 0
+                                    && mod_0
+                                        .as_ref()
+                                        .unwrap()
+                                        .test_identity(mod_list[i as usize].as_ref().unwrap())
+                                        != 0
                                 {
                                     mod_list[i as usize] = 0 as *mut Mod
                                 }
@@ -1106,7 +1105,7 @@ pub unsafe fn delete_fluid_preset_zone(zone: *mut PresetZone) -> i32 {
     while !mod_0.is_null() {
         tmp = mod_0;
         mod_0 = (*mod_0).next;
-        fluid_mod_delete(tmp.as_mut().unwrap());
+        tmp.as_mut().unwrap().delete();
     }
     if !(*zone).inst.is_null() {
         delete_fluid_inst((*zone).inst);
@@ -1156,7 +1155,7 @@ pub unsafe fn fluid_preset_zone_import_sfont(
     }
     count = 0 as i32;
     for mod_src in (*sfzone).mod_0.iter() {
-        let mut mod_dest: *mut Mod = fluid_mod_new();
+        let mut mod_dest: *mut Mod = Mod::new();
         let mut type_0: i32;
         if mod_dest.is_null() {
             return FLUID_FAILED as i32;
@@ -1387,7 +1386,7 @@ pub unsafe fn delete_fluid_inst_zone(zone: *mut InstrumentZone) -> i32 {
     while !mod_0.is_null() {
         tmp = mod_0;
         mod_0 = (*mod_0).next;
-        fluid_mod_delete(tmp.as_mut().unwrap());
+        tmp.as_mut().unwrap().delete();
     }
     libc::free(zone as *mut libc::c_void);
     return FLUID_OK as i32;
@@ -1433,7 +1432,7 @@ pub unsafe fn fluid_inst_zone_import_sfont(
     for mod_src in (*sfzone).mod_0.iter() {
         let mut type_0: i32;
         let mut mod_dest: *mut Mod;
-        mod_dest = fluid_mod_new();
+        mod_dest = Mod::new();
         if mod_dest.is_null() {
             return FLUID_FAILED as i32;
         }

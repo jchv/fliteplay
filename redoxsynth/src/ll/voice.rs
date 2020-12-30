@@ -15,9 +15,6 @@ use super::dsp_float::fluid_dsp_float_interpolate_linear;
 use super::dsp_float::fluid_dsp_float_interpolate_none;
 use super::gen::fluid_gen_init;
 use super::gen::Gen;
-use super::modulator::fluid_mod_get_dest;
-use super::modulator::fluid_mod_get_value;
-use super::modulator::fluid_mod_test_identity;
 use super::modulator::Mod;
 use super::sfont::Sample;
 use super::synth::Synth;
@@ -678,11 +675,10 @@ pub unsafe fn fluid_voice_calculate_runtime_synthesis_parameters(mut voice: *mut
     i = 0 as i32;
     while i < (*voice).mod_count {
         let mod_0: *mut Mod = &mut *(*voice).mod_0.as_mut_ptr().offset(i as isize) as *mut Mod;
-        let modval: f32 = fluid_mod_get_value(
-            mod_0.as_mut().unwrap(),
-            (*voice).channel.as_mut().unwrap(),
-            voice.as_mut().unwrap(),
-        );
+        let modval: f32 = mod_0
+            .as_mut()
+            .unwrap()
+            .get_value((*voice).channel.as_mut().unwrap(), voice.as_mut().unwrap());
         let dest_gen_index: i32 = (*mod_0).dest as i32;
         let mut dest_gen: *mut Gen =
             &mut *(*voice).gen.as_mut_ptr().offset(dest_gen_index as isize) as *mut Gen;
@@ -1370,16 +1366,18 @@ pub unsafe fn fluid_voice_modulate(mut voice: *mut Voice, cc: i32, ctrl: i32) ->
                     && (*mod_0).flags2 as i32 & FLUID_MOD_CC as i32 == 0 as i32
                     && cc == 0 as i32)
         {
-            gen = fluid_mod_get_dest(mod_0.as_ref().unwrap());
+            gen = mod_0.as_ref().unwrap().get_dest();
             modval = 0.0f32;
             k = 0 as i32;
             while k < (*voice).mod_count {
                 if (*voice).mod_0[k as usize].dest as i32 == gen {
-                    modval += fluid_mod_get_value(
-                        &mut *(*voice).mod_0.as_mut_ptr().offset(k as isize),
-                        (*voice).channel.as_mut().unwrap(),
-                        voice.as_mut().unwrap(),
-                    )
+                    modval += (*voice)
+                        .mod_0
+                        .as_mut_ptr()
+                        .offset(k as isize)
+                        .as_mut()
+                        .unwrap()
+                        .get_value((*voice).channel.as_mut().unwrap(), voice.as_mut().unwrap())
                 }
                 k += 1
             }
@@ -1400,16 +1398,18 @@ pub unsafe fn fluid_voice_modulate_all(mut voice: *mut Voice) -> i32 {
     i = 0 as i32;
     while i < (*voice).mod_count {
         mod_0 = &mut *(*voice).mod_0.as_mut_ptr().offset(i as isize) as *mut Mod;
-        gen = fluid_mod_get_dest(mod_0.as_ref().unwrap());
+        gen = mod_0.as_ref().unwrap().get_dest();
         modval = 0.0f32;
         k = 0 as i32;
         while k < (*voice).mod_count {
             if (*voice).mod_0[k as usize].dest as i32 == gen {
-                modval += fluid_mod_get_value(
-                    &mut *(*voice).mod_0.as_mut_ptr().offset(k as isize),
-                    (*voice).channel.as_mut().unwrap(),
-                    voice.as_mut().unwrap(),
-                )
+                modval += (*voice)
+                    .mod_0
+                    .as_mut_ptr()
+                    .offset(k as isize)
+                    .as_mut()
+                    .unwrap()
+                    .get_value((*voice).channel.as_mut().unwrap(), voice.as_mut().unwrap())
             }
             k += 1
         }
@@ -1525,7 +1525,7 @@ pub unsafe fn fluid_voice_add_mod(mut voice: *mut Voice, mod_0: &Mod, mode: i32)
     if mode == FLUID_VOICE_ADD as i32 {
         i = 0 as i32;
         while i < (*voice).mod_count {
-            if fluid_mod_test_identity(&(*voice).mod_0[i as usize], mod_0) != 0 {
+            if (*voice).mod_0[i as usize].test_identity(mod_0) != 0 {
                 //		printf("Adding modulator...\n");
                 (*voice).mod_0[i as usize].amount += (*mod_0).amount;
                 return;
@@ -1535,7 +1535,13 @@ pub unsafe fn fluid_voice_add_mod(mut voice: *mut Voice, mod_0: &Mod, mode: i32)
     } else if mode == FLUID_VOICE_OVERWRITE as i32 {
         i = 0 as i32;
         while i < (*voice).mod_count {
-            if fluid_mod_test_identity(&mut *(*voice).mod_0.as_mut_ptr().offset(i as isize), mod_0)
+            if (*voice)
+                .mod_0
+                .as_mut_ptr()
+                .offset(i as isize)
+                .as_ref()
+                .unwrap()
+                .test_identity(mod_0)
                 != 0
             {
                 //		printf("Replacing modulator...amount is %f\n",mod->amount);
@@ -1568,11 +1574,10 @@ pub unsafe fn fluid_voice_get_lower_boundary_for_attenuation(voice: *mut Voice) 
             && ((*mod_0).flags1 as i32 & FLUID_MOD_CC as i32 != 0
                 || (*mod_0).flags2 as i32 & FLUID_MOD_CC as i32 != 0)
         {
-            let current_val: f32 = fluid_mod_get_value(
-                mod_0.as_mut().unwrap(),
-                (*voice).channel.as_mut().unwrap(),
-                voice.as_mut().unwrap(),
-            );
+            let current_val: f32 = mod_0
+                .as_mut()
+                .unwrap()
+                .get_value((*voice).channel.as_mut().unwrap(), voice.as_mut().unwrap());
             let mut v: f32 = f64::abs((*mod_0).amount) as f32;
             if (*mod_0).src1 as i32 == FLUID_MOD_PITCHWHEEL as i32
                 || (*mod_0).flags1 as i32 & FLUID_MOD_BIPOLAR as i32 != 0
