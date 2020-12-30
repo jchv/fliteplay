@@ -69,8 +69,7 @@ impl Synth {
 #[cfg(test)]
 mod test {
     use super::{Settings, Synth};
-    use byte_slice_cast::AsByteSlice;
-    use std::{fs::File, io::Write};
+    use std::{fs::File, io::Write, slice::from_raw_parts};
 
     #[test]
     fn synth_sf2() {
@@ -80,44 +79,19 @@ mod test {
 
         let mut synth = Synth::new(settings).unwrap();
 
-        synth.sfload("../sf_/Boomwhacker.sf2", true).unwrap();
+        synth.sfload("../redoxsynth/testdata/Boomwhacker.sf2", true).unwrap();
 
         let mut samples = [0f32; 44100 * 2];
 
         synth.note_on(0, 60, 127).unwrap();
 
         synth.write(samples.as_mut()).unwrap();
-        pcm.write(samples.as_byte_slice()).unwrap();
+        pcm.write(unsafe { from_raw_parts(samples.as_ptr() as _, std::mem::size_of_val(&samples)) }).unwrap();
 
         synth.note_off(0, 60).unwrap();
 
         synth.write(samples.as_mut()).unwrap();
-        pcm.write(samples.as_byte_slice()).unwrap();
-
-        drop(synth);
-    }
-
-    #[test]
-    fn synth_sf3() {
-        let mut pcm = File::create("Boomwhacker.sf3.pcm").unwrap();
-
-        let settings = Settings::new().unwrap();
-
-        let mut synth = Synth::new(settings).unwrap();
-
-        synth.sfload("../sf_/Boomwhacker.sf3", true).unwrap();
-
-        let mut samples = [0f32; 44100 * 2];
-
-        synth.note_on(0, 60, 127).unwrap();
-
-        synth.write(samples.as_mut()).unwrap();
-        pcm.write(samples.as_byte_slice()).unwrap();
-
-        synth.note_off(0, 60).unwrap();
-
-        synth.write(samples.as_mut()).unwrap();
-        pcm.write(samples.as_byte_slice()).unwrap();
+        pcm.write(unsafe { from_raw_parts(samples.as_ptr() as _, std::mem::size_of_val(&samples)) }).unwrap();
 
         drop(synth);
     }
