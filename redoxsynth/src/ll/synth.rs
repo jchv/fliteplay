@@ -2205,16 +2205,6 @@ impl Drop for Synth {
             self.bank_offsets.clear();
             for loader in self.loaders.iter() {
                 if !(*loader).is_null() {
-                    if !(*(*loader)).fileapi.is_null() && (*(*(*loader)).fileapi).free.is_some() {
-                        Some(
-                            (*(*(*loader)).fileapi)
-                                .free
-                                .expect("non-null function pointer"),
-                        )
-                        .expect("non-null function pointer")(
-                            (*(*loader)).fileapi
-                        );
-                    }
                     if (*(*loader)).free.is_some() {
                         Some((*(*loader)).free.expect("non-null function pointer"))
                             .expect("non-null function pointer")(*loader);

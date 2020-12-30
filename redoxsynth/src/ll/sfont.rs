@@ -1,23 +1,16 @@
 use std::any::Any;
 
+use crate::fileapi::FileSystem;
+
 use super::synth::Synth;
-#[derive(Copy, Clone)]
+
 pub struct SoundFontLoader {
     pub data: *mut libc::c_void,
     pub free: Option<unsafe fn(_: *mut SoundFontLoader) -> i32>,
     pub load: Option<unsafe fn(_: *mut SoundFontLoader, _: &[u8]) -> Option<SoundFont>>,
-    pub fileapi: *mut FileApi,
+    pub filesystem: Box<dyn FileSystem>,
 }
-#[derive(Copy, Clone)]
-pub struct FileApi {
-    pub data: *mut libc::c_void,
-    pub free: Option<unsafe fn(_: *mut FileApi) -> i32>,
-    pub fopen: Option<unsafe fn(_: *mut FileApi, _: &[u8]) -> *mut libc::c_void>,
-    pub fread: Option<unsafe fn(_: *mut libc::c_void, _: i32, _: *mut libc::c_void) -> i32>,
-    pub fseek: Option<unsafe fn(_: *mut libc::c_void, _: isize, _: i32) -> i32>,
-    pub fclose: Option<unsafe fn(_: *mut libc::c_void) -> i32>,
-    pub ftell: Option<unsafe fn(_: *mut libc::c_void) -> isize>,
-}
+
 #[derive(Copy, Clone)]
 pub struct Preset {
     pub data: *mut libc::c_void,

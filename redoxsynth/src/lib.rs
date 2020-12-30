@@ -10,6 +10,7 @@ mod settings;
 mod synth;
 mod types;
 mod version;
+mod fileapi;
 
 pub use self::font::*;
 pub use self::loader::*;

@@ -13,9 +13,6 @@ mod redoxsynth_macros {
     }
 }
 
-pub const SEEK_SET: u32 = 0;
-pub const SEEK_CUR: u32 = 1;
-pub const SEEK_END: u32 = 2;
 pub const HINT_BOUNDED_BELOW: u32 = 1;
 pub const HINT_BOUNDED_ABOVE: u32 = 2;
 pub const HINT_TOGGLED: u32 = 4;
@@ -32,9 +29,6 @@ pub const CHORUS_DEFAULT_N: u32 = 3;
 pub const CHORUS_DEFAULT_LEVEL: f64 = 2.0;
 pub const CHORUS_DEFAULT_SPEED: f64 = 0.3;
 pub const CHORUS_DEFAULT_DEPTH: f64 = 8.0;
-
-pub const OK: i32 = 0;
-pub const FAILED: i32 = -1;
 
 pub(crate) mod channel;
 pub(crate) mod chorus;
