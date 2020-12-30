@@ -1,4 +1,4 @@
-use super::channel::Channel;
+use super::{channel::{Channel, InterpMethod}};
 use super::conv::fluid_act2hz;
 use super::conv::fluid_atten2amp;
 use super::conv::fluid_cb2amp;
@@ -95,7 +95,7 @@ pub struct Voice {
     amp_reverb: f32,
     chorus_send: f32,
     amp_chorus: f32,
-    interp_method: i32,
+    interp_method: InterpMethod,
     debug: i32,
 }
 #[derive(Copy, Clone)]
@@ -484,10 +484,10 @@ pub unsafe fn fluid_voice_write(
                     }
                     (*voice).dsp_buf = dsp_buf.as_mut_ptr();
                     match (*voice).interp_method {
-                        0 => count = fluid_dsp_float_interpolate_none(voice),
-                        1 => count = fluid_dsp_float_interpolate_linear(voice),
-                        7 => count = fluid_dsp_float_interpolate_7th_order(voice),
-                        4 | _ => count = fluid_dsp_float_interpolate_4th_order(voice),
+                        InterpMethod::None => count = fluid_dsp_float_interpolate_none(voice),
+                        InterpMethod::Linear => count = fluid_dsp_float_interpolate_linear(voice),
+                        InterpMethod::FourthOrder => count = fluid_dsp_float_interpolate_4th_order(voice),
+                        InterpMethod::SeventhOrder => count = fluid_dsp_float_interpolate_7th_order(voice),
                     }
                     if count > 0 as i32 {
                         fluid_voice_effects(
@@ -747,7 +747,7 @@ pub unsafe fn fluid_voice_update_param(mut voice: *mut Voice, gen: i32) {
     // Alternate attenuation scale used by EMU10K1 cards when setting the attenuation at the preset or instrument level within the SoundFont bank.
     static mut ALT_ATTENUATION_SCALE: f32 = 0.4f32;
     let current_block_195: u64;
-    match gen {
+    match gen as u32 {
         17 => {
             (*voice).pan = (*voice).gen[GEN_PAN as i32 as usize].val as f32
                 + (*voice).gen[GEN_PAN as i32 as usize].mod_0 as f32
@@ -1678,7 +1678,7 @@ pub unsafe fn fluid_voice_check_sample_sanity(mut voice: *mut Voice) {
 
 pub unsafe fn fluid_voice_set_param(
     mut voice: *mut Voice,
-    gen: i32,
+    gen: i16,
     nrpn_value: f32,
     abs: i32,
 ) -> i32 {
@@ -1688,7 +1688,7 @@ pub unsafe fn fluid_voice_set_param(
     } else {
         GEN_SET as i32
     } as u8;
-    fluid_voice_update_param(voice, gen);
+    fluid_voice_update_param(voice, gen as _);
     return FLUID_OK as i32;
 }
 

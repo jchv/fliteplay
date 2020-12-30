@@ -1,7 +1,37 @@
-use super::gen::fluid_gen_scale_nrpn;
+use super::gen::{GenParam, fluid_gen_scale_nrpn};
 use super::soundfont::Preset;
 use super::synth::Synth;
 use super::tuning::Tuning;
+/* Flags to choose the interpolation method */
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(u32)]
+pub enum InterpMethod {
+    /**
+    No interpolation: Fastest, but questionable audio quality
+     */
+    None = 0,
+    /**
+    Straight-line interpolation: A bit slower, reasonable audio quality
+     */
+    Linear = 1,
+    /**
+    Fourth-order interpolation: Requires 50% of the whole DSP processing time, good quality
+    (default)
+     */
+    FourthOrder = 4,
+    /**
+    Seventh-order interpolation
+     */
+    SeventhOrder = 7,
+}
+
+impl Default for InterpMethod {
+    fn default() -> Self {
+        Self::FourthOrder
+    }
+}
+
+
 #[derive(Clone)]
 pub struct Channel {
     pub(crate) channum: i32,
@@ -15,23 +45,20 @@ pub struct Channel {
     pub(crate) pitch_wheel_sensitivity: i16,
     pub(crate) cc: [i16; 128],
     bank_msb: u8,
-    interp_method: i32,
+    interp_method: InterpMethod,
     pub(crate) tuning: Option<Tuning>,
     nrpn_select: i16,
     nrpn_active: i16,
     pub(crate) gen: [f32; 60],
     pub(crate) gen_abs: [i8; 60],
 }
-pub type InterpolationType = u32;
-pub const INTERPOLATION_DEFAULT: InterpolationType = 4;
+
 pub type ModSrc = u32;
 pub const FLUID_MOD_PITCHWHEELSENS: ModSrc = 16;
 pub const FLUID_MOD_PITCHWHEEL: ModSrc = 14;
 pub const FLUID_MOD_CHANNELPRESSURE: ModSrc = 13;
 pub type GenType = u32;
 pub const GEN_LAST: GenType = 60;
-pub const GEN_FINETUNE: GenType = 52;
-pub const GEN_COARSETUNE: GenType = 51;
 pub const FLUID_OK: i32 = 0;
 pub type MidiControlChange = u32;
 pub const ALL_SOUND_OFF: MidiControlChange = 120;
@@ -67,7 +94,7 @@ impl Channel {
             pitch_wheel_sensitivity: 0 as _,
             cc: [0; 128],
             bank_msb: 0 as _,
-            interp_method: 0 as _,
+            interp_method: Default::default(),
             tuning: None,
             nrpn_select: 0 as _,
             nrpn_active: 0 as _,
@@ -93,10 +120,10 @@ impl Channel {
             _ => {}
         }
         self.preset = unsafe { synth.find_preset(self.banknum, self.prognum) };
-        self.interp_method = INTERPOLATION_DEFAULT as i32;
+        self.interp_method = Default::default();
         self.tuning = None;
-        self.nrpn_select = 0 as i32 as i16;
-        self.nrpn_active = 0 as i32 as i16;
+        self.nrpn_select = 0 as _;
+        self.nrpn_active = 0 as _;
     }
 
     pub fn init_ctrl(&mut self, is_all_ctrl_off: i32) {
@@ -251,10 +278,10 @@ impl Channel {
                             && (self.cc[NRPN_LSB as i32 as usize] as i32) < 100 as i32
                         {
                             if (self.nrpn_select as i32) < GEN_LAST as i32 {
-                                let val: f32 = fluid_gen_scale_nrpn(self.nrpn_select as i32, data);
-                                synth.set_gen(self.channum, self.nrpn_select as i32, val);
+                                let val: f32 = fluid_gen_scale_nrpn(self.nrpn_select, data);
+                                synth.set_gen(self.channum, self.nrpn_select, val);
                             }
-                            self.nrpn_select = 0 as i32 as i16
+                            self.nrpn_select = 0
                         }
                     } else if self.cc[RPN_MSB as i32 as usize] as i32 == 0 as i32 {
                         match self.cc[RPN_LSB as i32 as usize] as i32 {
@@ -264,14 +291,14 @@ impl Channel {
                             1 => {
                                 synth.set_gen(
                                     self.channum,
-                                    GEN_FINETUNE as i32,
+                                    GenParam::FineTune as i16,
                                     ((data - 8192 as i32) as f64 / 8192.0f64 * 100.0f64) as f32,
                                 );
                             }
                             2 => {
                                 synth.set_gen(
                                     self.channum,
-                                    GEN_COARSETUNE as i32,
+                                    GenParam::CoarseTune as i16,
                                     (value - 64 as i32) as f32,
                                 );
                             }
@@ -281,8 +308,8 @@ impl Channel {
                 }
                 99 => {
                     self.cc[NRPN_LSB as i32 as usize] = 0 as i32 as i16;
-                    self.nrpn_select = 0 as i32 as i16;
-                    self.nrpn_active = 1 as i32 as i16
+                    self.nrpn_select = 0 as _;
+                    self.nrpn_active = 1 as _
                 }
                 98 => {
                     if self.cc[NRPN_MSB as i32 as usize] as i32 == 120 as i32 {
@@ -343,11 +370,11 @@ impl Channel {
         return self.channum;
     }
 
-    pub fn set_interp_method(&mut self, new_method: i32) {
+    pub fn set_interp_method(&mut self, new_method: InterpMethod) {
         self.interp_method = new_method;
     }
 
-    pub fn get_interp_method(&self) -> i32 {
+    pub fn get_interp_method(&self) -> InterpMethod {
         return self.interp_method;
     }
 

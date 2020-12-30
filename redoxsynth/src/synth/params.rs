@@ -1,34 +1,6 @@
 use crate::{Status, Synth};
-use num_derive::FromPrimitive;
 
-/* Flags to choose the interpolation method */
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, FromPrimitive)]
-#[repr(u32)]
-pub enum InterpMethod {
-    /**
-    No interpolation: Fastest, but questionable audio quality
-     */
-    None = 0,
-    /**
-    Straight-line interpolation: A bit slower, reasonable audio quality
-     */
-    Linear = 1,
-    /**
-    Fourth-order interpolation: Requires 50% of the whole DSP processing time, good quality
-    (default)
-     */
-    FourthOrder = 4,
-    /**
-    Seventh-order interpolation
-     */
-    SeventhOrder = 7,
-}
-
-impl Default for InterpMethod {
-    fn default() -> Self {
-        Self::FourthOrder
-    }
-}
+type InterpMethod = crate::ll::channel::InterpMethod;
 
 /**
 Synthesis parameters

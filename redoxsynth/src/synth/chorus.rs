@@ -1,22 +1,6 @@
 use crate::{ll, Synth};
-use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
 
-/**
-Chorus type
- */
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, FromPrimitive)]
-#[repr(u32)]
-pub enum ChorusMode {
-    Sine = ll::chorus::CHORUS_MOD_SINE,
-    Triangle = ll::chorus::CHORUS_MOD_TRIANGLE,
-}
-
-impl Default for ChorusMode {
-    fn default() -> Self {
-        ChorusMode::Sine
-    }
-}
+type ChorusMode = ll::chorus::ChorusMode;
 
 /**
 Chorus parameters
@@ -55,9 +39,7 @@ impl Synth {
     Keep in mind, that the needed CPU time is proportional to `nr`.
      */
     pub fn set_chorus_params(&mut self, nr: u32, level: f64, speed: f64, depth: f64, mode: ChorusMode) {
-        unsafe {
-            self.handle.set_chorus_params(nr as i32, level, speed, depth, mode as i32);
-        }
+        self.handle.set_chorus_params(nr as i32, level, speed, depth, mode);
     }
 
     /**
@@ -112,7 +94,7 @@ impl Synth {
     Query the current chorus mode
      */
     pub fn get_chorus_mode(&self) -> ChorusMode {
-        ChorusMode::from_i32(self.handle.get_chorus_type()).unwrap()
+        self.handle.get_chorus_type()
     }
 
     /**

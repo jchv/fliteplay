@@ -1,66 +1,143 @@
 use super::channel::Channel;
-pub type GenType = u32;
-pub const GEN_LAST: GenType = 60;
-pub const GEN_PITCH: GenType = 59;
-pub const GEN_OVERRIDEROOTKEY: GenType = 58;
-pub const GEN_EXCLUSIVECLASS: GenType = 57;
-pub const GEN_SCALETUNE: GenType = 56;
-pub const GEN_RESERVED3: GenType = 55;
-pub const GEN_SAMPLEMODE: GenType = 54;
-pub const GEN_SAMPLEID: GenType = 53;
-pub const GEN_FINETUNE: GenType = 52;
-pub const GEN_COARSETUNE: GenType = 51;
-pub const GEN_ENDLOOPADDRCOARSEOFS: GenType = 50;
-pub const GEN_RESERVED2: GenType = 49;
-pub const GEN_ATTENUATION: GenType = 48;
-pub const GEN_VELOCITY: GenType = 47;
-pub const GEN_KEYNUM: GenType = 46;
-pub const GEN_STARTLOOPADDRCOARSEOFS: GenType = 45;
-pub const GEN_VELRANGE: GenType = 44;
-pub const GEN_KEYRANGE: GenType = 43;
-pub const GEN_RESERVED1: GenType = 42;
-pub const GEN_INSTRUMENT: GenType = 41;
-pub const GEN_KEYTOVOLENVDECAY: GenType = 40;
-pub const GEN_KEYTOVOLENVHOLD: GenType = 39;
-pub const GEN_VOLENVRELEASE: GenType = 38;
-pub const GEN_VOLENVSUSTAIN: GenType = 37;
-pub const GEN_VOLENVDECAY: GenType = 36;
-pub const GEN_VOLENVHOLD: GenType = 35;
-pub const GEN_VOLENVATTACK: GenType = 34;
-pub const GEN_VOLENVDELAY: GenType = 33;
-pub const GEN_KEYTOMODENVDECAY: GenType = 32;
-pub const GEN_KEYTOMODENVHOLD: GenType = 31;
-pub const GEN_MODENVRELEASE: GenType = 30;
-pub const GEN_MODENVSUSTAIN: GenType = 29;
-pub const GEN_MODENVDECAY: GenType = 28;
-pub const GEN_MODENVHOLD: GenType = 27;
-pub const GEN_MODENVATTACK: GenType = 26;
-pub const GEN_MODENVDELAY: GenType = 25;
-pub const GEN_VIBLFOFREQ: GenType = 24;
-pub const GEN_VIBLFODELAY: GenType = 23;
-pub const GEN_MODLFOFREQ: GenType = 22;
-pub const GEN_MODLFODELAY: GenType = 21;
-pub const GEN_UNUSED4: GenType = 20;
-pub const GEN_UNUSED3: GenType = 19;
-pub const GEN_UNUSED2: GenType = 18;
-pub const GEN_PAN: GenType = 17;
-pub const GEN_REVERBSEND: GenType = 16;
-pub const GEN_CHORUSSEND: GenType = 15;
-pub const GEN_UNUSED1: GenType = 14;
-pub const GEN_MODLFOTOVOL: GenType = 13;
-pub const GEN_ENDADDRCOARSEOFS: GenType = 12;
-pub const GEN_MODENVTOFILTERFC: GenType = 11;
-pub const GEN_MODLFOTOFILTERFC: GenType = 10;
-pub const GEN_FILTERQ: GenType = 9;
-pub const GEN_FILTERFC: GenType = 8;
-pub const GEN_MODENVTOPITCH: GenType = 7;
-pub const GEN_VIBLFOTOPITCH: GenType = 6;
-pub const GEN_MODLFOTOPITCH: GenType = 5;
-pub const GEN_STARTADDRCOARSEOFS: GenType = 4;
-pub const GEN_ENDLOOPADDROFS: GenType = 3;
-pub const GEN_STARTLOOPADDROFS: GenType = 2;
-pub const GEN_ENDADDROFS: GenType = 1;
-pub const GEN_STARTADDROFS: GenType = 0;
+
+/**
+Generator (effect) numbers
+
+See also _SoundFont 2.01 specifications section 8.1.3_
+ */
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(u32)]
+pub enum GenParam {
+    /** Sample start address offset (0-32767) */
+    StartAddrOfs = 0,
+    /**< Sample end address offset (-32767-0) */
+    EndAddrOfs = 1,
+    /**< Sample loop start address offset (-32767-32767) */
+    StartLoopAddrOfs = 2,
+    /**< Sample loop end address offset (-32767-32767) */
+    EndLoopAddrOfs = 3,
+    /** Sample start address coarse offset (X 32768) */
+    StartAddrCoarseOfs = 4,
+    /** Modulation LFO to pitch */
+    ModLfoToPitch = 5,
+    /** Vibrato LFO to pitch */
+    VibLfoToPitch = 6,
+    /** Modulation envelope to pitch */
+    ModEnvToPitch = 7,
+    /** Filter cutoff */
+    FilterFc = 8,
+    /** Filter Q */
+    FilterQ = 9,
+    /** Modulation LFO to filter cutoff */
+    ModLfoToFilterFc = 10,
+    /** Modulation envelope to filter cutoff */
+    ModEnvToFilterFc = 11,
+    /** Sample end address coarse offset (X 32768) */
+    EndAddrCoarseOfs = 12,
+    /** Modulation LFO to volume */
+    ModLfoToVol = 13,
+    /** Unused */
+    Unused = 14,
+    /** Chorus send amount */
+    ChorusSend = 15,
+    /** Reverb send amount */
+    ReverbSend = 16,
+    /** Stereo panning */
+    Pan = 17,
+    /** Unused */
+    Unused2 = 18,
+    /** Unused */
+    Unused3 = 19,
+    /** Unused */
+    Unused4 = 20,
+    /** Modulation LFO delay */
+    ModLfoDelay = 21,
+    /** Modulation LFO frequency */
+    ModLfoFreq = 22,
+    /** Vibrato LFO delay */
+    VibLfoDelay = 23,
+    /** Vibrato LFO frequency */
+    VibLfoFreq = 24,
+    /** Modulation envelope delay */
+    ModEnvDelay = 25,
+    /** Modulation envelope attack */
+    ModEnvAttack = 26,
+    /** Modulation envelope hold */
+    ModEnvHold = 27,
+    /** Modulation envelope decay */
+    ModEnvDecay = 28,
+    /** Modulation envelope sustain */
+    ModEnvSustain = 29,
+    /** Modulation envelope release */
+    ModEnvRelease = 30,
+    /** Key to modulation envelope hold */
+    KeyToModEnvHold = 31,
+    /** Key to modulation envelope decay */
+    KeyToModEnvDecay = 32,
+    /** Volume envelope delay */
+    VolEnvDelay = 33,
+    /** Volume envelope attack */
+    VolEnvAttack = 34,
+    /** Volume envelope hold */
+    VolEnvHold = 35,
+    /** Volume envelope decay */
+    VolEnvDecay = 36,
+    /** Volume envelope sustain */
+    VolEnvSustain = 37,
+    /** Volume envelope release */
+    VolEnvRelease = 38,
+    /** Key to volume envelope hold */
+    KeyToVolEnvHold = 39,
+    /** Key to volume envelope decay */
+    KeyToVolEnvDecay = 40,
+    /** Instrument ID (shouldn't be set by user) */
+    Instrument = 41,
+    /** Reserved */
+    Reserved1 = 42,
+    /** MIDI note range */
+    KeyRange = 43,
+    /** MIDI velocity range */
+    VelRange = 44,
+    /** Sample start loop address coarse offset (X 32768) */
+    StartLoopAddrCoarseOfs = 45,
+    /** Fixed MIDI note number */
+    KeyNum = 46,
+    /** Fixed MIDI velocity value */
+    Velocity = 47,
+    /** Initial volume attenuation */
+    Attenuation = 48,
+    /** Reserved */
+    Reserved2 = 49,
+    /** Sample end loop address coarse offset (X 32768) */
+    EndLoopAddrCoarseOfs = 50,
+    /** Coarse tuning */
+    CoarseTune = 51,
+    /** Fine tuning */
+    FineTune = 52,
+    /** Sample ID (shouldn't be set by user) */
+    SampleId = 53,
+    /** Sample mode flags */
+    SampleMode = 54,
+    /** Reserved */
+    Reserved3 = 55,
+    /** Scale tuning */
+    ScaleTune = 56,
+    /** Exclusive class number */
+    ExclusiveClass = 57,
+    /** Sample root note override */
+    OverrideRootKey = 58,
+    /** Pitch (NOTE: Not a real SoundFont generator)
+
+    The initial pitch is not a "standard" generator. It is not
+    mentioned in the list of generator in the SF2 specifications. It
+    is used, however, as the destination for the default pitch wheel
+    modulator.
+    */
+    Pitch = 59,
+
+    Last = 60,
+ }
+
 #[derive(Copy, Clone)]
 pub struct Gen {
     pub(crate) flags: u8,
@@ -85,7 +162,7 @@ pub type C2RustUnnamed = i32;
 
 pub static mut GEN_INFO: [GenInfo; 60] = [
     GenInfo {
-        num: GEN_STARTADDROFS as i8,
+        num: GenParam::StartAddrOfs as i8,
         init: 1,
         nrpn_scale: 1,
         min: 0.0f32,
@@ -93,7 +170,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_ENDADDROFS as i8,
+        num: GenParam::EndAddrOfs as i8,
         init: 1,
         nrpn_scale: 1,
         min: -1e10f32,
@@ -101,7 +178,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_STARTLOOPADDROFS as i8,
+        num: GenParam::StartLoopAddrOfs as i8,
         init: 1,
         nrpn_scale: 1,
         min: -1e10f32,
@@ -109,7 +186,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_ENDLOOPADDROFS as i8,
+        num: GenParam::EndLoopAddrOfs as i8,
         init: 1,
         nrpn_scale: 1,
         min: -1e10f32,
@@ -117,7 +194,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_STARTADDRCOARSEOFS as i8,
+        num: GenParam::StartAddrCoarseOfs as i8,
         init: 0,
         nrpn_scale: 1,
         min: 0.0f32,
@@ -125,7 +202,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_MODLFOTOPITCH as i8,
+        num: GenParam::ModLfoToPitch as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: -12000.0f32,
@@ -133,7 +210,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_VIBLFOTOPITCH as i8,
+        num: GenParam::VibLfoToPitch as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: -12000.0f32,
@@ -141,7 +218,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_MODENVTOPITCH as i8,
+        num: GenParam::ModEnvToPitch as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: -12000.0f32,
@@ -149,7 +226,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_FILTERFC as i8,
+        num: GenParam::FilterFc as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: 1500.0f32,
@@ -157,7 +234,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 13500.0f32,
     },
     GenInfo {
-        num: GEN_FILTERQ as i8,
+        num: GenParam::FilterQ as i8,
         init: 1,
         nrpn_scale: 1,
         min: 0.0f32,
@@ -165,7 +242,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_MODLFOTOFILTERFC as i8,
+        num: GenParam::ModLfoToFilterFc as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: -12000.0f32,
@@ -173,7 +250,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_MODENVTOFILTERFC as i8,
+        num: GenParam::ModEnvToFilterFc as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: -12000.0f32,
@@ -181,7 +258,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_ENDADDRCOARSEOFS as i8,
+        num: GenParam::EndAddrCoarseOfs as i8,
         init: 0,
         nrpn_scale: 1,
         min: -1e10f32,
@@ -189,7 +266,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_MODLFOTOVOL as i8,
+        num: GenParam::ModLfoToVol as i8,
         init: 1,
         nrpn_scale: 1,
         min: -960.0f32,
@@ -197,7 +274,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_UNUSED1 as i8,
+        num: GenParam::Unused as i8,
         init: 0,
         nrpn_scale: 0,
         min: 0.0f32,
@@ -205,7 +282,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_CHORUSSEND as i8,
+        num: GenParam::ChorusSend as i8,
         init: 1,
         nrpn_scale: 1,
         min: 0.0f32,
@@ -213,7 +290,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_REVERBSEND as i8,
+        num: GenParam::ReverbSend as i8,
         init: 1,
         nrpn_scale: 1,
         min: 0.0f32,
@@ -221,7 +298,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_PAN as i8,
+        num: GenParam::Pan as i8,
         init: 1,
         nrpn_scale: 1,
         min: -500.0f32,
@@ -229,7 +306,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_UNUSED2 as i8,
+        num: GenParam::Unused2 as i8,
         init: 0,
         nrpn_scale: 0,
         min: 0.0f32,
@@ -237,7 +314,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_UNUSED3 as i8,
+        num: GenParam::Unused3 as i8,
         init: 0,
         nrpn_scale: 0,
         min: 0.0f32,
@@ -245,7 +322,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_UNUSED4 as i8,
+        num: GenParam::Unused4 as i8,
         init: 0,
         nrpn_scale: 0,
         min: 0.0f32,
@@ -253,7 +330,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_MODLFODELAY as i8,
+        num: GenParam::ModLfoDelay as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: -12000.0f32,
@@ -261,7 +338,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: -12000.0f32,
     },
     GenInfo {
-        num: GEN_MODLFOFREQ as i8,
+        num: GenParam::ModLfoFreq as i8,
         init: 1,
         nrpn_scale: 4 as i8,
         min: -16000.0f32,
@@ -269,7 +346,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_VIBLFODELAY as i8,
+        num: GenParam::VibLfoDelay as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: -12000.0f32,
@@ -277,7 +354,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: -12000.0f32,
     },
     GenInfo {
-        num: GEN_VIBLFOFREQ as i8,
+        num: GenParam::VibLfoFreq as i8,
         init: 1,
         nrpn_scale: 4 as i8,
         min: -16000.0f32,
@@ -285,7 +362,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_MODENVDELAY as i8,
+        num: GenParam::ModEnvDelay as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: -12000.0f32,
@@ -293,7 +370,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: -12000.0f32,
     },
     GenInfo {
-        num: GEN_MODENVATTACK as i8,
+        num: GenParam::ModEnvAttack as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: -12000.0f32,
@@ -301,7 +378,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: -12000.0f32,
     },
     GenInfo {
-        num: GEN_MODENVHOLD as i8,
+        num: GenParam::ModEnvHold as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: -12000.0f32,
@@ -309,7 +386,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: -12000.0f32,
     },
     GenInfo {
-        num: GEN_MODENVDECAY as i8,
+        num: GenParam::ModEnvDecay as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: -12000.0f32,
@@ -317,7 +394,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: -12000.0f32,
     },
     GenInfo {
-        num: GEN_MODENVSUSTAIN as i8,
+        num: GenParam::ModEnvSustain as i8,
         init: 0,
         nrpn_scale: 1,
         min: 0.0f32,
@@ -325,7 +402,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_MODENVRELEASE as i8,
+        num: GenParam::ModEnvRelease as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: -12000.0f32,
@@ -333,7 +410,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: -12000.0f32,
     },
     GenInfo {
-        num: GEN_KEYTOMODENVHOLD as i8,
+        num: GenParam::KeyToModEnvHold as i8,
         init: 0,
         nrpn_scale: 1,
         min: -1200.0f32,
@@ -341,7 +418,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_KEYTOMODENVDECAY as i8,
+        num: GenParam::KeyToModEnvDecay as i8,
         init: 0,
         nrpn_scale: 1,
         min: -1200.0f32,
@@ -349,7 +426,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_VOLENVDELAY as i8,
+        num: GenParam::VolEnvDelay as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: -12000.0f32,
@@ -357,7 +434,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: -12000.0f32,
     },
     GenInfo {
-        num: GEN_VOLENVATTACK as i8,
+        num: GenParam::VolEnvAttack as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: -12000.0f32,
@@ -365,7 +442,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: -12000.0f32,
     },
     GenInfo {
-        num: GEN_VOLENVHOLD as i8,
+        num: GenParam::VolEnvHold as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: -12000.0f32,
@@ -373,7 +450,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: -12000.0f32,
     },
     GenInfo {
-        num: GEN_VOLENVDECAY as i8,
+        num: GenParam::VolEnvDecay as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: -12000.0f32,
@@ -381,7 +458,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: -12000.0f32,
     },
     GenInfo {
-        num: GEN_VOLENVSUSTAIN as i8,
+        num: GenParam::VolEnvSustain as i8,
         init: 0,
         nrpn_scale: 1,
         min: 0.0f32,
@@ -389,7 +466,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_VOLENVRELEASE as i8,
+        num: GenParam::VolEnvRelease as i8,
         init: 1,
         nrpn_scale: 2 as i8,
         min: -12000.0f32,
@@ -397,7 +474,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: -12000.0f32,
     },
     GenInfo {
-        num: GEN_KEYTOVOLENVHOLD as i8,
+        num: GenParam::KeyToVolEnvHold as i8,
         init: 0,
         nrpn_scale: 1,
         min: -1200.0f32,
@@ -405,7 +482,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_KEYTOVOLENVDECAY as i8,
+        num: GenParam::KeyToVolEnvDecay as i8,
         init: 0,
         nrpn_scale: 1,
         min: -1200.0f32,
@@ -413,7 +490,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_INSTRUMENT as i8,
+        num: GenParam::Instrument as i8,
         init: 0,
         nrpn_scale: 0,
         min: 0.0f32,
@@ -421,7 +498,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_RESERVED1 as i8,
+        num: GenParam::Reserved1 as i8,
         init: 0,
         nrpn_scale: 0,
         min: 0.0f32,
@@ -429,7 +506,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_KEYRANGE as i8,
+        num: GenParam::KeyRange as i8,
         init: 0,
         nrpn_scale: 0,
         min: 0.0f32,
@@ -437,7 +514,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_VELRANGE as i8,
+        num: GenParam::VelRange as i8,
         init: 0,
         nrpn_scale: 0,
         min: 0.0f32,
@@ -445,7 +522,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_STARTLOOPADDRCOARSEOFS as i8,
+        num: GenParam::StartLoopAddrCoarseOfs as i8,
         init: 0,
         nrpn_scale: 1,
         min: -1e10f32,
@@ -453,7 +530,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_KEYNUM as i8,
+        num: GenParam::KeyNum as i8,
         init: 1,
         nrpn_scale: 0,
         min: 0.0f32,
@@ -461,7 +538,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: -1.0f32,
     },
     GenInfo {
-        num: GEN_VELOCITY as i8,
+        num: GenParam::Velocity as i8,
         init: 1,
         nrpn_scale: 1,
         min: 0.0f32,
@@ -469,7 +546,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: -1.0f32,
     },
     GenInfo {
-        num: GEN_ATTENUATION as i8,
+        num: GenParam::Attenuation as i8,
         init: 1,
         nrpn_scale: 1,
         min: 0.0f32,
@@ -477,7 +554,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_RESERVED2 as i8,
+        num: GenParam::Reserved2 as i8,
         init: 0,
         nrpn_scale: 0,
         min: 0.0f32,
@@ -485,7 +562,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_ENDLOOPADDRCOARSEOFS as i8,
+        num: GenParam::EndLoopAddrCoarseOfs as i8,
         init: 0,
         nrpn_scale: 1,
         min: -1e10f32,
@@ -493,7 +570,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_COARSETUNE as i8,
+        num: GenParam::CoarseTune as i8,
         init: 0,
         nrpn_scale: 1,
         min: -120.0f32,
@@ -501,7 +578,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_FINETUNE as i8,
+        num: GenParam::FineTune as i8,
         init: 0,
         nrpn_scale: 1,
         min: -99.0f32,
@@ -509,7 +586,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_SAMPLEID as i8,
+        num: GenParam::SampleId as i8,
         init: 0,
         nrpn_scale: 0,
         min: 0.0f32,
@@ -517,7 +594,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_SAMPLEMODE as i8,
+        num: GenParam::SampleMode as i8,
         init: 0,
         nrpn_scale: 0,
         min: 0.0f32,
@@ -525,7 +602,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_RESERVED3 as i8,
+        num: GenParam::Reserved3 as i8,
         init: 0,
         nrpn_scale: 0,
         min: 0.0f32,
@@ -533,7 +610,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_SCALETUNE as i8,
+        num: GenParam::ScaleTune as i8,
         init: 0,
         nrpn_scale: 1,
         min: 0.0f32,
@@ -541,7 +618,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 100.0f32,
     },
     GenInfo {
-        num: GEN_EXCLUSIVECLASS as i8,
+        num: GenParam::ExclusiveClass as i8,
         init: 0,
         nrpn_scale: 0,
         min: 0.0f32,
@@ -549,7 +626,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: 0.0f32,
     },
     GenInfo {
-        num: GEN_OVERRIDEROOTKEY as i8,
+        num: GenParam::OverrideRootKey as i8,
         init: 1,
         nrpn_scale: 0,
         min: 0.0f32,
@@ -557,7 +634,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
         def: -1.0f32,
     },
     GenInfo {
-        num: GEN_PITCH as i8,
+        num: GenParam::Pitch as i8,
         init: 1,
         nrpn_scale: 0,
         min: 0.0f32,
@@ -569,7 +646,7 @@ pub static mut GEN_INFO: [GenInfo; 60] = [
 pub unsafe fn fluid_gen_set_default_values(gen: *mut Gen) -> i32 {
     let mut i: i32;
     i = 0 as i32;
-    while i < GEN_LAST as i32 {
+    while i < GenParam::Last as i32 {
         (*gen.offset(i as isize)).flags = GEN_UNUSED as i32 as u8;
         (*gen.offset(i as isize)).mod_0 = 0.0f64;
         (*gen.offset(i as isize)).nrpn = 0.0f64;
@@ -583,7 +660,7 @@ pub unsafe fn fluid_gen_init(gen: *mut Gen, channel: *mut Channel) -> i32 {
     let mut i: i32;
     fluid_gen_set_default_values(gen);
     i = 0 as i32;
-    while i < GEN_LAST as i32 {
+    while i < GenParam::Last as i32 {
         (*gen.offset(i as isize)).nrpn = (*channel).gen[i as usize] as f64;
         if (*channel).gen_abs[i as usize] != 0 {
             (*gen.offset(i as isize)).flags = GEN_ABS_NRPN as i32 as u8
@@ -593,7 +670,7 @@ pub unsafe fn fluid_gen_init(gen: *mut Gen, channel: *mut Channel) -> i32 {
     return FLUID_OK as i32;
 }
 
-pub unsafe fn fluid_gen_scale_nrpn(gen: i32, data: i32) -> f32 {
+pub unsafe fn fluid_gen_scale_nrpn(gen: i16, data: i32) -> f32 {
     let mut value: f32 = data as f32 - 8192.0f32;
     value = if value < -(8192 as i32) as f32 {
         -(8192 as i32) as f32

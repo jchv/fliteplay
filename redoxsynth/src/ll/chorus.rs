@@ -1,11 +1,23 @@
-pub type ChorusMod = u32;
-pub const CHORUS_MOD_TRIANGLE: ChorusMod = 1;
-pub const CHORUS_MOD_SINE: ChorusMod = 0;
+/**
+Chorus type
+ */
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(u32)]
+pub enum ChorusMode {
+    Sine = 0,
+    Triangle = 1,
+}
+
+impl Default for ChorusMode {
+    fn default() -> Self {
+        ChorusMode::Sine
+    }
+}
 
 #[derive(Copy, Clone)]
 pub struct Chorus {
-    type_0: i32,
-    new_type: i32,
+    type_0: ChorusMode,
+    new_type: ChorusMode,
     depth_ms: f32,
     new_depth_ms: f32,
     level: f32,
@@ -27,8 +39,8 @@ impl Chorus {
     pub fn new(sample_rate: f32) -> Self {
         unsafe {
             let mut chorus = Self {
-                type_0: 0,
-                new_type: 0,
+                type_0: ChorusMode::Sine,
+                new_type: ChorusMode::Sine,
                 depth_ms: 0f32,
                 new_depth_ms: 0f32,
                 level: 0f32,
@@ -101,7 +113,7 @@ impl Chorus {
         self.set_level(2.0f32);
         self.set_speed_hz(0.3f32);
         self.set_depth_ms(8.0f32);
-        self.set_type(CHORUS_MOD_SINE as i32);
+        self.set_type(ChorusMode::Sine);
         self.update();
     }
 
@@ -137,11 +149,11 @@ impl Chorus {
         return self.depth_ms;
     }
 
-    pub fn set_type(&mut self, type_0: i32) {
+    pub fn set_type(&mut self, type_0: ChorusMode) {
         self.new_type = type_0;
     }
 
-    pub fn get_type(&self) -> i32 {
+    pub fn get_type(&self) -> ChorusMode {
         return self.type_0;
     }
 
@@ -221,13 +233,13 @@ impl Chorus {
             );
             modulation_depth_samples = (1 as i32) << 12 as i32 - 1 as i32
         }
-        if self.type_0 == CHORUS_MOD_SINE as i32 {
+        if self.type_0 == ChorusMode::Sine {
             modulate_sine(
                 self.lookup_tab,
                 self.modulation_period_samples as i32,
                 modulation_depth_samples,
             );
-        } else if self.type_0 == CHORUS_MOD_TRIANGLE as i32 {
+        } else if self.type_0 == ChorusMode::Triangle {
             modulate_triangle(
                 self.lookup_tab,
                 self.modulation_period_samples as i32,
@@ -238,7 +250,7 @@ impl Chorus {
                 FLUID_WARN,
                 "chorus: Unknown modulation type. Using sinewave.",
             );
-            self.type_0 = CHORUS_MOD_SINE as i32;
+            self.type_0 = ChorusMode::Sine;
             modulate_sine(
                 self.lookup_tab,
                 self.modulation_period_samples as i32,

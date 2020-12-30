@@ -1,6 +1,6 @@
 use std::ffi::CStr;
 
-use super::channel::Channel;
+use super::{channel::{Channel, InterpMethod}, chorus::ChorusMode};
 use super::chorus::Chorus;
 use super::sfloader::new_fluid_defsfloader;
 use super::dsp_float::fluid_dsp_float_config;
@@ -987,13 +987,13 @@ impl Synth {
         self.reverb.set_level(level as f32);
     }
 
-    pub unsafe fn set_chorus_params(
+    pub fn set_chorus_params(
         &mut self,
         nr: i32,
         level: f64,
         speed: f64,
         depth_ms: f64,
-        type_0: i32,
+        type_0: ChorusMode,
     ) {
         self.chorus.set_nr(nr);
         self.chorus.set_level(level as f32);
@@ -1552,7 +1552,7 @@ impl Synth {
         return self.chorus.get_depth_ms() as f64;
     }
 
-    pub fn get_chorus_type(&self) -> i32 {
+    pub fn get_chorus_type(&self) -> ChorusMode {
         return self.chorus.get_type();
     }
 
@@ -1590,7 +1590,7 @@ impl Synth {
         }
     }
 
-    pub unsafe fn set_interp_method(&mut self, chan: i32, interp_method: i32) -> i32 {
+    pub unsafe fn set_interp_method(&mut self, chan: i32, interp_method: InterpMethod) -> i32 {
         let mut i;
         i = 0 as i32;
         while i < self.midi_channels {
@@ -1840,15 +1840,11 @@ impl Synth {
         }
     }
 
-    pub unsafe fn set_gen(&mut self, chan: i32, param: i32, value: f32) -> i32 {
+    pub unsafe fn set_gen(&mut self, chan: i32, param: i16, value: f32) -> i32 {
         let mut i;
         let mut voice;
         if chan < 0 as i32 || chan >= self.midi_channels {
             fluid_log!(FLUID_WARN, "Channel out of range",);
-            return FLUID_FAILED as i32;
-        }
-        if param < 0 as i32 || param >= GEN_LAST as i32 {
-            fluid_log!(FLUID_WARN, "Parameter number out of range",);
             return FLUID_FAILED as i32;
         }
         self.channel[chan as usize].gen[param as usize] = value;
