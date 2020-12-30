@@ -24,19 +24,19 @@ Reference to SoundFont object
  */
 #[repr(transparent)]
 pub struct FontRef<'a> {
-    handle: *mut ll::sfont::SoundFont,
+    handle: *mut ll::soundfont::SoundFont,
     phantom: PhantomData<&'a ()>,
 }
 
 impl<'a> FontRef<'a> {
-    pub(crate) fn from_ptr(handle: *mut ll::sfont::SoundFont) -> Self {
+    pub(crate) fn from_ptr(handle: *mut ll::soundfont::SoundFont) -> Self {
         Self {
             handle,
             phantom: PhantomData,
         }
     }
 
-    pub(crate) fn as_ptr(&self) -> *mut ll::sfont::SoundFont {
+    pub(crate) fn as_ptr(&self) -> *mut ll::soundfont::SoundFont {
         self.handle
     }
 }
@@ -46,12 +46,12 @@ Reference to Preset object
  */
 #[repr(transparent)]
 pub struct PresetRef<'a> {
-    handle: *mut ll::sfont::Preset,
+    handle: *mut ll::soundfont::Preset,
     phantom: PhantomData<&'a ()>,
 }
 
 impl<'a> PresetRef<'a> {
-    pub(crate) fn from_ptr(handle: *mut ll::sfont::Preset) -> Self {
+    pub(crate) fn from_ptr(handle: *mut ll::soundfont::Preset) -> Self {
         Self {
             handle,
             phantom: PhantomData,
@@ -67,7 +67,7 @@ mod private {
 
     impl<X> IsFont for X
     where
-        X: HasHandle<Handle = ll::sfont::SoundFont>,
+        X: HasHandle<Handle = ll::soundfont::SoundFont>,
     {
         fn get_id(&self) -> FontId {
             let handle = self.get_handle();
@@ -92,7 +92,7 @@ mod private {
     }
 
     impl<'a> HasHandle for FontRef<'a> {
-        type Handle = ll::sfont::SoundFont;
+        type Handle = ll::soundfont::SoundFont;
 
         fn get_handle(&self) -> *const Self::Handle {
             self.handle
@@ -105,7 +105,7 @@ mod private {
 
     impl<X> IsPreset for X
     where
-        X: HasHandle<Handle = ll::sfont::Preset>,
+        X: HasHandle<Handle = ll::soundfont::Preset>,
     {
         fn get_name(&self) -> Option<String> {
             let handle = self.get_handle();
@@ -141,7 +141,7 @@ mod private {
     }
 
     impl<'a> HasHandle for PresetRef<'a> {
-        type Handle = ll::sfont::Preset;
+        type Handle = ll::soundfont::Preset;
 
         fn get_handle(&self) -> *const Self::Handle {
             self.handle

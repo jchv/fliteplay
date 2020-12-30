@@ -16,7 +16,7 @@ use super::dsp_float::fluid_dsp_float_interpolate_none;
 use super::gen::fluid_gen_init;
 use super::gen::Gen;
 use super::modulator::Mod;
-use super::sfont::Sample;
+use super::soundfont::Sample;
 use super::synth::Synth;
 
 pub struct Voice {

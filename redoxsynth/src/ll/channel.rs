@@ -1,5 +1,5 @@
 use super::gen::fluid_gen_scale_nrpn;
-use super::sfont::Preset;
+use super::soundfont::Preset;
 use super::synth::Synth;
 use super::tuning::Tuning;
 #[derive(Clone)]
