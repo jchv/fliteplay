@@ -375,7 +375,6 @@ pub unsafe fn fluid_defsfont_sfont_get_preset(
                 fluid_defpreset_preset_noteon
                     as unsafe fn(_: *mut Preset, _: &mut Synth, _: i32, _: i32, _: i32) -> i32,
             );
-            (*preset).notify = None;
             return preset;
         }
         None => {
@@ -407,7 +406,6 @@ pub unsafe fn fluid_defsfont_sfont_iteration_next(
         fluid_defpreset_preset_noteon
             as unsafe fn(_: *mut Preset, _: &mut Synth, _: i32, _: i32, _: i32) -> i32,
     );
-    (*preset).notify = None;
     match (*sfont).data.downcast_mut::<DefaultSoundFont>() {
         Some(defsfont) => {
             return fluid_defsfont_iteration_next(defsfont, preset);

@@ -24,9 +24,6 @@ pub struct Channel {
 }
 pub type InterpolationType = u32;
 pub const INTERPOLATION_DEFAULT: InterpolationType = 4;
-pub type C2RustUnnamed = u32;
-pub const FLUID_PRESET_UNSELECTED: C2RustUnnamed = 1;
-pub const FLUID_PRESET_SELECTED: C2RustUnnamed = 0;
 pub type ModSrc = u32;
 pub const FLUID_MOD_PITCHWHEELSENS: ModSrc = 16;
 pub const FLUID_MOD_PITCHWHEEL: ModSrc = 14;
@@ -168,22 +165,6 @@ impl Channel {
 
     pub fn set_preset(&mut self, preset: *mut Preset) -> i32 {
         unsafe {
-            if !self.preset.is_null() && (*self.preset).notify.is_some() {
-                Some((*self.preset).notify.expect("non-null function pointer"))
-                    .expect("non-null function pointer")(
-                    self.preset,
-                    FLUID_PRESET_UNSELECTED as i32,
-                    self.channum,
-                );
-            }
-            if !preset.is_null() && (*preset).notify.is_some() {
-                Some((*preset).notify.expect("non-null function pointer"))
-                    .expect("non-null function pointer")(
-                    preset,
-                    FLUID_PRESET_SELECTED as i32,
-                    self.channum,
-                );
-            }
             if !self.preset.is_null() {
                 if !self.preset.is_null() && (*self.preset).free.is_some() {
                     Some((*self.preset).free.expect("non-null function pointer"))

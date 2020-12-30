@@ -20,7 +20,6 @@ pub struct Preset {
     pub get_banknum: Option<unsafe fn(_: *const Preset) -> i32>,
     pub get_num: Option<unsafe fn(_: *const Preset) -> i32>,
     pub noteon: Option<unsafe fn(_: *mut Preset, _: &mut Synth, _: i32, _: i32, _: i32) -> i32>,
-    pub notify: Option<unsafe fn(_: *mut Preset, _: i32, _: i32) -> i32>,
 }
 
 pub struct SoundFont {
