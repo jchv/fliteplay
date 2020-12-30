@@ -107,8 +107,6 @@ pub struct EnvData {
     pub max: f32,
 }
 pub type Phase = u64;
-pub type C2RustUnnamed = u32;
-pub const FLUID_SAMPLE_DONE: C2RustUnnamed = 2;
 pub type ModFlags = u32;
 pub const FLUID_MOD_CC: ModFlags = 16;
 pub const FLUID_MOD_BIPOLAR: ModFlags = 2;
@@ -1489,16 +1487,6 @@ pub unsafe fn fluid_voice_off(mut voice: *mut Voice) -> i32 {
     (*voice).status = FLUID_VOICE_OFF as i32 as u8;
     if !(*voice).sample.is_null() {
         (*(*voice).sample).refcount = (*(*voice).sample).refcount.wrapping_sub(1);
-        if (*(*voice).sample).refcount == 0 as i32 as u32 && (*(*voice).sample).notify.is_some() {
-            Some(
-                (*(*voice).sample)
-                    .notify
-                    .expect("non-null function pointer"),
-            )
-            .expect("non-null function pointer")(
-                (*voice).sample, FLUID_SAMPLE_DONE as i32
-            );
-        }
         (*voice).sample = 0 as *mut Sample
     }
     return FLUID_OK as i32;

@@ -32,6 +32,7 @@ pub struct SoundFont {
     pub iteration_start: Option<unsafe fn(_: *mut SoundFont) -> ()>,
     pub iteration_next: Option<unsafe fn(_: *mut SoundFont, _: *mut Preset) -> i32>,
 }
+
 #[derive(Copy, Clone)]
 pub struct Sample {
     pub name: [u8; 21],
@@ -48,6 +49,4 @@ pub struct Sample {
     pub amplitude_that_reaches_noise_floor_is_valid: i32,
     pub amplitude_that_reaches_noise_floor: f64,
     pub refcount: u32,
-    pub notify: Option<unsafe fn(_: *mut Sample, _: i32) -> i32>,
-    pub userdata: *mut libc::c_void,
 }
