@@ -17,7 +17,7 @@ impl Synth {
         let filename = CString::new(filename).map_err(|_| Error::Path)?;
 
         Synth::neg_err(unsafe {
-            ll::synth::fluid_synth_sfload(&mut self.handle, CString::from(filename).as_bytes_with_nul(), reset_presets as _)
+            self.handle.sfload(CString::from(filename).as_bytes_with_nul(), reset_presets as _)
         })
         .map(|id| id as _)
     }
@@ -27,7 +27,7 @@ impl Synth {
     index on the stack.
      */
     pub fn sfreload(&mut self, id: FontId) -> Result<FontId> {
-        Synth::neg_err(unsafe { ll::synth::fluid_synth_sfreload(&mut self.handle, id as _) })
+        Synth::neg_err(unsafe { self.handle.sfreload(id as _) })
             .map(|id| id as _)
     }
 
@@ -35,14 +35,14 @@ impl Synth {
     Removes a SoundFont from the stack and deallocates it.
      */
     pub fn sfunload(&mut self, id: FontId, reset_presets: bool) -> Status {
-        Synth::zero_ok(unsafe { ll::synth::fluid_synth_sfunload(&mut self.handle, id, reset_presets as _) })
+        Synth::zero_ok(unsafe { self.handle.sfunload(id, reset_presets as _) })
     }
 
     /**
     Count the number of loaded SoundFonts.
      */
     pub fn sfcount(&self) -> u32 {
-        unsafe { ll::synth::fluid_synth_sfcount(&self.handle) as _ }
+        unsafe { self.handle.sfcount() as _ }
     }
 
     /**
@@ -52,7 +52,7 @@ impl Synth {
     - `num` The number of the SoundFont (0 <= num < sfcount)
      */
     pub fn get_sfont(&mut self, num: u32) -> Option<FontRef<'_>> {
-        option_from_ptr(unsafe { ll::synth::fluid_synth_get_sfont(&mut self.handle, num) })
+        option_from_ptr(unsafe { self.handle.get_sfont(num) })
             .map(FontRef::from_ptr)
     }
 
@@ -67,7 +67,7 @@ impl Synth {
     Get a SoundFont. The SoundFont is specified by its ID.
      */
     pub fn get_sfont_by_id(&mut self, id: FontId) -> Option<FontRef<'_>> {
-        option_from_ptr(unsafe { ll::synth::fluid_synth_get_sfont_by_id(&mut self.handle, id) })
+        option_from_ptr(unsafe { self.handle.get_sfont_by_id(id) })
             .map(FontRef::from_ptr)
     }
 
@@ -78,7 +78,7 @@ impl Synth {
      */
     pub fn remove_sfont(&mut self, sfont: FontRef<'_>) {
         unsafe {
-            ll::synth::fluid_synth_remove_sfont(&mut self.handle, sfont.as_ptr());
+            self.handle.remove_sfont(sfont.as_ptr());
         }
     }
 
@@ -96,7 +96,7 @@ impl Synth {
     Get the preset of a channel
      */
     pub fn get_channel_preset(&self, chan: Chan) -> Option<PresetRef<'_>> {
-        option_from_ptr(unsafe { ll::synth::fluid_synth_get_channel_preset(&self.handle, chan as _) })
+        option_from_ptr(unsafe { self.handle.get_channel_preset(chan as _) })
             .map(PresetRef::from_ptr)
     }
 
@@ -106,7 +106,7 @@ impl Synth {
      */
     pub fn set_bank_offset(&mut self, sfont_id: FontId, offset: u32) -> Status {
         Synth::zero_ok(unsafe {
-            ll::synth::fluid_synth_set_bank_offset(&mut self.handle, sfont_id as _, offset as _)
+            self.handle.set_bank_offset(sfont_id as _, offset as _)
         })
     }
 
@@ -114,7 +114,7 @@ impl Synth {
     Get the offset of the bank numbers in a SoundFont.
      */
     pub fn get_bank_offset(&self, sfont_id: FontId) -> Result<u32> {
-        Synth::neg_err(unsafe { ll::synth::fluid_synth_get_bank_offset(&self.handle, sfont_id as _) })
+        Synth::neg_err(unsafe { self.handle.get_bank_offset(sfont_id as _) })
             .map(|val| val as _)
     }
 }
@@ -170,7 +170,7 @@ impl<'a> Iterator for FontIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let font =
-            option_from_ptr(unsafe { ll::synth::fluid_synth_get_sfont(self.handle.as_mut().unwrap(), self.font_no) })
+            option_from_ptr(unsafe { self.handle.as_mut().unwrap().get_sfont(self.font_no) })
                 .map(FontRef::from_ptr);
         if font.is_some() {
             self.font_no += 1;

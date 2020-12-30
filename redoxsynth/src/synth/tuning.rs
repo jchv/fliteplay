@@ -25,8 +25,7 @@ impl Synth {
     ) -> Status {
         let name = CString::new(name.as_ref()).unwrap();
         Synth::zero_ok(unsafe {
-            ll::synth::fluid_synth_create_key_tuning(
-                &mut self.handle,
+            self.handle.create_key_tuning(
                 tuning_bank as _,
                 tuning_prog as _,
                 name.as_bytes_with_nul(),
@@ -51,8 +50,7 @@ impl Synth {
     ) -> Status {
         let name = CString::new(name.as_ref()).unwrap();
         Synth::zero_ok(unsafe {
-            ll::synth::fluid_synth_create_octave_tuning(
-                &mut self.handle,
+            self.handle.create_octave_tuning(
                 tuning_bank as _,
                 tuning_prog as _,
                 name.as_bytes_with_nul(),
@@ -71,8 +69,7 @@ impl Synth {
     ) -> Status {
         let name = CString::new(name.as_ref()).unwrap();
         Synth::zero_ok(unsafe {
-            ll::synth::fluid_synth_activate_octave_tuning(
-                &mut self.handle,
+            self.handle.activate_octave_tuning(
                 bank as _,
                 prog as _,
                 name.as_bytes_with_nul(),
@@ -105,8 +102,7 @@ impl Synth {
         let pitch = pitch.as_ref();
         let len = keys.len().min(pitch.len());
         Synth::zero_ok(unsafe {
-            ll::synth::fluid_synth_tune_notes(
-                &mut self.handle,
+            self.handle.tune_notes(
                 tuning_bank as _,
                 tuning_prog as _,
                 len as _,
@@ -122,8 +118,7 @@ impl Synth {
      */
     pub fn select_tuning(&mut self, chan: Chan, tuning_bank: Bank, tuning_prog: Prog) -> Status {
         Synth::zero_ok(unsafe {
-            ll::synth::fluid_synth_select_tuning(
-                &mut self.handle,
+            self.handle.select_tuning(
                 chan as _,
                 tuning_bank as _,
                 tuning_prog as _,
@@ -133,8 +128,7 @@ impl Synth {
 
     pub fn activate_tuning(&mut self, chan: Chan, bank: Bank, prog: Prog, apply: bool) -> Status {
         Synth::zero_ok(unsafe {
-            ll::synth::fluid_synth_activate_tuning(
-                &mut self.handle,
+            self.handle.activate_tuning(
                 chan as _,
                 bank as _,
                 prog as _,
@@ -147,7 +141,7 @@ impl Synth {
     Set the tuning to the default well-tempered tuning on a channel.
      */
     pub fn reset_tuning(&mut self, chan: Chan) -> Status {
-        Synth::zero_ok(unsafe { ll::synth::fluid_synth_reset_tuning(&mut self.handle, chan as _) })
+        Synth::zero_ok(unsafe { self.handle.reset_tuning(chan as _) })
     }
 
     /**
@@ -169,8 +163,7 @@ impl Synth {
         let mut pitch = MaybeUninit::<[f64; 128]>::uninit();
 
         Synth::zero_ok(unsafe {
-            ll::synth::fluid_synth_tuning_dump(
-                &self.handle,
+            self.handle.tuning_dump(
                 bank as _,
                 prog as _,
                 name.as_mut_ptr() as _,
@@ -198,8 +191,7 @@ impl Synth {
         let mut name = MaybeUninit::<[u8; NAME_LEN]>::uninit();
 
         Synth::zero_ok(unsafe {
-            ll::synth::fluid_synth_tuning_dump(
-                &self.handle,
+            self.handle.tuning_dump(
                 bank as _,
                 prog as _,
                 name.as_mut_ptr() as _,
@@ -222,8 +214,7 @@ impl Synth {
         let mut pitch = MaybeUninit::<[f64; 128]>::uninit();
 
         Synth::zero_ok(unsafe {
-            ll::synth::fluid_synth_tuning_dump(
-                &self.handle,
+            self.handle.tuning_dump(
                 bank as _,
                 prog as _,
                 null_mut(),
@@ -263,7 +254,7 @@ impl<'a> Iterator for TuningIter<'a> {
         if self.init {
             self.init = false;
             unsafe {
-                ll::synth::fluid_synth_tuning_iteration_start(self.handle.as_mut().unwrap());
+                self.handle.as_mut().unwrap().tuning_iteration_start();
             }
         }
         if self.next {
@@ -271,8 +262,7 @@ impl<'a> Iterator for TuningIter<'a> {
             let mut prog = MaybeUninit::uninit();
             self.next = 0
                 != unsafe {
-                    ll::synth::fluid_synth_tuning_iteration_next(
-                        self.handle.as_mut().unwrap(),
+                    self.handle.as_mut().unwrap().tuning_iteration_next(
                         bank.as_mut_ptr(),
                         prog.as_mut_ptr(),
                     )

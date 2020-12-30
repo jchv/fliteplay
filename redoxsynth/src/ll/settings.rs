@@ -1,4 +1,4 @@
-use super::synth::fluid_synth_settings;
+use super::synth::Synth;
 use std::collections::HashMap;
 pub type SettingsType = i32;
 pub const FLUID_SET_TYPE: SettingsType = 3;
@@ -114,7 +114,7 @@ pub unsafe fn new_fluid_settings() -> Settings {
 }
 
 unsafe fn fluid_settings_init(settings: &mut Settings) {
-    fluid_synth_settings(settings);
+    Synth::register_settings(settings);
 }
 
 unsafe fn fluid_settings_get<'a>(settings: &'a Settings, name: &[String]) -> Option<&'a Setting> {

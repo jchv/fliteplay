@@ -1,13 +1,6 @@
 use super::gen::fluid_gen_scale_nrpn;
 use super::settings::fluid_settings_str_equal;
 use super::sfont::Preset;
-use super::synth::fluid_synth_all_notes_off;
-use super::synth::fluid_synth_all_sounds_off;
-use super::synth::fluid_synth_damp_voices;
-use super::synth::fluid_synth_find_preset;
-use super::synth::fluid_synth_modulate_voices;
-use super::synth::fluid_synth_modulate_voices_all;
-use super::synth::fluid_synth_set_gen;
 use super::synth::Synth;
 use super::tuning::Tuning;
 #[derive(Clone)]
@@ -103,7 +96,7 @@ impl Channel {
             },
             _ => {}
         }
-        self.preset = unsafe { fluid_synth_find_preset(synth, self.banknum, self.prognum) };
+        self.preset = unsafe { synth.find_preset(self.banknum, self.prognum) };
         self.interp_method = INTERPOLATION_DEFAULT as i32;
         self.tuning = None;
         self.nrpn_select = 0 as i32 as i16;
@@ -231,7 +224,7 @@ impl Channel {
             match num {
                 64 => {
                     if value < 64 as i32 {
-                        fluid_synth_damp_voices(synth, self.channum);
+                        synth.damp_voices(self.channum);
                     }
                 }
                 0 => {
@@ -263,14 +256,14 @@ impl Channel {
                     );
                 }
                 123 => {
-                    fluid_synth_all_notes_off(synth, self.channum);
+                    synth.all_notes_off(self.channum);
                 }
                 120 => {
-                    fluid_synth_all_sounds_off(synth, self.channum);
+                    synth.all_sounds_off(self.channum);
                 }
                 121 => {
                     self.init_ctrl(1 as i32);
-                    fluid_synth_modulate_voices_all(synth, self.channum);
+                    synth.modulate_voices_all(self.channum);
                 }
                 6 => {
                     let data: i32 =
@@ -281,7 +274,7 @@ impl Channel {
                         {
                             if (self.nrpn_select as i32) < GEN_LAST as i32 {
                                 let val: f32 = fluid_gen_scale_nrpn(self.nrpn_select as i32, data);
-                                fluid_synth_set_gen(synth, self.channum, self.nrpn_select as i32, val);
+                                synth.set_gen(self.channum, self.nrpn_select as i32, val);
                             }
                             self.nrpn_select = 0 as i32 as i16
                         }
@@ -291,16 +284,14 @@ impl Channel {
                                 self.pitch_wheel_sens(synth, value);
                             }
                             1 => {
-                                fluid_synth_set_gen(
-                                    synth,
+                                synth.set_gen(
                                     self.channum,
                                     GEN_FINETUNE as i32,
                                     ((data - 8192 as i32) as f64 / 8192.0f64 * 100.0f64) as f32,
                                 );
                             }
                             2 => {
-                                fluid_synth_set_gen(
-                                    synth,
+                                synth.set_gen(
                                     self.channum,
                                     GEN_COARSETUNE as i32,
                                     (value - 64 as i32) as f32,
@@ -331,7 +322,7 @@ impl Channel {
                 }
                 101 | 100 => self.nrpn_active = 0 as i32 as i16,
                 _ => {
-                    fluid_synth_modulate_voices(synth, self.channum, 1 as i32, num);
+                    synth.modulate_voices(self.channum, 1 as i32, num);
                 }
             }
         }
@@ -349,8 +340,7 @@ impl Channel {
     pub fn pressure(&mut self, synth: &mut Synth, val: i32) -> i32 {
         self.channel_pressure = val as i16;
         unsafe {
-            fluid_synth_modulate_voices(
-                synth,
+            synth.modulate_voices(
                 self.channum,
                 0 as i32,
                 FLUID_MOD_CHANNELPRESSURE as i32,
@@ -362,7 +352,7 @@ impl Channel {
     pub fn pitch_bend(&mut self, synth: &mut Synth, val: i32) -> i32 {
         self.pitch_bend = val as i16;
         unsafe {
-            fluid_synth_modulate_voices(synth, self.channum, 0 as i32, FLUID_MOD_PITCHWHEEL as i32);
+            synth.modulate_voices(self.channum, 0 as i32, FLUID_MOD_PITCHWHEEL as i32);
         }
         return FLUID_OK as i32;
     }
@@ -370,8 +360,7 @@ impl Channel {
     pub fn pitch_wheel_sens(&mut self, synth: &mut Synth, val: i32) -> i32 {
         self.pitch_wheel_sensitivity = val as i16;
         unsafe {
-            fluid_synth_modulate_voices(
-                synth,
+            synth.modulate_voices(
                 self.channum,
                 0 as i32,
                 FLUID_MOD_PITCHWHEELSENS as i32,

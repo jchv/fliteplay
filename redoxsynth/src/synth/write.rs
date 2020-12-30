@@ -1,4 +1,4 @@
-use crate::{ll, Status, Synth};
+use crate::{Status, Synth};
 
 /// The trait which implements samples data buffer interface
 pub trait IsSamples {
@@ -68,8 +68,7 @@ impl Synth {
         roff: u32,
         rincr: u32,
     ) -> Status {
-        Synth::zero_ok(ll::synth::fluid_synth_write_s16(
-            &mut self.handle,
+        Synth::zero_ok(self.handle.write_s16(
             len as _,
             lbuf as _,
             loff as _,
@@ -100,8 +99,7 @@ impl Synth {
         roff: u32,
         rincr: u32,
     ) -> Status {
-        Synth::zero_ok(ll::synth::fluid_synth_write_float(
-            &mut self.handle,
+        Synth::zero_ok(self.handle.write_float(
             len as _,
             lbuf as _,
             loff as _,

@@ -35,7 +35,7 @@ impl Version {
         let mut minor = 0;
         let mut micro = 0;
 
-        ll::synth::fluid_version(&mut major, &mut minor, &mut micro);
+        ll::synth::Synth::version(&mut major, &mut minor, &mut micro);
 
         Version::new(
             major as _,

@@ -138,7 +138,7 @@ impl Synth {
     specification, paragraph 8.1.3, page 48.
      */
     pub fn set_gen(&mut self, chan: Chan, param: GenParam, value: f32) -> Status {
-        Synth::zero_ok(unsafe { ll::synth::fluid_synth_set_gen(&mut self.handle, chan as _, param as _, value) })
+        Synth::zero_ok(unsafe { self.handle.set_gen(chan as _, param as _, value) })
     }
 
     /**
@@ -148,6 +148,6 @@ impl Synth {
     Returns the value of the generator.
      */
     pub fn get_gen(&self, chan: Chan, param: GenParam) -> f32 {
-        unsafe { ll::synth::fluid_synth_get_gen(&self.handle, chan as _, param as _) }
+        unsafe { self.handle.get_gen(chan as _, param as _) }
     }
 }

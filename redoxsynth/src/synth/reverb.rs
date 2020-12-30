@@ -30,7 +30,7 @@ impl Synth {
     Set the parameters for the built-in reverb unit
      */
     pub fn set_reverb_params(&mut self, roomsize: f64, damp: f64, width: f64, level: f64) {
-        ll::synth::fluid_synth_set_reverb(&mut self.handle, roomsize, damp, width, level);
+        self.handle.set_reverb(roomsize, damp, width, level);
     }
 
     /**
@@ -45,7 +45,7 @@ impl Synth {
      */
     pub fn set_reverb_on(&mut self, on: bool) {
         unsafe {
-            ll::synth::fluid_synth_set_reverb_on(&mut self.handle, on as _);
+            self.handle.set_reverb_on(on as _);
         }
     }
 
@@ -53,28 +53,28 @@ impl Synth {
     Query the current reverb room size
      */
     pub fn get_reverb_roomsize(&self) -> f64 {
-        unsafe { ll::synth::fluid_synth_get_reverb_roomsize(&self.handle) }
+        unsafe { self.handle.get_reverb_roomsize() }
     }
 
     /**
     Query the current reverb dumping
      */
     pub fn get_reverb_damp(&self) -> f64 {
-        unsafe { ll::synth::fluid_synth_get_reverb_damp(&self.handle) }
+        unsafe { self.handle.get_reverb_damp() }
     }
 
     /**
     Query the current reverb level
      */
     pub fn get_reverb_level(&self) -> f64 {
-        unsafe { ll::synth::fluid_synth_get_reverb_level(&self.handle) }
+        unsafe { self.handle.get_reverb_level() }
     }
 
     /**
     Query the current reverb width
      */
     pub fn get_reverb_width(&self) -> f64 {
-        unsafe { ll::synth::fluid_synth_get_reverb_width(&self.handle) }
+        unsafe { self.handle.get_reverb_width() }
     }
 
     /**

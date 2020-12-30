@@ -9,8 +9,6 @@ use super::sfont::Preset;
 use super::sfont::Sample;
 use super::sfont::SoundFont;
 use super::sfont::SoundFontLoader;
-use super::synth::fluid_synth_alloc_voice;
-use super::synth::fluid_synth_start_voice;
 use super::synth::Synth;
 use super::voice::fluid_voice_add_mod;
 use super::voice::fluid_voice_gen_incr;
@@ -840,7 +838,7 @@ pub unsafe fn fluid_defpreset_noteon(
                     inst_zone = fluid_inst_zone_next(inst_zone)
                 } else {
                     if fluid_inst_zone_inside_range(inst_zone, key, vel) != 0 && !sample.is_null() {
-                        voice = fluid_synth_alloc_voice(synth, sample, chan, key, vel);
+                        voice = synth.alloc_voice(sample, chan, key, vel);
                         if voice.is_null() {
                             return FLUID_FAILED as i32;
                         }
@@ -979,7 +977,7 @@ pub unsafe fn fluid_defpreset_noteon(
                             }
                             i += 1
                         }
-                        fluid_synth_start_voice(synth, voice);
+                        synth.start_voice(voice);
                     }
                     inst_zone = fluid_inst_zone_next(inst_zone)
                 }

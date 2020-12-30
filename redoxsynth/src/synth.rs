@@ -55,7 +55,7 @@ impl Synth {
      */
     pub fn set_sample_rate(&mut self, sample_rate: f32) {
         unsafe {
-            ll::synth::fluid_synth_set_sample_rate(&mut self.handle, sample_rate);
+            self.handle.set_sample_rate(sample_rate);
         }
     }
 
